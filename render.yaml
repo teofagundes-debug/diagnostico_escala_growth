@@ -3,7 +3,7 @@ services:
     name: diagnostico-escala-growth
     runtime: node
     plan: free
-    buildCommand: npm install -g pnpm@11.7.0 && pnpm install --no-frozen-lockfile && pnpm build
+    buildCommand: npm install -g pnpm@11.7.0 && pnpm install --no-frozen-lockfile --dangerously-allow-all-builds && pnpm build
     startCommand: pnpm start
     healthCheckPath: /
     autoDeploy: true
