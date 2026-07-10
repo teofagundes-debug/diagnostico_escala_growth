@@ -16,7 +16,8 @@ Cada pilar contém cinco perguntas de 0 a 4 (máximo 20). O total máximo é 100
 
 O MVP funciona localmente, sem integração externa. Para a próxima fase, execute `database/schema.sql` no SQL Editor do Supabase e configure as variáveis de `.env.example`. A chave de serviço deve existir somente no servidor.
 
-## Deploy
+## Deploy no Render
 
-O projeto está preparado para build e publicação. Configure o comando de build `pnpm build` e o ambiente Node.js 22+ no provedor.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/teofagundes-debug/diagnostico_escala_growth)
 
+O arquivo `render.yaml` configura build, inicialização, verificação de saúde e publicação automática a cada atualização da branch `main`.
