@@ -1,0 +1,9 @@
+create extension if not exists "pgcrypto";
+create table empresas(id uuid primary key default gen_random_uuid(),nome text not null,segmento text,quantidade_colaboradores int,quantidade_equipe_comercial int,contatos_mes int,canal_principal text,cidade text,estado text,created_at timestamptz default now(),updated_at timestamptz default now());
+create table responsaveis(id uuid primary key default gen_random_uuid(),empresa_id uuid references empresas on delete cascade,nome text not null,email text not null,telefone text,created_at timestamptz default now());
+create table diagnosticos(id uuid primary key default gen_random_uuid(),empresa_id uuid references empresas on delete cascade,responsavel_id uuid references responsaveis,data_diagnostico date not null,pontuacao_geral int check(pontuacao_geral between 0 and 100),percentual_geral int check(percentual_geral between 0 and 100),nivel_maturidade text,maior_pilar text,menor_pilar text,created_at timestamptz default now());
+create table respostas(id uuid primary key default gen_random_uuid(),diagnostico_id uuid references diagnosticos on delete cascade,pilar text,pergunta text,resposta_numerica int check(resposta_numerica between 0 and 4));
+create table respostas_abertas(id uuid primary key default gen_random_uuid(),diagnostico_id uuid references diagnosticos on delete cascade,pergunta text,resposta text);
+create table resultados_pilares(id uuid primary key default gen_random_uuid(),diagnostico_id uuid references diagnosticos on delete cascade,pilar text,pontuacao int,percentual int check(percentual between 0 and 100));
+alter table empresas enable row level security; alter table responsaveis enable row level security; alter table diagnosticos enable row level security; alter table respostas enable row level security; alter table respostas_abertas enable row level security; alter table resultados_pilares enable row level security;
+
