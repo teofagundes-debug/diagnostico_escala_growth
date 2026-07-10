@@ -3,11 +3,10 @@ services:
     name: diagnostico-escala-growth
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    buildCommand: corepack enable && pnpm install --no-frozen-lockfile && pnpm build
     startCommand: pnpm start
     healthCheckPath: /
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: 22.13.0
-
