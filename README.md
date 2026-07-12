@@ -1,23 +1,39 @@
-# Diagnóstico Escala Growth — MVP
+# Diagnóstico Escala Growth
 
-MVP responsivo para coletar informações, pontuar 25 respostas em cinco pilares, diagnosticar a maturidade comercial e gerar relatório em PDF.
+Aplicação pública e área interna Central Escala Growth.
 
-## Uso
+## URLs
+- Aplicação: https://diagnostico-escala-growth-fuoc.onrender.com/
+- Login da Central: https://diagnostico-escala-growth-fuoc.onrender.com/login
+- Central: https://diagnostico-escala-growth-fuoc.onrender.com/central
 
-Requer Node.js 22. Execute `pnpm install` e `pnpm dev`. Para produção, `pnpm build`.
+## Administrador inicial
+Nome: Teófilo Oliveira Fagundes
+E-mail: teofagundes@gmail.com
+Senha temporária: EscalaGrowth@2026
 
-O progresso é salvo no navegador. No resultado, clique **Baixar relatório em PDF** e escolha **Salvar como PDF** na impressão.
+Após configurar o Supabase, execute pnpm setup:admin. O script não cria conta duplicada. Altere a senha temporária em Supabase > Authentication > Users.
 
-## Cálculo
+## Configuração
+Configure no Render: SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY.
+Aplique no SQL Editor: database/schema.sql, database/migration_v2.sql e database/migration_v3_central.sql, nessa ordem.
+A service_role é exclusiva do servidor.
 
-Cada pilar contém cinco perguntas de 0 a 4 (máximo 20). O total máximo é 100. Os três menores percentuais viram prioridades.
+## Usuários e senhas
+Crie novos usuários em Supabase > Authentication > Users > Add user. Para alterar ou redefinir senha, abra o usuário e use Update user ou Reset password. Cada membro deve ter uma conta individual.
 
-## Supabase
+## Banco
+empresas; responsaveis; diagnosticos; respostas; respostas_abertas; resultados_pilares; diagnostico_status_historico; planos_estrategicos; reunioes_estrategicas; implantacoes; configuracoes. As tabelas administrativas usam RLS.
 
-O MVP funciona localmente, sem integração externa. Para a próxima fase, execute `database/schema.sql` no SQL Editor do Supabase e configure as variáveis de `.env.example`. A chave de serviço deve existir somente no servidor.
+## Funcionalidades
+Diagnóstico e IEG; relatório, radar, prioridades e certificado; agendamento; persistência no Supabase; login Supabase Auth; dashboard executivo; diagnósticos; empresas; reuniões; planos; implantações; evolução; histórico e observações internas.
 
-## Deploy no Render
+## Desenvolvimento
+Node.js 22. Use pnpm install, pnpm dev, pnpm test, pnpm build e pnpm setup:admin.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/teofagundes-debug/diagnostico_escala_growth)
+## Próximas evoluções
+Upload do PDF no Supabase Storage; recuperação de senha na aplicação; perfis por função; integração Cal.com; evolução histórica do IEG; auditoria administrativa.
 
-O arquivo `render.yaml` configura build, inicialização, verificação de saúde e publicação automática a cada atualização da branch `main`.
+## Filosofia
+O Diagnóstico mostra onde a empresa está. A Reunião Estratégica define para onde ela vai. O Plano Estratégico mostra como chegar. A Implantação executa. O IEG mede a evolução.
+
