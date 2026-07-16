@@ -108,3 +108,19 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 
 .client-contract-terms{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}.client-contract-terms span{background:var(--soft);padding:10px 14px;border-radius:9px;color:var(--muted)}
 
+
+/* Configuracoes: perfis Master e Cliente */
+.user-access-settings{margin-top:32px;padding-top:28px;border-top:1px solid var(--line)}
+.user-access-settings h3{margin:0 0 8px}
+.user-access-settings>.muted{margin:0 0 22px}
+.user-access-settings .form-grid{display:grid;grid-template-columns:minmax(240px,1.4fr) minmax(180px,.8fr) minmax(220px,1fr);gap:16px;align-items:end;margin-bottom:18px}
+.user-access-settings .form-grid label{font-weight:700}
+.user-access-settings input,.user-access-settings select{width:100%;margin-top:7px}
+.user-access-settings>.btn{margin-bottom:22px}
+.user-access-settings .table-wrap{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.user-access-settings table{width:100%;min-width:680px;border-collapse:collapse;table-layout:auto}
+.user-access-settings th,.user-access-settings td{padding:13px 18px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+.user-access-settings th{background:var(--soft);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.user-access-settings tbody tr:last-child td{border-bottom:0}
+.user-access-settings th:first-child,.user-access-settings td:first-child{width:38%}
+@media(max-width:800px){.user-access-settings .form-grid{grid-template-columns:1fr}.user-access-settings th,.user-access-settings td{padding:12px 14px}}
