@@ -1,8 +1,9 @@
+import {isMaster} from '../../../lib/access';
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY,ANON=process.env.SUPABASE_ANON_KEY;
 const h=()=>({apikey:KEY!,Authorization:`Bearer ${KEY}`,'Content-Type':'application/json'});
 const configFields=['nome_empresa','logo_url','telefone','whatsapp','email','website','instagram','linkedin','consultor','cargo','cra','agenda_url','assinatura_url'];
 function ready(){return Boolean(SUPABASE_URL&&KEY&&ANON)}
-async function authorized(req:Request){if(!ready())return false;const t=req.headers.get('cookie')?.match(/escala_session=([^;]+)/)?.[1];if(!t)return false;try{return (await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:ANON!,Authorization:`Bearer ${t}`},cache:'no-store'})).ok}catch{return false}}
+async function authorized(req:Request){return ready()&&await isMaster(req)}
 const out=async(r:Response)=>new Response(await r.text(),{status:r.status,headers:{'Content-Type':'application/json; charset=utf-8'}});
 const error=async(r:Response,fallback:string)=>{let message=fallback;try{const body=await r.clone().json();message=body.message||body.error_description||body.error||fallback}catch{}return Response.json({error:message},{status:r.status||500})};
 function cleanConfig(data:any){return Object.fromEntries(configFields.filter(k=>data?.[k]!==undefined).map(k=>[k,data[k]??null]))}
