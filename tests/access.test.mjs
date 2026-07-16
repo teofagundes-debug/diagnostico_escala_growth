@@ -7,3 +7,4 @@ test('rotas administrativas exigem Master',()=>{for(const file of ['app/api/cent
 test('cadastro exp?e somente os dois tipos desta vers?o',()=>{const ui=read('components/CentralApp.tsx');assert.match(ui,/<option value="master">Master<\/option><option value="cliente">Cliente<\/option>/);const api=read('app/api/users/route.ts');assert.match(api,/body\.perfil==='master'\?'master':'cliente'/)});
 test('portal restringe altera??es internas ao Master',()=>{const portal=read('app/api/portal/route.ts');assert.match(portal,/p\.role!=='master'/);assert.match(portal,/p\.role!=='cliente'/)});
 
+test('administrador legado e convertido sem liberar usuarios sem perfil',()=>{const sql=read('database/migration_v12_perfis_simplificados.sql');assert.match(sql,/raw_user_meta_data->>'role'/);const access=read('lib/access.ts');assert.match(access,/user\.app_metadata\?\.role/);assert.doesNotMatch(access,/!profile.*master/)})
