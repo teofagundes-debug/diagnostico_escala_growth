@@ -124,3 +124,27 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .user-access-settings tbody tr:last-child td{border-bottom:0}
 .user-access-settings th:first-child,.user-access-settings td:first-child{width:38%}
 @media(max-width:800px){.user-access-settings .form-grid{grid-template-columns:1fr}.user-access-settings th,.user-access-settings td{padding:12px 14px}}
+
+
+/* Marketing: implantacao, gestao e midia em blocos separados */
+.marketing-platforms{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.marketing-main-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 26px}
+.marketing-main-fields label,.marketing-scenarios label{display:block;font-weight:700}
+.marketing-main-fields input,.marketing-main-fields select,.marketing-scenarios input{margin-top:7px}
+.marketing-scenarios{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.marketing-scenarios label{background:var(--soft);border-radius:12px;padding:15px}
+.marketing-scenarios small,.marketing-scenarios span{display:block;margin-top:6px;color:var(--muted)}
+.marketing-scenarios span{font-weight:800;color:var(--green-dark)}
+.marketing-rule{margin-top:16px}.marketing-rule .btn{margin-top:10px}
+.media-summary article{background:#eef7f1;color:var(--ink);border:1px solid var(--line)}
+.media-summary small{color:var(--muted)}
+.separation-note{background:#fff8df;border-left:5px solid #d4a62a;padding:15px;border-radius:8px}
+.marketing-company-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;border:1px solid var(--line);border-radius:12px;padding:16px}
+.marketing-company-fields h3{grid-column:1/-1;margin:0}
+.client-marketing-card{margin:28px 0!important;padding:24px!important;border:1px solid var(--line)!important;border-radius:16px;background:#f7faf8}
+.client-marketing-card>div{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+.client-marketing-card article{background:white;border:1px solid var(--line);border-radius:12px;padding:18px}
+.client-marketing-card article b,.client-marketing-card article span,.client-marketing-card article small,.client-marketing-card article>strong{display:block;margin-top:7px}
+.client-marketing-card article>strong{font-size:24px;color:var(--green-dark)}
+.client-marketing-card aside{background:#e9f5ed;border-left:5px solid var(--green);padding:18px;border-radius:8px;margin-top:18px}
+@media(max-width:900px){.marketing-platforms,.marketing-main-fields,.marketing-scenarios,.client-marketing-card>div{grid-template-columns:1fr}.marketing-company-fields{grid-template-columns:1fr}.marketing-company-fields h3{grid-column:auto}}
