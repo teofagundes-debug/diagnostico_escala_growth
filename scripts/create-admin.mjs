@@ -5,4 +5,3 @@ const h={apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/js
 const list=await fetch(`${url}/auth/v1/admin/users?per_page=1000`,{headers:h}).then(r=>r.json());
 if(list.users?.some(u=>u.email===email))console.log('Usuário administrador já existe:',email);
 else{const r=await fetch(`${url}/auth/v1/admin/users`,{method:'POST',headers:h,body:JSON.stringify({email,password,email_confirm:true,user_metadata:{name:'Teófilo Oliveira Fagundes',role:'admin'}})});if(!r.ok)throw new Error(await r.text());console.log('Usuário administrador criado:',email)}
-
