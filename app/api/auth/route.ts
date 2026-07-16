@@ -1,4 +1,5 @@
-const URL=process.env.SUPABASE_URL,ANON=process.env.SUPABASE_ANON_KEY;
+import {access} from '../../../lib/access';
+﻿const URL=process.env.SUPABASE_URL,ANON=process.env.SUPABASE_ANON_KEY;
 export async function POST(req:Request){
  if(!URL||!ANON)return Response.json({error:'Supabase Auth não configurado'},{status:503});
  const {email,password}=await req.json();
@@ -12,7 +13,7 @@ export async function GET(req:Request){
  if(!token||!URL||!ANON)return Response.json({user:null},{status:401});
  const r=await fetch(`${URL}/auth/v1/user`,{headers:{apikey:ANON,Authorization:`Bearer ${token}`}});
  if(!r.ok)return Response.json({user:null},{status:401});
- return Response.json({user:await r.json()});
+ const current=await access(req);return Response.json({user:await r.json(),role:current?.role||null,empresa_id:current?.empresa_id||null});
 }
 export async function DELETE(){return new Response(null,{status:204,headers:{'Set-Cookie':'escala_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0'}})}
 
