@@ -168,3 +168,20 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .radar-page>aside p{margin:0}.radar-page>aside .btn{white-space:nowrap}
 .radar-empty{min-height:340px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
 @media(max-width:700px){.radar-admin-fields{grid-template-columns:1fr}.journey-radar-card,.radar-page>aside{align-items:flex-start;flex-direction:column}.radar-page iframe{min-height:420px}}
+
+
+
+/* Tela de definição de senha do cliente */
+.password-page { min-height:100vh; display:grid; place-items:center; padding:32px 20px; background:radial-gradient(circle at 15% 10%,rgba(24,135,83,.1),transparent 34%),var(--soft); }
+.password-card { width:min(100%,520px); padding:38px; background:#fff; border:1px solid var(--line); border-radius:22px; box-shadow:0 20px 55px rgba(13,57,36,.12); }
+.password-logo { display:block; width:220px; max-width:72%; height:auto; margin:0 auto 28px; object-fit:contain; }
+.password-card .eyebrow { display:block; text-align:center; }
+.password-card h1 { max-width:none; margin:12px 0 10px; font-size:clamp(34px,7vw,48px); line-height:1.08; text-align:center; }
+.password-intro { margin:0 0 26px; color:var(--muted); line-height:1.55; text-align:center; }
+.password-form { display:grid; gap:17px; }
+.password-form label { display:grid; gap:7px; font-weight:700; }
+.password-form input,.password-form .btn { width:100%; }
+.password-form .btn { margin-top:3px; }
+.password-card > .success,.password-card > .error { margin-top:18px; }
+@media (max-width:560px) { .password-page { padding:18px 14px; } .password-card { padding:30px 22px; border-radius:18px; } }
+
