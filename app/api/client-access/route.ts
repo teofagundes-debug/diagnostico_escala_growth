@@ -1,7 +1,7 @@
 import {isMaster} from '../../../lib/access';
 import {advanceJourney,diagnosticContext,updatePlanJourney} from '../../../lib/workflow';
 const URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY,ANON=process.env.SUPABASE_ANON_KEY;
-const APP=(process.env.NEXT_PUBLIC_APP_URL||'https://diagnostico-escala-growth-fuoc.onrender.com').replace(/\/$/,'');
+const APP=(process.env.NEXT_PUBLIC_APP_URL||'https://www.escala-growth.escalavendas.com.br').replace(/\/$/,'');
 const h=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
 async function rest(path:string,init:RequestInit={}){const r=await fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...h(),...(init.headers||{})},cache:'no-store'});if(!r.ok)throw new Error(await r.text());const text=await r.text();return text?JSON.parse(text):null}
 async function companyData(empresaId:string){const company=(await rest(`empresas?id=eq.${encodeURIComponent(empresaId)}&select=id,nome&limit=1`))?.[0],responsible=(await rest(`responsaveis?empresa_id=eq.${encodeURIComponent(empresaId)}&select=nome,email,telefone&order=created_at.asc&limit=1`))?.[0];if(!company)throw new Error('Empresa não encontrada.');return{company,responsible}}
