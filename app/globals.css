@@ -155,3 +155,16 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .field-help{display:block;margin-top:7px;color:var(--muted);font-weight:400;line-height:1.4}
 .scenario-badge{display:inline-block!important;margin:0 0 0 8px!important;padding:3px 7px;border-radius:99px;background:#dfeee4;color:var(--green-dark)!important;font-size:9px;font-weight:800;vertical-align:middle}
 .method-note{margin-top:16px;background:#f2f8f4;border-left:5px solid var(--green)}
+
+
+/* Radar Comercial por empresa */
+.radar-admin-fields{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin:18px 0}
+.radar-admin-fields label{display:block;font-weight:700}.radar-admin-fields input,.radar-admin-fields select{margin-top:7px}
+.journey-radar-card{display:flex;justify-content:space-between;align-items:center;gap:20px}
+.journey-radar-card h2{margin:8px 0}.journey-radar-card .btn{white-space:nowrap}
+.radar-page>p,.radar-empty>p{max-width:780px}
+.radar-page iframe{display:block;width:100%;height:min(72vh,820px);min-height:520px;border:1px solid var(--line);border-radius:14px;background:var(--soft);margin-top:22px}
+.radar-page>aside{display:flex;align-items:center;justify-content:space-between;gap:18px;background:var(--soft);padding:16px 18px;border-radius:12px;margin-top:14px}
+.radar-page>aside p{margin:0}.radar-page>aside .btn{white-space:nowrap}
+.radar-empty{min-height:340px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+@media(max-width:700px){.radar-admin-fields{grid-template-columns:1fr}.journey-radar-card,.radar-page>aside{align-items:flex-start;flex-direction:column}.radar-page iframe{min-height:420px}}
