@@ -19,7 +19,7 @@ alter table public.catalogo_recursos
   alter column ui drop default,
   add column if not exists valor_mensal numeric(12,2),
   add column if not exists valor_avulso numeric(12,2),
-  add column if not exists obrigatoriedade text not null default 'Opcional';
+  add column if not exists obrigatoriedade text not null default 'Padrão';
 
 update public.catalogo_recursos set tipo='Implantação' where tipo is null or tipo not in ('Implantação','Mensalidade','Avulso');
 update public.catalogo_recursos set ui=coalesce(ui,1) where tipo='Implantação';
@@ -29,7 +29,7 @@ update public.catalogo_recursos set ui=null,valor_avulso=coalesce(valor_avulso,0
 alter table public.catalogo_recursos drop constraint if exists catalogo_recursos_tipo_check;
 alter table public.catalogo_recursos add constraint catalogo_recursos_tipo_check check (tipo in ('Implantação','Mensalidade','Avulso'));
 alter table public.catalogo_recursos drop constraint if exists catalogo_recursos_obrigatoriedade_check;
-alter table public.catalogo_recursos add constraint catalogo_recursos_obrigatoriedade_check check (obrigatoriedade in ('Obrigatório','Opcional'));
+alter table public.catalogo_recursos add constraint catalogo_recursos_obrigatoriedade_check check (obrigatoriedade in ('Obrigatório','Padrão','Sob Demanda'));
 alter table public.catalogo_recursos drop constraint if exists catalogo_recursos_valores_por_tipo_check;
 alter table public.catalogo_recursos add constraint catalogo_recursos_valores_por_tipo_check check (
   (tipo='Implantação' and ui is not null and ui > 0 and valor_mensal is null and valor_avulso is null)
