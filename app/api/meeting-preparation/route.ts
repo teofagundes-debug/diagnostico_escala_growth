@@ -11,11 +11,15 @@ async function api(path:string,init:RequestInit={}){return fetch(`${URL}/rest/v1
 export async function GET(req:Request){
  if(!await guard(req))return Response.json({error:'Não autorizado'},{status:401});
  const id=new URL(req.url).searchParams.get('id');
- const [preparations,meetings]=await Promise.all([
+ const [preparations,directMeetings,diagnostics]=await Promise.all([
   api(`preparacoes_reuniao?diagnostico_id=eq.${id}&select=*&limit=1`).then(r=>r.ok?r.json():[]),
-  api(`reunioes_estrategicas?diagnostico_id=eq.${id}&select=*&order=data.desc&limit=1`).then(r=>r.ok?r.json():[])
+  api(`reunioes_estrategicas?diagnostico_id=eq.${id}&select=*&order=data.desc&limit=1`).then(r=>r.ok?r.json():[]),
+  api(`diagnosticos?id=eq.${id}&select=empresa_id&limit=1`).then(r=>r.ok?r.json():[])
  ]);
- return Response.json({...preparations[0],meeting:meetings[0]||null});
+ const companyId=preparations[0]?.empresa_id||diagnostics[0]?.empresa_id;
+ const companyMeetings=!directMeetings[0]&&companyId?await api(`reunioes_estrategicas?empresa_id=eq.${companyId}&select=*&order=data.desc,created_at.desc&limit=1`).then(r=>r.ok?r.json():[]):[];
+ const meeting=directMeetings[0]||companyMeetings[0]||null;
+ return Response.json({...preparations[0],reuniao_id:preparations[0]?.reuniao_id||meeting?.id||null,meeting});
 }
 
 export async function POST(req:Request){
