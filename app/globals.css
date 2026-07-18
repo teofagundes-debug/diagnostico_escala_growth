@@ -191,3 +191,9 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .catalog-tabs button.active { background:var(--green); border-color:var(--green); color:#fff; box-shadow:0 10px 24px #1f7a4c35; }
 @media (max-width:560px) { .catalog-tabs { flex-direction:column; } }
 
+
+.service-class { display:inline-flex; width:max-content; padding:6px 9px; border-radius:999px; background:#eef4f0; color:var(--green-dark); font-size:11px; font-weight:800; }
+.service-class.obrigatório { background:#e1efe7; }
+.service-class.sob-demanda { background:#f2f3f2; color:var(--muted); }
+.resource-cards select:disabled { cursor:not-allowed; opacity:.72; background:#edf4ef; }
+
