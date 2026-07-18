@@ -48,7 +48,7 @@ export async function PATCH(req:Request){
  if(!saved.ok)return Response.json({error:'Não foi possível concluir a preparação.'},{status:saved.status});
  await Promise.all([
   api(`reunioes_estrategicas?id=eq.${body.reuniao_id}`,{method:'PATCH',body:JSON.stringify({status:'Realizada',realizada_em:now,updated_at:now})}),
-  api(`planos_estrategicos?diagnostico_id=eq.${body.diagnostico_id}`,{method:'PATCH',body:JSON.stringify({status:'Em elaboração',observacoes:body.parecer_reuniao||body.hipotese_inicial||null,updated_at:now})})
+  api(`planos_estrategicos?diagnostico_id=eq.${body.diagnostico_id}`,{method:'PATCH',body:JSON.stringify({status:'Em Consolidação',observacoes:body.parecer_reuniao||body.hipotese_inicial||null,updated_at:now})})
  ]);
  await advanceJourney({diagnosticoId:body.diagnostico_id,empresaId:body.empresa_id,status:'Reunião Realizada',title:'Reunião Estratégica concluída',description:'Validações registradas. O Plano Estratégico está disponível para atualização.'});
  return Response.json({ok:true});
