@@ -17,7 +17,7 @@ export async function POST(req:Request){try{
  }
  if(body.action==='resource'){
   const type=['Implantação','Mensalidade','Avulso'].includes(body.tipo)?body.tipo:'Implantação';
-  const requirement=['Obrigatório','Opcional'].includes(body.obrigatoriedade)?body.obrigatoriedade:'Opcional';
+  const requirement=['Obrigatório','Padrão','Sob Demanda'].includes(body.obrigatoriedade)?body.obrigatoriedade:'Padrão';
   if(!body.codigo?.trim()||!body.categoria?.trim()||!body.nome?.trim())return Response.json({error:'Código, categoria e nome são obrigatórios.'},{status:400});
   if(type==='Implantação'&&Number(body.ui)<=0)return Response.json({error:'Informe uma UI maior que zero para serviços de Implantação.'},{status:400});
   if(type==='Mensalidade'&&(body.valor_mensal===''||body.valor_mensal==null||Number(body.valor_mensal)<0))return Response.json({error:'Informe o Valor Mensal do serviço.'},{status:400});
