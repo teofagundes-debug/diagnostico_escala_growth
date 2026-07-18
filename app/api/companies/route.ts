@@ -16,6 +16,8 @@ export async function DELETE(req:Request){
   const body=await req.json(),companyId=String(body.empresa_id||'');
   if(body.confirmacao!=='EXCLUIR')return Response.json({error:'Digite EXCLUIR para confirmar a exclusão definitiva.'},{status:400});
   if(!companyId)return Response.json({error:'Empresa não informada.'},{status:400});
+  const auditReady=await rest('exclusoes_empresas_log?select=id&limit=1');
+  if(!auditReady.ok)return Response.json({error:'Execute a migração V22 no Supabase antes de utilizar a exclusão definitiva.'},{status:503});
   const companyResponse=await rest(`empresas?id=eq.${encodeURIComponent(companyId)}&select=id,nome&limit=1`),company=(companyResponse.ok?await companyResponse.json():[])[0];
   if(!company)return Response.json({error:'Empresa não encontrada.'},{status:404});
 
