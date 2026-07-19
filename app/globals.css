@@ -339,3 +339,12 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .priority-percent{display:inline-block;margin-bottom:8px;font-size:1.1rem;color:#1d8757}
 .strategic-priority-card p{margin:4px 0 0!important;line-height:1.5!important;text-align:left}
 @media(max-width:520px){.strategic-priority-card header strong{width:100%;margin-left:0;box-sizing:border-box;text-align:center}}
+
+
+/* Executive meeting conclusion */
+.executive-summary-review{background:linear-gradient(145deg,#f7faf8,#edf6f1);border-left:5px solid #1d8757}
+.executive-summary-review>p{max-width:900px;margin-bottom:18px}
+.executive-summary-review textarea{min-height:320px;background:#fff;line-height:1.65;font-size:1rem}
+.meeting-final-actions{padding-top:20px;border-top:1px solid #d8e3dc;justify-content:flex-end}
+.meeting-final-actions .btn-primary{min-width:240px}
+@media(max-width:650px){.meeting-final-actions{flex-direction:column}.meeting-final-actions button{width:100%}.executive-summary-review textarea{min-height:260px}}
