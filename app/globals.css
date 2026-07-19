@@ -229,3 +229,5 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .autosave-status{min-width:155px;padding:9px 13px;border:1px solid #cfe0d5;border-radius:999px;background:#eef7f1;color:#17623d;font-size:.82rem;font-weight:700;cursor:default}
 .autosave-status.error{border-color:#e7bcbc;background:#fff1f1;color:#a52f2f;cursor:pointer}
 .meeting-preparation>.detail-actions{position:relative;z-index:10;pointer-events:auto}
+
+.meeting-save-reference{display:grid;justify-items:end;gap:4px}.meeting-save-reference small{color:var(--muted);font-size:.72rem}
