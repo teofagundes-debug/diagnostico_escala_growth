@@ -27,3 +27,16 @@ test('interface aguarda carregamento e possui autosave isolado por reunião',()=
  assert.match(component,/setAutoStatus\('Salvo'\)/);
  assert.doesNotMatch(component,/Preparação não iniciada|Prontidão da Reunião/);
 });
+
+
+test('autosave cobre reunião completa e protege contra concorrência',()=>{
+ assert.match(component,/editableFields=\[/);
+ assert.match(component,/observacoes_consultor/);
+ assert.match(component,/validacoes_reuniao:validations/);
+ assert.match(component,/autosave_version:version/);
+ assert.match(component,/requestSequence/);
+ assert.match(component,/beforeunload/);
+ assert.match(api,/autosave_version=lt\./);
+ assert.match(api,/Uma versão mais recente desta reunião já foi salva/);
+ assert.match(api,/updated_at:updated\.updated_at/);
+});
