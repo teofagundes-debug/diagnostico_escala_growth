@@ -325,3 +325,17 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
  justify-content:flex-start!important;
  min-height:46px;
 }
+
+
+/* Strategic priority ranking */
+.strategic-priority-ranking{display:grid;gap:14px}
+.strategic-priority-card{position:relative;padding:18px;border:1px solid #d8e3dc;border-left:5px solid #1d8757;border-radius:14px;background:#fff}
+.strategic-priority-card:first-child{border-left-color:#d5a51f;background:#fffdf5;box-shadow:0 8px 24px rgba(145,108,15,.09)}
+.strategic-priority-card header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.strategic-priority-card header small{font-weight:900;letter-spacing:.08em;color:#0b5134}
+.strategic-priority-card header strong{margin-left:auto;padding:5px 9px;border-radius:999px;background:#e7f2eb;color:#176c47;font-size:.72rem}
+.priority-medal{font-size:1.25rem}
+.strategic-priority-card h4{margin:14px 0 5px;font-size:1.35rem;color:#13251d}
+.priority-percent{display:inline-block;margin-bottom:8px;font-size:1.1rem;color:#1d8757}
+.strategic-priority-card p{margin:4px 0 0!important;line-height:1.5!important;text-align:left}
+@media(max-width:520px){.strategic-priority-card header strong{width:100%;margin-left:0;box-sizing:border-box;text-align:center}}
