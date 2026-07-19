@@ -23,7 +23,14 @@ export async function GET(req:Request){
  let preparations=meeting?.id?await api(`preparacoes_reuniao?reuniao_id=eq.${encodeURIComponent(meeting.id)}&select=*&order=updated_at.desc&limit=1`).then(r=>r.ok?r.json():[]):[];
  if(!preparations[0]&&meeting?.preparacao_id)preparations=await api(`preparacoes_reuniao?id=eq.${encodeURIComponent(meeting.preparacao_id)}&select=*&limit=1`).then(r=>r.ok?r.json():[]);
  if(!preparations[0]&&id)preparations=await api(`preparacoes_reuniao?diagnostico_id=eq.${encodeURIComponent(id)}&select=*&order=updated_at.desc&limit=1`).then(r=>r.ok?r.json():[]);
- return Response.json({...preparations[0],reuniao_id:preparations[0]?.reuniao_id||meeting?.id||null,meeting});
+ let preparation=preparations[0]||{};
+ const hasReadiness=Object.values(preparation.prontidao||{}).some(Boolean);
+ if(!hasReadiness&&meeting?.id){
+  const history=await api(`reuniao_estrategica_historico?reuniao_id=eq.${encodeURIComponent(meeting.id)}&select=snapshot&order=created_at.desc`).then(r=>r.ok?r.json():[]);
+  const recovered=history.map((item:any)=>item.snapshot?.prontidao).find((value:any)=>value&&Object.values(value).some(Boolean));
+  if(recovered)preparation={...preparation,prontidao:recovered};
+ }
+ return Response.json({...preparation,reuniao_id:preparation.reuniao_id||meeting?.id||null,meeting});
 }
 
 export async function POST(req:Request){
