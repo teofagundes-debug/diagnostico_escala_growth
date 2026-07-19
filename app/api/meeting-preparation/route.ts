@@ -20,16 +20,18 @@ export async function GET(req:Request){
  const diagnostics=await api(`diagnosticos?id=eq.${id}&select=empresa_id&limit=1`).then(r=>r.ok?r.json():[]);
  const meeting=meetingId?await api(`reunioes_estrategicas?id=eq.${encodeURIComponent(meetingId)}&select=*&limit=1`).then(r=>r.ok?r.json():[]).then(x=>x[0]||null):await findMeeting(String(id||''),diagnostics[0]?.empresa_id);
  if(!meeting)return Response.json({error:'Reunião Estratégica não encontrada.'},{status:404});
- const [legacy,history]=await Promise.all([
+ const [legacy,diagnosticLegacy,history]=await Promise.all([
   api(`preparacoes_reuniao?reuniao_id=eq.${encodeURIComponent(meeting.id)}&select=*&order=updated_at.desc&limit=1`).then(r=>r.ok?r.json():[]),
+  api(`preparacoes_reuniao?diagnostico_id=eq.${encodeURIComponent(meeting.diagnostico_id)}&empresa_id=eq.${encodeURIComponent(meeting.empresa_id)}&select=*&order=updated_at.desc&limit=2`).then(r=>r.ok?r.json():[]),
   api(`reuniao_estrategica_historico?reuniao_id=eq.${encodeURIComponent(meeting.id)}&select=snapshot&order=created_at.desc&limit=20`).then(r=>r.ok?r.json():[])
  ]);
- const meetingData={...(legacy[0]||{}),...(meeting.dados_reuniao||{})};
+ const safeLegacy=legacy[0]||(diagnosticLegacy.length===1?diagnosticLegacy[0]:null);
+ const meetingData={...(safeLegacy||{}),...(meeting.dados_reuniao||{})};
  const filled=(...values:any[])=>values.find(value=>typeof value==='string'&&value.trim().length>0)||'';
  const historyValue=(key:string)=>history.map((item:any)=>item.snapshot?.[key]).find((value:any)=>typeof value==='string'&&value.trim().length>0);
- const hypothesis=filled(meeting.consultant_initial_hypothesis,meetingData.hipotese_inicial,legacy[0]?.hipotese_inicial,historyValue('hipotese_inicial'));
- const questions=filled(meeting.prepared_specific_questions,meetingData.perguntas_especificas,legacy[0]?.perguntas_especificas,historyValue('perguntas_especificas'));
- const notes=filled(meeting.consultant_notes,meetingData.observacoes_consultor,legacy[0]?.observacoes_consultor,historyValue('observacoes_consultor'));
+ const hypothesis=filled(meeting.consultant_initial_hypothesis,meetingData.hipotese_inicial,safeLegacy?.hipotese_inicial,historyValue('hipotese_inicial'));
+ const questions=filled(meeting.prepared_specific_questions,meetingData.perguntas_especificas,safeLegacy?.perguntas_especificas,historyValue('perguntas_especificas'));
+ const notes=filled(meeting.consultant_notes,meetingData.observacoes_consultor,safeLegacy?.observacoes_consultor,historyValue('observacoes_consultor'));
  const repair:any={};
  if(!String(meeting.consultant_initial_hypothesis||'').trim()&&hypothesis)repair.consultant_initial_hypothesis=hypothesis;
  if(!String(meeting.prepared_specific_questions||'').trim()&&questions)repair.prepared_specific_questions=questions;
