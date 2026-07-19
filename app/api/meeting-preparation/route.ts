@@ -45,7 +45,7 @@ export async function POST(req:Request){
  const updated=(await saved.json())[0];
  if(!updated)return Response.json({error:'Uma versão mais recente desta reunião já foi salva.',current_version:Number(meeting.autosave_version||0)},{status:409});
  if(!updated||('consultant_initial_hypothesis'in update&&updated.consultant_initial_hypothesis!==update.consultant_initial_hypothesis)||('prepared_specific_questions'in update&&updated.prepared_specific_questions!==update.prepared_specific_questions))return Response.json({error:'O banco não confirmou a persistência dos campos internos.'},{status:500});
- await api('reuniao_estrategica_historico',{method:'POST',body:JSON.stringify({empresa_id:body.empresa_id,diagnostico_id:body.diagnostico_id,reuniao_id:meeting.id,acao:'Reunião salva',responsavel:meetingData.responsavel_reuniao,status:meeting.status||'Agendada',snapshot:meetingData})});
+ if(raw.autosave!==true)await api('reuniao_estrategica_historico',{method:'POST',body:JSON.stringify({empresa_id:body.empresa_id,diagnostico_id:body.diagnostico_id,reuniao_id:meeting.id,acao:'Reunião salva',responsavel:meetingData.responsavel_reuniao,status:meeting.status||'Agendada',snapshot:meetingData})});
  return Response.json({ok:true,message:'Reunião salva com sucesso.',id:updated.id,updated_at:updated.updated_at,autosave_version:updated.autosave_version,fields:updated.dados_reuniao,meetingData,meeting:updated});
 }
 
