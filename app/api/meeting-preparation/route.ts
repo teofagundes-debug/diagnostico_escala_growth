@@ -30,6 +30,11 @@ export async function GET(req:Request){
  const hypothesis=filled(meeting.consultant_initial_hypothesis,meetingData.hipotese_inicial,legacy[0]?.hipotese_inicial,historyValue('hipotese_inicial'));
  const questions=filled(meeting.prepared_specific_questions,meetingData.perguntas_especificas,legacy[0]?.perguntas_especificas,historyValue('perguntas_especificas'));
  const notes=filled(meeting.consultant_notes,meetingData.observacoes_consultor,legacy[0]?.observacoes_consultor,historyValue('observacoes_consultor'));
+ const repair:any={};
+ if(!String(meeting.consultant_initial_hypothesis||'').trim()&&hypothesis)repair.consultant_initial_hypothesis=hypothesis;
+ if(!String(meeting.prepared_specific_questions||'').trim()&&questions)repair.prepared_specific_questions=questions;
+ if(!String(meeting.consultant_notes||'').trim()&&notes)repair.consultant_notes=notes;
+ if(Object.keys(repair).length)await api(`reunioes_estrategicas?id=eq.${meeting.id}`,{method:'PATCH',body:JSON.stringify({...repair,dados_reuniao:{...meetingData,hipotese_inicial:hypothesis,perguntas_especificas:questions,observacoes_consultor:notes},updated_at:new Date().toISOString()})});
  return Response.json({...meetingData,hipotese_inicial:hypothesis,perguntas_especificas:questions,observacoes_consultor:notes,autosave_version:Number(meeting.autosave_version||0),empresa_id:meeting.empresa_id,diagnostico_id:meeting.diagnostico_id,reuniao_id:meeting.id,meeting});
 }
 
