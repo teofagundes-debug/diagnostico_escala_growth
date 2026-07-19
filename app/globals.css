@@ -222,3 +222,10 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .meeting-preparation-content>.detail-metrics{margin-top:20px}
 
 .internal-autosave{display:block;min-height:1.2em;margin-top:-10px;color:var(--muted);font-size:.82rem;text-align:right}
+
+
+.meeting-title-row{position:sticky;top:0;z-index:8;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px 0;background:rgba(255,255,255,.96);backdrop-filter:blur(8px)}
+.meeting-title-row h2{margin-bottom:0}
+.autosave-status{min-width:155px;padding:9px 13px;border:1px solid #cfe0d5;border-radius:999px;background:#eef7f1;color:#17623d;font-size:.82rem;font-weight:700;cursor:default}
+.autosave-status.error{border-color:#e7bcbc;background:#fff1f1;color:#a52f2f;cursor:pointer}
+.meeting-preparation>.detail-actions{position:relative;z-index:10;pointer-events:auto}
