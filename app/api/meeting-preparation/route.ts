@@ -3,7 +3,7 @@ import {advanceJourney} from '../../../lib/workflow';
 
 const URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({apikey:KEY!,Authorization:`Bearer ${KEY}`,'Content-Type':'application/json'});
-const allowed=['empresa_id','diagnostico_id','reuniao_id','hipotese_inicial','recomendacoes','prontidao','pontos_validacao','perguntas_especificas','validacoes_reuniao','parecer_reuniao','problema_principal','ajustes_diagnostico','prioridades_confirmadas','recomendacoes_aprovadas','recomendacoes_removidas','novas_recomendacoes','informacoes_complementares','missao_definida','indicadores_sugeridos','observacoes_consultor','parecer_consultor','responsavel_reuniao','status','iniciada_em','concluida_em','ultima_alteracao_em'];
+const allowed=['empresa_id','diagnostico_id','reuniao_id','hipotese_inicial','recomendacoes','prontidao','pontos_validacao','perguntas_especificas','validacoes_reuniao','parecer_reuniao','problema_principal','ajustes_diagnostico','prioridades_confirmadas','recomendacoes_aprovadas','recomendacoes_removidas','novas_recomendacoes','informacoes_complementares','missao_definida','indicadores_sugeridos','observacoes_consultor','parecer_consultor','responsavel_reuniao','status','iniciada_em','concluida_em','ultima_alteracao_em','autosave_version'];
 const clean=(body:any)=>Object.fromEntries(allowed.filter(k=>body[k]!==undefined).map(k=>[k,body[k]]));
 async function guard(req:Request){return Boolean(URL&&KEY)&&await isMaster(req)}
 async function api(path:string,init:RequestInit={}){return fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init.headers||{})},cache:'no-store'})}
@@ -24,7 +24,8 @@ export async function GET(req:Request){
  const meetingData=meeting.dados_reuniao||legacy[0]||{};
  const hypothesis=meeting.consultant_initial_hypothesis??meetingData.hipotese_inicial??legacy[0]?.hipotese_inicial??'';
  const questions=meeting.prepared_specific_questions??meetingData.perguntas_especificas??legacy[0]?.perguntas_especificas??'';
- return Response.json({...meetingData,hipotese_inicial:hypothesis,perguntas_especificas:questions,empresa_id:meeting.empresa_id,diagnostico_id:meeting.diagnostico_id,reuniao_id:meeting.id,meeting});
+ const notes=meeting.consultant_notes??meetingData.observacoes_consultor??legacy[0]?.observacoes_consultor??'';
+ return Response.json({...meetingData,hipotese_inicial:hypothesis,perguntas_especificas:questions,observacoes_consultor:notes,autosave_version:Number(meeting.autosave_version||0),empresa_id:meeting.empresa_id,diagnostico_id:meeting.diagnostico_id,reuniao_id:meeting.id,meeting});
 }
 
 export async function POST(req:Request){
@@ -34,15 +35,18 @@ export async function POST(req:Request){
  const meeting=body.reuniao_id?await api(`reunioes_estrategicas?id=eq.${encodeURIComponent(body.reuniao_id)}&select=*&limit=1`).then(r=>r.ok?r.json():[]).then(x=>x[0]||null):await findMeeting(body.diagnostico_id,body.empresa_id);
  if(!meeting?.id)return Response.json({error:'Nenhuma Reunião Estratégica agendada foi encontrada para esta empresa.'},{status:409});
  const meetingData={...(meeting.dados_reuniao||{}),...body,reuniao_id:meeting.id,responsavel_reuniao:body.responsavel_reuniao||current?.email||'Usuário Master',ultima_alteracao_em:now};
- const update:any={dados_reuniao:meetingData,consultor:meetingData.responsavel_reuniao,observacoes:meetingData.observacoes_consultor||null,updated_at:now};
+ const requestedVersion=Math.max(Number(meeting.autosave_version||0)+1,Number(raw.autosave_version||0));
+ const update:any={dados_reuniao:meetingData,autosave_version:requestedVersion,consultor:meetingData.responsavel_reuniao,observacoes:meetingData.observacoes_consultor||null,updated_at:now};
  if(Object.prototype.hasOwnProperty.call(raw,'hipotese_inicial'))update.consultant_initial_hypothesis=body.hipotese_inicial;
  if(Object.prototype.hasOwnProperty.call(raw,'perguntas_especificas'))update.prepared_specific_questions=body.perguntas_especificas;
- const saved=await api(`reunioes_estrategicas?id=eq.${meeting.id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(update)});
- if(!saved.ok)return Response.json({error:'Não foi possível salvar a reunião. Execute a migração V27 no Supabase.'},{status:saved.status});
+ if(Object.prototype.hasOwnProperty.call(raw,'observacoes_consultor'))update.consultant_notes=body.observacoes_consultor;
+ const saved=await api(`reunioes_estrategicas?id=eq.${meeting.id}&autosave_version=lt.${requestedVersion}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(update)});
+ if(!saved.ok)return Response.json({error:'Não foi possível salvar a reunião. Execute a migração V28 no Supabase.'},{status:saved.status});
  const updated=(await saved.json())[0];
+ if(!updated)return Response.json({error:'Uma versão mais recente desta reunião já foi salva.',current_version:Number(meeting.autosave_version||0)},{status:409});
  if(!updated||('consultant_initial_hypothesis'in update&&updated.consultant_initial_hypothesis!==update.consultant_initial_hypothesis)||('prepared_specific_questions'in update&&updated.prepared_specific_questions!==update.prepared_specific_questions))return Response.json({error:'O banco não confirmou a persistência dos campos internos.'},{status:500});
  await api('reuniao_estrategica_historico',{method:'POST',body:JSON.stringify({empresa_id:body.empresa_id,diagnostico_id:body.diagnostico_id,reuniao_id:meeting.id,acao:'Reunião salva',responsavel:meetingData.responsavel_reuniao,status:meeting.status||'Agendada',snapshot:meetingData})});
- return Response.json({ok:true,message:'Reunião salva com sucesso.',meetingData,meeting:updated});
+ return Response.json({ok:true,message:'Reunião salva com sucesso.',id:updated.id,updated_at:updated.updated_at,autosave_version:updated.autosave_version,fields:updated.dados_reuniao,meetingData,meeting:updated});
 }
 
 export async function PATCH(req:Request){
@@ -65,7 +69,7 @@ export async function PATCH(req:Request){
  const validatedPriorities=[body.prioridades_confirmadas,priorityValidation.resposta&&`Concordância do cliente: ${priorityValidation.resposta}.`,priorityValidation.alteracoes].filter(Boolean).join('\n');
  const existingTools={...(currentImplementation?.recursos_existentes||{}),CRM:crm.resposta==='Sim'?[crm.nome,crm.uso,crm.futuro].filter(Boolean).join(' — '):crm.resposta||'',Campanhas:media.resposta==='Sim'?[media.canais,media.responsavel,media.verba,media.resultados].filter(Boolean).join(' — '):media.resposta||'',Equipe_Comercial:team.resposta==='Sim'?[team.quantidade,team.funcoes,team.distribuicao,team.acompanhamento].filter(Boolean).join(' — '):team.resposta||'',Projeto_Em_Andamento:project.resposta==='Sim'?project.descricao:project.resposta||''};
  await Promise.all([
-  api(`reunioes_estrategicas?id=eq.${body.reuniao_id}`,{method:'PATCH',body:JSON.stringify({status:'Realizada',etapa_atual:'Reunião concluída',prontidao_percentual:100,dados_reuniao:meetingData,consultant_initial_hypothesis:body.hipotese_inicial??null,prepared_specific_questions:body.perguntas_especificas??null,realizada_em:now,observacoes:body.observacoes_consultor||null,consultor:body.responsavel_reuniao,updated_at:now})}),
+  api(`reunioes_estrategicas?id=eq.${body.reuniao_id}`,{method:'PATCH',body:JSON.stringify({status:'Realizada',etapa_atual:'Reunião concluída',prontidao_percentual:100,dados_reuniao:meetingData,consultant_initial_hypothesis:body.hipotese_inicial??null,prepared_specific_questions:body.perguntas_especificas??null,consultant_notes:body.observacoes_consultor??null,realizada_em:now,observacoes:body.observacoes_consultor||null,consultor:body.responsavel_reuniao,updated_at:now})}),
   api(`planos_estrategicos?diagnostico_id=eq.${body.diagnostico_id}`,{method:'PATCH',body:JSON.stringify({status:'Em Consolidação',situacao_atual:validatedSituation,objetivos:body.missao_definida,prioridades:validatedPriorities,proximos_passos:[...approved,...added].join('\n'),parecer_consultor:body.parecer_consultor||null,updated_at:now})}),
   currentImplementation?api(`planos_implantacao?id=eq.${currentImplementation.id}`,{method:'PATCH',body:JSON.stringify({objetivo:body.missao_definida,missoes:[{titulo:'Missão validada na Reunião Estratégica',objetivo:body.missao_definida,status:'Planejada'}],recursos:resources.length?resources:currentImplementation.recursos,recursos_existentes:existingTools,indicadores:indicators.length?indicators:currentImplementation.indicadores,observacoes:body.informacoes_complementares||currentImplementation.observacoes,updated_at:now})}):Promise.resolve(null),
   api('reuniao_estrategica_historico',{method:'POST',body:JSON.stringify({empresa_id:body.empresa_id,diagnostico_id:body.diagnostico_id,reuniao_id:body.reuniao_id,acao:'Reunião concluída',responsavel:body.responsavel_reuniao,status:'Concluída',snapshot:{...body,concluida_em:now}})})
