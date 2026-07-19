@@ -24,7 +24,7 @@ export async function DELETE(req:Request){
   const modules:Record<string,string>={
    diagnosticos:'diagnosticos',reunioes_estrategicas:'reunioes_estrategicas',preparacoes_reuniao:'preparacoes_reuniao',
    planos_estrategicos:'planos_estrategicos',planos_implantacao:'planos_implantacao',investimentos:'financeiro_growth',
-   contratos:'contratos_growth',aceites:'aceites_growth',pagamentos:'pagamentos_growth',timeline:'dossie_eventos',
+   contratos:'contratos_growth',aceites:'aceites_growth',pagamentos:'pagamentos_growth',timeline:'dossie_eventos',historico_reunioes:'reuniao_estrategica_historico',
    implantacoes:'implantacoes',comunicacoes:'comunicacoes_growth',usuarios:'portal_usuarios'
   };
   const entries=await Promise.all(Object.entries(modules).map(async([label,table])=>[label,(await rows(table,companyId)).length] as const));
