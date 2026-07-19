@@ -233,3 +233,31 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .meeting-save-reference{display:grid;justify-items:end;gap:4px}.meeting-save-reference small{color:var(--muted);font-size:.72rem}
 
 .autosave-detail{max-width:360px;color:#a52f2f!important;text-align:right;font-size:.75rem!important}
+
+
+/* Guided Strategic Meeting */
+.guided-meeting{display:flex;flex-direction:column;gap:22px}
+.guided-meeting-header{display:grid;gap:16px}
+.guided-column-labels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;border:1px solid #d8e3dc;border-radius:14px 14px 0 0;overflow:hidden}
+.guided-column-labels b{padding:14px 18px;background:#eef5f1;color:#0b5134;text-transform:uppercase;font-size:.78rem;letter-spacing:.08em}
+.guided-column-labels b+ b{background:#e3f1e9;border-left:1px solid #cbded3}
+.guided-block{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border:1px solid #d8e3dc;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 10px 28px rgba(15,55,38,.05)}
+.guided-source,.guided-validation{padding:24px;min-width:0}
+.guided-source{background:#f7faf8}
+.guided-validation{background:#fff;border-left:1px solid #d8e3dc}
+.guided-source h3,.guided-validation h3{margin:6px 0 12px}
+.diagnostic-source-text{white-space:pre-line;line-height:1.65}
+.prepared-question{padding:10px 12px;border-left:3px solid #1d8757;background:#fff;border-radius:0 8px 8px 0}
+.recommendation-validation-row{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:1px solid #e2ebe6}
+.recommendation-validation-row .guided-source,.recommendation-validation-row .guided-validation{padding-top:18px;padding-bottom:18px}
+.meeting-decisions,.guided-validation .validation-options{display:flex;flex-wrap:wrap;gap:10px 16px}
+.guided-validation label,.meeting-conclusion label{display:flex;flex-direction:column;gap:7px}
+.meeting-conclusion{width:100%;padding:26px;border:1px solid #cfe0d6;border-radius:18px;background:#f7faf8;box-sizing:border-box}
+.meeting-conclusion .detail-grid{margin:18px 0}
+@media (max-width:850px){
+ .guided-column-labels{display:none}
+ .guided-block,.recommendation-validation-row{grid-template-columns:1fr}
+ .guided-validation{border-left:0;border-top:1px solid #d8e3dc}
+ .recommendation-validation-row .guided-source{border-top:0}
+ .guided-source,.guided-validation,.meeting-conclusion{padding:18px}
+}
