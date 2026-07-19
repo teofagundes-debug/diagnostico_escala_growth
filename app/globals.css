@@ -374,3 +374,14 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 @media(max-width:1000px){.operational-solution-grid{grid-template-columns:1fr}.operational-schedule{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.operational-schedule{grid-template-columns:1fr}.operational-solution-card>header{grid-template-columns:auto 1fr}.operational-solution-card>header>b{grid-column:2}}
 @media print{.operational-solution-card,.operational-schedule article{break-inside:avoid}.operational-solution-grid{grid-template-columns:repeat(2,1fr)}}
+
+
+/* Solution Knowledge Library */
+.solution-template-form{display:grid;gap:16px;margin:20px 0}
+.solution-template-form fieldset{margin:0;padding:20px;border:1px solid #d8e3dc;border-radius:14px;background:#f8fbf9}
+.solution-template-form legend{padding:0 9px;color:#0b5134;font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem}
+.solution-template-form .resource-form{margin:0}
+.solution-template-form .resource-form .wide{grid-column:1/-1}
+.solution-planning-summary{background:#f2f7f4}
+.solution-planning-summary p+p{margin-top:8px!important}
+@media(max-width:650px){.solution-template-form .resource-form .wide{grid-column:auto}}
