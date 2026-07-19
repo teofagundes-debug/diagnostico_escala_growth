@@ -15,13 +15,14 @@ async function findMeeting(diagnosticId:string,companyId?:string){
 
 export async function GET(req:Request){
  if(!await guard(req))return Response.json({error:'Não autorizado'},{status:401});
- const id=new URL(req.url).searchParams.get('id');
+ const requestUrl=new URL(req.url);if(requestUrl.searchParams.get('list')==='1'){const response=await api('preparacoes_reuniao?select=*&order=updated_at.desc');return new Response(await response.text(),{status:response.status,headers:{'Content-Type':'application/json; charset=utf-8'}})}
+ const id=requestUrl.searchParams.get('id'),meetingId=requestUrl.searchParams.get('meeting_id');
  const [preparations,diagnostics]=await Promise.all([
-  api(`preparacoes_reuniao?diagnostico_id=eq.${id}&select=*&limit=1`).then(r=>r.ok?r.json():[]),
+  api(meetingId?`preparacoes_reuniao?reuniao_id=eq.${encodeURIComponent(meetingId)}&select=*&limit=1`:`preparacoes_reuniao?diagnostico_id=eq.${id}&select=*&order=updated_at.desc&limit=1`).then(r=>r.ok?r.json():[]),
   api(`diagnosticos?id=eq.${id}&select=empresa_id&limit=1`).then(r=>r.ok?r.json():[])
  ]);
  const companyId=preparations[0]?.empresa_id||diagnostics[0]?.empresa_id;
- const meeting=await findMeeting(String(id||''),companyId);
+ const meeting=meetingId?await api(`reunioes_estrategicas?id=eq.${encodeURIComponent(meetingId)}&select=*&limit=1`).then(r=>r.ok?r.json():[]).then(x=>x[0]||null):await findMeeting(String(id||''),companyId);
  return Response.json({...preparations[0],reuniao_id:preparations[0]?.reuniao_id||meeting?.id||null,meeting});
 }
 
@@ -33,7 +34,7 @@ export async function POST(req:Request){
  if(!meeting?.id)return Response.json({error:'Nenhuma Reunião Estratégica agendada foi encontrada para esta empresa. Abra a Agenda e confirme se a reunião está vinculada à empresa correta.'},{status:409});
  body.reuniao_id=meeting.id;
  body.responsavel_reuniao=body.responsavel_reuniao||current?.email||'Usuário Master';body.ultima_alteracao_em=now;
- const existing=await api(`preparacoes_reuniao?diagnostico_id=eq.${body.diagnostico_id}&select=id&limit=1`).then(r=>r.ok?r.json():[]);
+ const existing=await api(`preparacoes_reuniao?reuniao_id=eq.${body.reuniao_id}&select=id&limit=1`).then(r=>r.ok?r.json():[]);
  const response=existing[0]?await api(`preparacoes_reuniao?id=eq.${existing[0].id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({...body,updated_at:now})}):await api('preparacoes_reuniao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...body,created_at:now,updated_at:now})});
  if(!response.ok)return Response.json({error:'Não foi possível salvar. Execute a migração V23 no Supabase.'},{status:response.status});
  const preparation=(await response.json())[0];
@@ -52,7 +53,7 @@ export async function PATCH(req:Request){
  if(!body.reuniao_id)return Response.json({error:'Reunião não vinculada. Confirme o agendamento na Agenda.'},{status:400});
  if(!body.problema_principal?.trim()||!body.prioridades_confirmadas?.trim()||!body.missao_definida?.trim())return Response.json({error:'Preencha Problema Principal, Prioridades Confirmadas e Missão Definida antes de concluir.'},{status:400});
  body.responsavel_reuniao=body.responsavel_reuniao||current?.email||'Usuário Master';body.ultima_alteracao_em=now;
- const saved=await api(`preparacoes_reuniao?diagnostico_id=eq.${body.diagnostico_id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({...body,status:'Concluída',concluida_em:now,updated_at:now})});
+ const saved=await api(`preparacoes_reuniao?reuniao_id=eq.${body.reuniao_id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({...body,status:'Concluída',concluida_em:now,updated_at:now})});
  if(!saved.ok)return Response.json({error:'Não foi possível concluir a preparação.'},{status:saved.status});
  const preparation=(await saved.json())[0];
  const implementation=await api(`planos_implantacao?diagnostico_id=eq.${body.diagnostico_id}&select=*&limit=1`).then(r=>r.ok?r.json():[]);
