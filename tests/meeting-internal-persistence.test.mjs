@@ -21,9 +21,9 @@ test('API salva, confirma e recarrega os dois campos pela reunião',()=>{
 });
 
 test('interface aguarda carregamento e possui autosave isolado por reunião',()=>{
- assert.match(component,/savedInternal=useRef/);
+ assert.match(component,/savedSignature=useRef/);
  assert.match(component,/reuniao_id:meetingId/);
- assert.match(component,/setTimeout\(async\(\)=>/);
+ assert.match(component,/setTimeout\(\(\)=>\{void persist\(false\)\},1000\)/);
  assert.match(component,/setAutoStatus\('Salvo'\)/);
  assert.doesNotMatch(component,/Preparação não iniciada|Prontidão da Reunião/);
 });
