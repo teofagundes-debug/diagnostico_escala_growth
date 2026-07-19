@@ -22,19 +22,25 @@ export async function GET(req:Request){
  if(!meeting)return Response.json({error:'Reunião Estratégica não encontrada.'},{status:404});
  const legacy=await api(`preparacoes_reuniao?reuniao_id=eq.${encodeURIComponent(meeting.id)}&select=*&order=updated_at.desc&limit=1`).then(r=>r.ok?r.json():[]);
  const meetingData=meeting.dados_reuniao||legacy[0]||{};
- return Response.json({...meetingData,empresa_id:meeting.empresa_id,diagnostico_id:meeting.diagnostico_id,reuniao_id:meeting.id,meeting});
+ const hypothesis=meeting.consultant_initial_hypothesis??meetingData.hipotese_inicial??legacy[0]?.hipotese_inicial??'';
+ const questions=meeting.prepared_specific_questions??meetingData.perguntas_especificas??legacy[0]?.perguntas_especificas??'';
+ return Response.json({...meetingData,hipotese_inicial:hypothesis,perguntas_especificas:questions,empresa_id:meeting.empresa_id,diagnostico_id:meeting.diagnostico_id,reuniao_id:meeting.id,meeting});
 }
 
 export async function POST(req:Request){
  if(!await guard(req))return Response.json({error:'Não autorizado'},{status:401});
- const current=await access(req),body=clean(await req.json()),now=new Date().toISOString();
+ const current=await access(req),raw=await req.json(),body=clean(raw),now=new Date().toISOString();
  if(!body.diagnostico_id||!body.empresa_id)return Response.json({error:'Empresa e diagnóstico são obrigatórios.'},{status:400});
  const meeting=body.reuniao_id?await api(`reunioes_estrategicas?id=eq.${encodeURIComponent(body.reuniao_id)}&select=*&limit=1`).then(r=>r.ok?r.json():[]).then(x=>x[0]||null):await findMeeting(body.diagnostico_id,body.empresa_id);
  if(!meeting?.id)return Response.json({error:'Nenhuma Reunião Estratégica agendada foi encontrada para esta empresa.'},{status:409});
  const meetingData={...(meeting.dados_reuniao||{}),...body,reuniao_id:meeting.id,responsavel_reuniao:body.responsavel_reuniao||current?.email||'Usuário Master',ultima_alteracao_em:now};
- const saved=await api(`reunioes_estrategicas?id=eq.${meeting.id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({dados_reuniao:meetingData,consultor:meetingData.responsavel_reuniao,observacoes:meetingData.observacoes_consultor||null,updated_at:now})});
- if(!saved.ok)return Response.json({error:'Não foi possível salvar a reunião. Execute a migração V26 no Supabase.'},{status:saved.status});
+ const update:any={dados_reuniao:meetingData,consultor:meetingData.responsavel_reuniao,observacoes:meetingData.observacoes_consultor||null,updated_at:now};
+ if(Object.prototype.hasOwnProperty.call(raw,'hipotese_inicial'))update.consultant_initial_hypothesis=body.hipotese_inicial;
+ if(Object.prototype.hasOwnProperty.call(raw,'perguntas_especificas'))update.prepared_specific_questions=body.perguntas_especificas;
+ const saved=await api(`reunioes_estrategicas?id=eq.${meeting.id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(update)});
+ if(!saved.ok)return Response.json({error:'Não foi possível salvar a reunião. Execute a migração V27 no Supabase.'},{status:saved.status});
  const updated=(await saved.json())[0];
+ if(!updated||('consultant_initial_hypothesis'in update&&updated.consultant_initial_hypothesis!==update.consultant_initial_hypothesis)||('prepared_specific_questions'in update&&updated.prepared_specific_questions!==update.prepared_specific_questions))return Response.json({error:'O banco não confirmou a persistência dos campos internos.'},{status:500});
  await api('reuniao_estrategica_historico',{method:'POST',body:JSON.stringify({empresa_id:body.empresa_id,diagnostico_id:body.diagnostico_id,reuniao_id:meeting.id,acao:'Reunião salva',responsavel:meetingData.responsavel_reuniao,status:meeting.status||'Agendada',snapshot:meetingData})});
  return Response.json({ok:true,message:'Reunião salva com sucesso.',meetingData,meeting:updated});
 }
@@ -59,7 +65,7 @@ export async function PATCH(req:Request){
  const validatedPriorities=[body.prioridades_confirmadas,priorityValidation.resposta&&`Concordância do cliente: ${priorityValidation.resposta}.`,priorityValidation.alteracoes].filter(Boolean).join('\n');
  const existingTools={...(currentImplementation?.recursos_existentes||{}),CRM:crm.resposta==='Sim'?[crm.nome,crm.uso,crm.futuro].filter(Boolean).join(' — '):crm.resposta||'',Campanhas:media.resposta==='Sim'?[media.canais,media.responsavel,media.verba,media.resultados].filter(Boolean).join(' — '):media.resposta||'',Equipe_Comercial:team.resposta==='Sim'?[team.quantidade,team.funcoes,team.distribuicao,team.acompanhamento].filter(Boolean).join(' — '):team.resposta||'',Projeto_Em_Andamento:project.resposta==='Sim'?project.descricao:project.resposta||''};
  await Promise.all([
-  api(`reunioes_estrategicas?id=eq.${body.reuniao_id}`,{method:'PATCH',body:JSON.stringify({status:'Realizada',etapa_atual:'Reunião concluída',prontidao_percentual:100,dados_reuniao:meetingData,realizada_em:now,observacoes:body.observacoes_consultor||null,consultor:body.responsavel_reuniao,updated_at:now})}),
+  api(`reunioes_estrategicas?id=eq.${body.reuniao_id}`,{method:'PATCH',body:JSON.stringify({status:'Realizada',etapa_atual:'Reunião concluída',prontidao_percentual:100,dados_reuniao:meetingData,consultant_initial_hypothesis:body.hipotese_inicial??null,prepared_specific_questions:body.perguntas_especificas??null,realizada_em:now,observacoes:body.observacoes_consultor||null,consultor:body.responsavel_reuniao,updated_at:now})}),
   api(`planos_estrategicos?diagnostico_id=eq.${body.diagnostico_id}`,{method:'PATCH',body:JSON.stringify({status:'Em Consolidação',situacao_atual:validatedSituation,objetivos:body.missao_definida,prioridades:validatedPriorities,proximos_passos:[...approved,...added].join('\n'),parecer_consultor:body.parecer_consultor||null,updated_at:now})}),
   currentImplementation?api(`planos_implantacao?id=eq.${currentImplementation.id}`,{method:'PATCH',body:JSON.stringify({objetivo:body.missao_definida,missoes:[{titulo:'Missão validada na Reunião Estratégica',objetivo:body.missao_definida,status:'Planejada'}],recursos:resources.length?resources:currentImplementation.recursos,recursos_existentes:existingTools,indicadores:indicators.length?indicators:currentImplementation.indicadores,observacoes:body.informacoes_complementares||currentImplementation.observacoes,updated_at:now})}):Promise.resolve(null),
   api('reuniao_estrategica_historico',{method:'POST',body:JSON.stringify({empresa_id:body.empresa_id,diagnostico_id:body.diagnostico_id,reuniao_id:body.reuniao_id,acao:'Reunião concluída',responsavel:body.responsavel_reuniao,status:'Concluída',snapshot:{...body,concluida_em:now}})})
