@@ -209,3 +209,14 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 /* Estágio persistente da reunião na Agenda */
 .meeting-stage{display:inline-flex;align-items:center;width:max-content;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:800}.meeting-stage.preparation-new{background:#e8f6ee;color:#176b43}.meeting-stage.preparation-progress{background:#fff6d8;color:#80620d}.meeting-stage.preparation-ready{background:#e8f1ff;color:#285da8}.meeting-stage.meeting-live,.meeting-stage.meeting-complete{background:#f0e9ff;color:#65409a}
 
+
+
+/* Reunião Estratégica unificada */
+.meeting-preparation-details{border:1px solid #d8e4dc;border-radius:14px;background:#f7faf8;overflow:hidden}
+.meeting-preparation-details summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;font-weight:800;cursor:pointer;color:#173c2b;list-style:none}
+.meeting-preparation-details summary::-webkit-details-marker{display:none}
+.meeting-preparation-details summary::after{content:'＋';font-size:1.2rem}
+.meeting-preparation-details[open] summary::after{content:'−'}
+.meeting-preparation-details summary small{margin-left:auto;color:var(--muted);font-weight:500}
+.meeting-preparation-content{display:grid;gap:18px;padding:0 20px 20px;border-top:1px solid #d8e4dc}
+.meeting-preparation-content>.detail-metrics{margin-top:20px}
