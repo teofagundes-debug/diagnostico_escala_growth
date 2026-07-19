@@ -231,3 +231,5 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .meeting-preparation>.detail-actions{position:relative;z-index:10;pointer-events:auto}
 
 .meeting-save-reference{display:grid;justify-items:end;gap:4px}.meeting-save-reference small{color:var(--muted);font-size:.72rem}
+
+.autosave-detail{max-width:360px;color:#a52f2f!important;text-align:right;font-size:.75rem!important}
