@@ -220,3 +220,5 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .meeting-preparation-details summary small{margin-left:auto;color:var(--muted);font-weight:500}
 .meeting-preparation-content{display:grid;gap:18px;padding:0 20px 20px;border-top:1px solid #d8e4dc}
 .meeting-preparation-content>.detail-metrics{margin-top:20px}
+
+.internal-autosave{display:block;min-height:1.2em;margin-top:-10px;color:var(--muted);font-size:.82rem;text-align:right}
