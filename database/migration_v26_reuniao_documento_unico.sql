@@ -5,16 +5,16 @@ alter table public.reunioes_estrategicas
 -- Incorpora integralmente a preparação mais recente na própria reunião.
 -- A tabela antiga é preservada somente como histórico de migração e deixa de ser usada pelo fluxo.
 update public.reunioes_estrategicas r
-set dados_reuniao = coalesce(r.dados_reuniao, '{}'::jsonb) || (to_jsonb(p) - 'meeting')
-from lateral (
-  select pr.*
+set dados_reuniao = coalesce(r.dados_reuniao, '{}'::jsonb) || coalesce((
+  select to_jsonb(pr)
   from public.preparacoes_reuniao pr
   where pr.reuniao_id = r.id
   order by pr.updated_at desc
   limit 1
-) p
-where r.dados_reuniao = '{}'::jsonb
-   or r.dados_reuniao is null;
+), '{}'::jsonb)
+where exists (
+  select 1 from public.preparacoes_reuniao pr where pr.reuniao_id = r.id
+);
 
 comment on column public.reunioes_estrategicas.dados_reuniao is
   'Documento único da Reunião Estratégica: preparação interna, validações, decisões, parecer e observações do consultor.';
