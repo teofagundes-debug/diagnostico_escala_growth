@@ -35,7 +35,7 @@ export async function POST(req:Request){
  const meeting=body.reuniao_id?await api(`reunioes_estrategicas?id=eq.${encodeURIComponent(body.reuniao_id)}&select=*&limit=1`).then(r=>r.ok?r.json():[]).then(x=>x[0]||null):await findMeeting(body.diagnostico_id,body.empresa_id);
  if(!meeting?.id)return Response.json({error:'Nenhuma Reunião Estratégica agendada foi encontrada para esta empresa.'},{status:409});
  const meetingData={...(meeting.dados_reuniao||{}),...body,reuniao_id:meeting.id,responsavel_reuniao:body.responsavel_reuniao||current?.email||'Usuário Master',ultima_alteracao_em:now};
- const requestedVersion=Math.max(Number(meeting.autosave_version||0)+1,Number(raw.autosave_version||0));
+ const requestedVersion=raw.autosave_version!==undefined?Number(raw.autosave_version):Number(meeting.autosave_version||0)+1;
  const update:any={dados_reuniao:meetingData,autosave_version:requestedVersion,consultor:meetingData.responsavel_reuniao,observacoes:meetingData.observacoes_consultor||null,updated_at:now};
  if(Object.prototype.hasOwnProperty.call(raw,'hipotese_inicial'))update.consultant_initial_hypothesis=body.hipotese_inicial;
  if(Object.prototype.hasOwnProperty.call(raw,'perguntas_especificas'))update.prepared_specific_questions=body.perguntas_especificas;
