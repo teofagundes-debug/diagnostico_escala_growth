@@ -276,3 +276,52 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .priority-radio-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
 .priority-radio-list label{display:flex;flex-direction:row;align-items:center;padding:12px 14px;border:1px solid #d8e3dc;border-radius:10px;background:#f8fbf9}
 @media (max-width:520px){.priority-radio-list{grid-template-columns:1fr}}
+
+
+/* Left-aligned validation controls */
+.guided-validation .validation-option{
+ display:flex!important;
+ flex-direction:row!important;
+ align-items:flex-start!important;
+ justify-content:flex-start!important;
+ gap:10px!important;
+ width:100%;
+ box-sizing:border-box;
+ text-align:left!important;
+ cursor:pointer;
+}
+.guided-validation .validation-option input[type="checkbox"],
+.guided-validation .validation-option input[type="radio"]{
+ width:16px!important;
+ min-width:16px!important;
+ height:16px!important;
+ margin:3px 0 0!important;
+ padding:0!important;
+ flex:0 0 16px!important;
+ align-self:flex-start!important;
+}
+.guided-validation .validation-option span{
+ display:block;
+ flex:1 1 auto;
+ min-width:0;
+ text-align:left!important;
+ line-height:1.4;
+ overflow-wrap:anywhere;
+}
+.guided-validation .validation-options label{
+ justify-content:flex-start!important;
+ text-align:left!important;
+}
+.guided-validation .validation-options input[type="checkbox"],
+.guided-validation .validation-options input[type="radio"]{
+ width:auto!important;
+ min-width:16px;
+ flex:0 0 auto;
+ margin:0!important;
+ padding:0!important;
+}
+.priority-radio-list .priority-option{
+ align-items:flex-start!important;
+ justify-content:flex-start!important;
+ min-height:46px;
+}
