@@ -2,10 +2,12 @@
 import {useEffect,useState} from 'react';
 const money=(v:any)=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const solutionDraftKey='escala-growth-solution-draft';
 const legend=[[1,'Muito Baixo','Configuração simples.'],[2,'Baixo','Configuração padrão.'],[3,'Médio','Personalização moderada.'],[5,'Alto','Implantação estratégica.'],[8,'Muito Alto','Integrações complexas.'],[13,'Projeto Especial','Grande esforço de implantação.']];
 function useCommercial(){const [data,setData]=useState<any>(null),[error,setError]=useState('');const load=async()=>{setError('');try{const r=await fetch('/api/commercial',{cache:'no-store'}),x=await r.json();if(!r.ok)throw new Error(x.error);setData(x)}catch(e:any){setError(e?.message||'Não foi possível carregar os parâmetros.')}};useEffect(()=>{load()},[]);return{data,error,load}}
 export function CommercialParameters(){
- const {data,error,load}=useCommercial(),[editing,setEditing]=useState<any>(null),[message,setMessage]=useState(''),[formError,setFormError]=useState(''),[tab,setTab]=useState<'services'|'financial'>('services');
+ const {data,error,load}=useCommercial(),[editing,setEditing]=useState<any>(()=>{try{const saved=sessionStorage.getItem(solutionDraftKey);return saved?JSON.parse(saved):null}catch{return null}}),[message,setMessage]=useState(''),[formError,setFormError]=useState(''),[tab,setTab]=useState<'services'|'financial'>('services');
+ useEffect(()=>{try{if(editing)sessionStorage.setItem(solutionDraftKey,JSON.stringify(editing));else sessionStorage.removeItem(solutionDraftKey)}catch{}},[editing]);
  if(error)return <section className="admin-section"><h2>Parâmetros Comerciais</h2><p className="error">{error}</p></section>;
  if(!data)return <div className="loading-state">Preparando parâmetros comerciais...</div>;
  const p=data.parameters||{valor_ui:350,desconto_pix:10,prazo_contratual:12,validade_proposta:15,reajuste_indice:'IPCA',reajuste_periodicidade:12,reajuste_mes_base:1};
