@@ -39,7 +39,7 @@ export function CommercialParameters(){
    <label>Prioridade comercial<input value={editing.prioridade||''} onChange={e=>setEditing({...editing,prioridade:e.target.value})}/></label>
    <label className="wide">Descrição Comercial<textarea rows={4} value={editing.descricao||''} onChange={e=>setEditing({...editing,descricao:e.target.value})}/></label>
    <label className="wide">Benefícios <small className="field-help">Um benefício por linha.</small><textarea rows={4} value={Array.isArray(editing.beneficios)?editing.beneficios.join('\n'):editing.beneficios||''} onChange={e=>setEditing({...editing,beneficios:e.target.value})}/></label>
-   <label>Tipo<select value={editing.tipo||'Implantação'} onChange={e=>setEditing({...editing,tipo:e.target.value,ui:e.target.value==='Implantação'?(editing.ui||1):null,valor_mensal:e.target.value==='Mensalidade'?(editing.valor_mensal??''):null,valor_avulso:e.target.value==='Avulso'?(editing.valor_avulso??''):null})}><option>Implantação</option><option>Mensalidade</option><option>Avulso</option></select></label>
+   <label>Tipo<select value={editing.tipo||'Implantação'} onChange={e=>{const tipo=e.target.value;setEditing({...editing,tipo,ui:tipo==='Implantação'?(editing.ui||1):null,valor_mensal:tipo==='Mensalidade'?(editing.valor_mensal??''):null,valor_avulso:tipo==='Avulso'?(editing.valor_avulso??''):null,ordem_implantacao:tipo==='Mensalidade'?'':editing.ordem_implantacao,semana_sugerida:tipo==='Mensalidade'?'':editing.semana_sugerida,duracao_padrao:tipo==='Mensalidade'?'':editing.duracao_padrao})}}><option>Implantação</option><option>Mensalidade</option><option>Avulso</option></select></label>
    {editing.tipo==='Implantação'&&<label>UI (Unidade de Implantação)<input type="number" min="0.01" step="0.01" value={editing.ui??''} onChange={e=>setEditing({...editing,ui:e.target.value})}/></label>}
    {editing.tipo==='Mensalidade'&&<label>Valor Mensal<input type="number" min="0" step="0.01" value={editing.valor_mensal??''} onChange={e=>setEditing({...editing,valor_mensal:e.target.value})}/></label>}
    {editing.tipo==='Avulso'&&<label>Valor Avulso<input type="number" min="0" step="0.01" value={editing.valor_avulso??''} onChange={e=>setEditing({...editing,valor_avulso:e.target.value})}/></label>}
@@ -54,9 +54,11 @@ export function CommercialParameters(){
    <label>Critério de conclusão<textarea rows={4} value={editing.criterio_conclusao||''} onChange={e=>setEditing({...editing,criterio_conclusao:e.target.value})}/></label>
   </div></fieldset>
   <fieldset><legend>3 · Planejamento</legend><div className="resource-form planning-fields">
-   <label>Ordem de implantação<input type="number" min="1" step="1" value={editing.ordem_implantacao??''} onChange={e=>setEditing({...editing,ordem_implantacao:e.target.value})}/></label>
-   <label>Semana sugerida<select value={editing.semana_sugerida||'Semana 1'} onChange={e=>setEditing({...editing,semana_sugerida:e.target.value})}>{['Semana 1','Semana 2','Semana 3','Semana 4','Personalizado'].map(x=><option key={x}>{x}</option>)}</select></label>
-   <label>Duração padrão (dias)<input type="number" min="1" step="1" value={editing.duracao_padrao??''} onChange={e=>setEditing({...editing,duracao_padrao:e.target.value})}/></label>
+   {editing.tipo==='Mensalidade'?<p className="wide field-help">Serviços recorrentes não fazem parte do cronograma de implantação. Ordem, semana e duração não se aplicam a este tipo.</p>:<>
+    <label>Ordem de implantação<input required={editing.tipo==='Implantação'} type="number" min="1" step="1" value={editing.ordem_implantacao??''} onChange={e=>setEditing({...editing,ordem_implantacao:e.target.value})}/></label>
+    <label>Semana sugerida<input required={editing.tipo==='Implantação'} list="solution-weeks" placeholder="Ex.: Semana 1" value={editing.semana_sugerida||''} onChange={e=>setEditing({...editing,semana_sugerida:e.target.value})}/><datalist id="solution-weeks">{[1,2,3,4,5,6,7,8,9,10,11,12].map(x=><option value={'Semana '+x} key={x}/>)}<option value="Personalizado"/></datalist></label>
+    <label>Duração padrão (dias)<input required={editing.tipo==='Implantação'} type="number" min="1" step="1" value={editing.duracao_padrao??''} onChange={e=>setEditing({...editing,duracao_padrao:e.target.value})}/></label>
+   </>}
    <label className="wide">Dependências<textarea rows={4} value={editing.dependencias||''} onChange={e=>setEditing({...editing,dependencias:e.target.value})}/></label>
   </div></fieldset>
   <fieldset><legend>4 · Interno</legend><div className="resource-form">
