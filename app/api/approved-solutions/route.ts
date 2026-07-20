@@ -5,7 +5,7 @@ const headers=()=>({apikey:KEY!,Authorization:`Bearer ${KEY}`,'Content-Type':'ap
 export async function GET(req:Request){
  try{
   if(!URL||!KEY||!await isMaster(req))return Response.json({error:'Não autorizado'},{status:401});
-  const diagnosticId=new URL(req.url).searchParams.get('diagnostico_id');
+  const diagnosticId=new globalThis.URL(req.url).searchParams.get('diagnostico_id');
   if(!diagnosticId)return Response.json({error:'Diagnóstico não informado.'},{status:400});
   const response=await fetch(`${URL}/rest/v1/projeto_solucoes_aprovadas?diagnostico_id=eq.${encodeURIComponent(diagnosticId)}&status=eq.Aprovada&tipo=eq.Implanta%C3%A7%C3%A3o&select=*&order=aprovada_em.asc`,{headers:headers(),cache:'no-store'});
   const text=await response.text();
