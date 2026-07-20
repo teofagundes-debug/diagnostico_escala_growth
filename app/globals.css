@@ -385,3 +385,15 @@ html{scrollbar-gutter:stable}.central-gate{min-height:100vh;display:grid;place-c
 .solution-planning-summary{background:#f2f7f4}
 .solution-planning-summary p+p{margin-top:8px!important}
 @media(max-width:650px){.solution-template-form .resource-form .wide{grid-column:auto}}
+
+/* Publicação e Acesso */
+.publication-panel{scroll-margin-top:24px}
+.publication-checklist{margin:24px 0;padding:20px;border:1px solid #d7e5dc;border-radius:16px;background:#f7faf8}
+.publication-checklist h3{margin:0 0 14px}
+.publication-checklist>div{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e2ebe5}
+.publication-checklist>div:last-child{border-bottom:0}
+.publication-checklist .done b{color:#15824b}
+.publication-checklist .pending b{color:#8a928d}
+.publication-pending{margin:18px 0;padding:16px 18px;border:1px solid #e6b8b8;border-radius:14px;background:#fff5f5;color:#8a2525}
+.publication-pending ul{margin:10px 0 0;padding-left:22px}
+#company-financial{scroll-margin-top:24px}
