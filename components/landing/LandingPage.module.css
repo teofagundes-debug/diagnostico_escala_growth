@@ -165,9 +165,9 @@
 .contactCard { padding: 22px; border: 1px solid #2b3a31; border-radius: 14px; background: #18231c; }
 .contactCard h3 { margin-bottom: 9px; color: #fff; font-size: 1rem; }
 .contactCard p { margin-bottom: 15px; color: #b9c6be; font-size: .86rem; line-height: 1.55; }
-.contactCard small { display: block; margin-top: 10px; color: #89978e; font-size: .7rem; line-height: 1.4; }
-.chatButton { min-height: 42px; padding: 10px 16px; border: 0; border-radius: 10px; background: var(--landing-green); color: #fff; cursor: pointer; font: inherit; font-size: .84rem; font-weight: 800; }
-.chatButton:hover { background: #29915d; }
+.chatDirection { display: flex; margin-top: 14px; align-items: center; gap: 10px; color: #bfe9cf; }
+.chatDirection span { color: #40d77a; font-size: 2rem; font-weight: 900; line-height: 1; }
+.chatDirection strong { font-size: .78rem; line-height: 1.45; }
 .footer strong { color: #fff; }
 .footer p { margin: 0; color: #9eaaa2; line-height: 1.6; }
 .footer a { color: #d8e2dc; text-decoration: none; }
