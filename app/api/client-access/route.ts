@@ -34,10 +34,10 @@ export async function GET(req:Request){
    {label:'Portal publicado',done:Boolean(publication||financial?.publicada_em)},
    {label:'Cliente acessou',done:Boolean(access?.primeiro_acesso_em)},
    {label:'Aceite realizado',done:Boolean(acceptances?.[0])},
-   {label:'Pagamento confirmado',done:Boolean(payments?.[0]&&String(payments[0].status||'').toLowerCase().includes('confirm'))},
-   {label:'Kickoff realizado',done:Boolean(diagnostic&&['Kickoff','Implantação','Cliente Ativo'].includes(diagnostic.status))},
-   {label:'Implantação iniciada',done:Boolean(diagnostic&&['Implantação','Cliente Ativo'].includes(diagnostic.status))},
-   {label:'Cliente ativo',done:Boolean(diagnostic?.status==='Cliente Ativo')}
+   {label:'Pagamento confirmado',done:Boolean(financial?.status==='Pagamento confirmado'||payments?.[0]&&String(payments[0].status||'').toLowerCase().includes('confirm'))},
+   {label:'Kickoff realizado',done:Boolean(diagnostic&&['Kickoff','Kickoff realizado','Implantação','Implantação em andamento','Implantação concluída','Cliente Ativo'].includes(diagnostic.status))},
+   {label:'Implantação concluída',done:Boolean(diagnostic&&['Implantação concluída','Cliente Ativo'].includes(diagnostic.status))},
+   {label:'Cliente Ativo',done:Boolean(diagnostic?.status==='Cliente Ativo')}
   ];
   return Response.json({company:data.company,responsible:data.responsible,access,financial,publication,checklist});
  }catch(e:any){return Response.json({error:e?.message||'Não foi possível carregar a Publicação.'},{status:500})}
@@ -54,6 +54,22 @@ export async function POST(req:Request){
    await rest(`portal_usuarios?id=eq.${existing.id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({ativo:active,status_acesso:active?'Acesso ativado':'Acesso desativado',updated_at:new Date().toISOString()})});
    await audit(empresaId,ctx.diagnosticoId,active?'Acesso reativado':'Acesso desativado',`Acesso do cliente ${active?'reativado':'desativado'} pelo Usuário Master.`);
    return Response.json({ok:true,message:active?'Acesso reativado.':'Acesso bloqueado.'});
+  }
+  if(action==='operational_stage'){
+   const allowed:Record<string,{journey:string;project:string;mission:string}>={
+    kickoff:{journey:'Kickoff realizado',project:'Kickoff realizado',mission:'Iniciar implantação'},
+    implementation:{journey:'Implantação concluída',project:'Implantação concluída',mission:'Ativar cliente'},
+    active:{journey:'Cliente Ativo',project:'Cliente Ativo',mission:'Acompanhar evolução do IEG'}
+   };
+   const stage=allowed[String(body.stage||'')];
+   if(!stage)return Response.json({error:'Etapa operacional inválida.'},{status:400});
+   await advanceJourney({diagnosticoId:ctx.diagnosticoId,empresaId,status:stage.journey,title:stage.project,description:`Etapa marcada manualmente pelo Usuário Master: ${stage.project}.`,manual:true});
+   await Promise.all([
+    rest(`empresas?id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status_implantacao:stage.project,proxima_missao:{titulo:stage.mission,responsavel:'Escala Vendas e cliente',status:'Pendente'},updated_at:new Date().toISOString()})}),
+    body.stage==='implementation'?rest(`planos_implantacao?empresa_id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Implantação Concluída',updated_at:new Date().toISOString()})}):Promise.resolve()
+   ]);
+   await audit(empresaId,ctx.diagnosticoId,stage.project,`Etapa operacional atualizada manualmente para ${stage.project}.`);
+   return Response.json({ok:true,message:`${stage.project} registrado com sucesso.`});
   }
   const email=String(body.email||existing?.email||data.responsible?.email||'').trim().toLowerCase(),name=String(body.nome||existing?.nome||data.responsible?.nome||'Cliente'),phone=String(body.telefone||existing?.telefone||data.responsible?.telefone||'');
   if(!email||!email.includes('@'))return Response.json({error:'Revise o e-mail do responsável.'},{status:400});
