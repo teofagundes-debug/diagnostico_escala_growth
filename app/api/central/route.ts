@@ -2,7 +2,7 @@ import {isMaster} from '../../../lib/access';
 import {advanceJourney,diagnosticContext,ensurePlan,updatePlanJourney} from '../../../lib/workflow';
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY,ANON=process.env.SUPABASE_ANON_KEY;
 const h=()=>({apikey:KEY!,Authorization:`Bearer ${KEY}`,'Content-Type':'application/json'});
-const configFields=['nome_empresa','logo_url','telefone','whatsapp','email','website','instagram','linkedin','consultor','cargo','cra','agenda_url','assinatura_url'];
+const configFields=['nome_empresa','razao_social','nome_fantasia','cnpj','endereco','cidade','estado','cep','financeiro_email','logo_url','telefone','whatsapp','email','website','instagram','linkedin','consultor','cargo','cra','agenda_url','assinatura_url'];
 function ready(){return Boolean(SUPABASE_URL&&KEY&&ANON)}
 async function authorized(req:Request){return ready()&&await isMaster(req)}
 const out=async(r:Response)=>new Response(await r.text(),{status:r.status,headers:{'Content-Type':'application/json; charset=utf-8'}});
