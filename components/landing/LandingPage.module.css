@@ -78,7 +78,10 @@
 .heroCopy h1 { max-width: 780px; margin-bottom: 24px; font-size: clamp(2.55rem, 5vw, 4.75rem); font-weight: 500; letter-spacing: -.055em; line-height: .98; }
 .heroLead { max-width: 690px; margin-bottom: 30px; color: var(--landing-muted); font-size: 1.15rem; line-height: 1.7; }
 .heroButtons { display: flex; flex-wrap: wrap; gap: 12px; }
-.heroNote { max-width: 650px; margin: 20px 0 0; color: var(--landing-muted); font-size: .88rem; line-height: 1.55; }
+.heroIndicators { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 20px 0 0; padding: 0; color: var(--landing-muted); font-size: .86rem; font-weight: 700; list-style: none; }
+.heroIndicators li { display: inline-flex; align-items: center; gap: 7px; }
+.heroIndicators span { color: var(--landing-green); font-weight: 900; }
+.heroNote { max-width: 650px; margin: 14px 0 0; color: var(--landing-muted); font-size: .88rem; line-height: 1.55; }
 .indexPreview { position: relative; padding: 32px; border: 1px solid rgba(31, 122, 76, .18); border-radius: 24px; background: rgba(255, 255, 255, .94); box-shadow: 0 30px 80px rgba(33, 70, 48, .14); }
 .indexPreview::before { content: ""; position: absolute; width: 72px; height: 5px; top: 0; left: 32px; border-radius: 0 0 8px 8px; background: var(--landing-green); }
 .previewHeader { display: flex; align-items: center; justify-content: space-between; gap: 15px; color: var(--landing-green-dark); font-weight: 900; }
@@ -157,15 +160,21 @@
 .finalCta small { display: block; margin-top: 20px; color: #c8ead5; }
 
 .footer { padding: 54px 20px 24px; background: #111713; color: #d8e2dc; }
-.footerInner { display: grid; width: min(1180px, 100%); margin: auto; grid-template-columns: 1.6fr .8fr .6fr; gap: 60px; }
+.footerInner { display: grid; width: min(1180px, 100%); margin: auto; grid-template-columns: 1.25fr .8fr 1.2fr .55fr; gap: 42px; }
 .footerInner > div, .footerInner nav { display: flex; flex-direction: column; gap: 9px; }
+.contactCard { padding: 22px; border: 1px solid #2b3a31; border-radius: 14px; background: #18231c; }
+.contactCard h3 { margin-bottom: 9px; color: #fff; font-size: 1rem; }
+.contactCard p { margin-bottom: 15px; color: #b9c6be; font-size: .86rem; line-height: 1.55; }
+.contactCard small { display: block; margin-top: 10px; color: #89978e; font-size: .7rem; line-height: 1.4; }
+.chatButton { min-height: 42px; padding: 10px 16px; border: 0; border-radius: 10px; background: var(--landing-green); color: #fff; cursor: pointer; font: inherit; font-size: .84rem; font-weight: 800; }
+.chatButton:hover { background: #29915d; }
 .footer strong { color: #fff; }
 .footer p { margin: 0; color: #9eaaa2; line-height: 1.6; }
 .footer a { color: #d8e2dc; text-decoration: none; }
 .footer a:hover { color: #79dda0; }
 .copyright { width: min(1180px, 100%); margin: 40px auto 0 !important; padding-top: 22px; border-top: 1px solid #29322c; font-size: .82rem; }
 
-.landingPage a:focus-visible, .landingPage summary:focus-visible { outline: 3px solid #7ce5a5; outline-offset: 3px; }
+.landingPage a:focus-visible, .landingPage button:focus-visible, .landingPage summary:focus-visible { outline: 3px solid #7ce5a5; outline-offset: 3px; }
 
 @media (max-width: 1060px) {
   .desktopNavigation { display: none; }
@@ -188,6 +197,7 @@
   .pillarGrid, .solutionGrid { grid-template-columns: 1fr 1fr; }
   .benefitsSection .sectionInner, .aboutSection .sectionInner, .faqInner { grid-template-columns: 1fr; gap: 46px; }
   .footerInner { grid-template-columns: 1fr 1fr; }
+  .contactCard { order: 4; }
 }
 
 @media (max-width: 560px) {
