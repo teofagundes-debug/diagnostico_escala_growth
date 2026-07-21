@@ -18,12 +18,12 @@ export function CommercialParameters(){
  return <><div className="admin-section catalog-tabs"><button className={tab==='services'?'active':''} onClick={()=>setTab('services')}>Serviços</button><button className={tab==='financial'?'active':''} onClick={()=>setTab('financial')}>Configurações Financeiras</button></div>{tab==='financial'&&<section className="admin-section"><span className="eyebrow">Administração · acesso Master</span><h2>Configurações Financeiras</h2><p>Fonte única das regras comerciais utilizadas em implantação, proposta, mensalidades e contrato.</p><form className="parameter-form" onSubmit={saveParams}>
   <label>Valor da UI<input name="valor_ui" type="number" min="0.01" step="0.01" defaultValue={p.valor_ui}/></label>
   <label>Desconto para pagamento da Implantação via PIX (%)<input name="desconto_pix" type="number" min="0" max="100" step="0.01" defaultValue={p.desconto_pix}/></label>
-  <label>Prazo Contratual (meses)<input name="prazo_contratual" type="number" min="1" defaultValue={p.prazo_contratual}/></label>
+  <label>Prazo Contratual (meses)<input name="prazo_contratual" type="number" value={12} readOnly/><small>Prazo institucional único da Escala Growth.</small></label>
   <label>Validade da Proposta (dias)<input name="validade_proposta" type="number" min="1" defaultValue={p.validade_proposta}/></label>
   <label>Índice de reajuste<select name="reajuste_indice" defaultValue={p.reajuste_indice||'IPCA'}><option>IPCA</option><option>IGP-M</option></select></label>
   <label>Periodicidade<select name="reajuste_periodicidade" defaultValue={p.reajuste_periodicidade||12}><option value="12">12 meses</option></select></label>
   <label>Mês-base do reajuste<select name="reajuste_mes_base" defaultValue={p.reajuste_mes_base||1}>{months.map((m,i)=><option value={i+1} key={m}>{m}</option>)}</select></label>
-  <label>Multa por atraso (%)<input name="multa_atraso" type="number" min="0" step="0.01" defaultValue={p.multa_atraso??''} placeholder="Opcional"/></label>
+  
   <label>Juros por atraso (% ao mês)<input name="juros_atraso" type="number" min="0" step="0.01" defaultValue={p.juros_atraso??''} placeholder="Opcional"/></label>
   <label>Dias de tolerância<input name="dias_tolerancia" type="number" min="0" defaultValue={p.dias_tolerancia??''} placeholder="Opcional"/></label>
   <button className="btn btn-primary">Salvar configurações financeiras</button>
