@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicHeader } from "./PublicHeader";
+import { WebchatWidget } from "./WebchatWidget";
 import styles from "./LandingPage.module.css";
 
 const problems = [
@@ -51,6 +52,11 @@ export function LandingPage() {
                 <Link className={styles.primaryButton} href="/diagnostico">Descobrir meu Índice Escala Growth</Link>
                 <a className={styles.secondaryButton} href="#como-funciona">Conhecer a metodologia</a>
               </div>
+              <ul className={styles.heroIndicators} aria-label="Informações sobre o diagnóstico">
+                <li><span aria-hidden="true">✓</span> Diagnóstico online</li>
+                <li><span aria-hidden="true">✓</span> Aproximadamente 8 minutos</li>
+                <li><span aria-hidden="true">✓</span> Relatório imediato</li>
+              </ul>
               <p className={styles.heroNote}>Diagnóstico estratégico para empresas que desejam organizar processos, atendimento, vendas e indicadores.</p>
             </div>
             <aside className={styles.indexPreview} aria-label="Representação ilustrativa do Índice Escala Growth">
@@ -170,7 +176,8 @@ export function LandingPage() {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div><strong>Escala Vendas LTDA</strong><p>CNPJ: 60.328.666/0001-03</p><p>Rua Marechal Deodoro, 450, sala 505<br />Centro · Curitiba – PR · CEP 80010-010</p></div>
-          <div><strong>Contato</strong><a href="tel:+5541998134442">(41) 99813-4442</a><a href="https://www.escalavendas.com.br" target="_blank" rel="noopener noreferrer">www.escalavendas.com.br</a></div>
+          <div><strong>Contato</strong><a href="mailto:contato@escalavendas.com.br">contato@escalavendas.com.br</a></div>
+          <WebchatWidget />
           <nav aria-label="Links do rodapé"><strong>Acesso</strong><Link href="/diagnostico">Diagnóstico</Link><Link href="/login">Área do cliente</Link></nav>
         </div>
         <p className={styles.copyright}>© {new Date().getFullYear()} Escala Vendas. Todos os direitos reservados.</p>
