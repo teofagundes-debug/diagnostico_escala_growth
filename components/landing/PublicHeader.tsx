@@ -13,7 +13,7 @@ export function PublicHeader() {
   return (
     <header className={styles.publicHeader}>
       <div className={styles.headerInner}>
-        <Link className={styles.brand} href="/inicio" aria-label="Escala Growth — início">
+        <Link className={styles.brand} href="/" aria-label="Escala Growth — início">
           <img src={brandLogo} alt="Escala Vendas" />
           <span>Escala Growth</span>
         </Link>
