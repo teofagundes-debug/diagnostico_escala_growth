@@ -35,7 +35,7 @@ export async function PATCH(req:Request){
    optional(`planos_implantacao?empresa_id=eq.${encodeURIComponent(empresa_id)}&select=id&order=created_at.desc&limit=1`).then(x=>x[0]),
    optional(`financeiro_growth?empresa_id=eq.${encodeURIComponent(empresa_id)}&select=*&limit=1`).then(x=>x[0]||{})
   ]);
-  if(body.action==='confirm_payment'){data.status='Pagamento confirmado';data._payment={metodo:String(body.metodo_pagamento||'Não informado'),valor:Number(body.valor_pago||existing.valor_implantacao||0),confirmado_em:new Date().toISOString()}}
+  const paymentConfirmation=body.action==='confirm_payment'?{metodo:String(body.metodo_pagamento||'Não informado'),valor:Number(body.valor_pago||existing.valor_implantacao||0),confirmado_em:new Date().toISOString()}:null;if(paymentConfirmation)data.status='Pagamento confirmado'
   else{
    const merged={...existing,...data},ready=Number(merged.valor_implantacao)>0&&Number(merged.prazo_contratual)>0&&Number(merged.validade_proposta)>0&&merged.link_pix&&merged.link_cartao&&merged.link_assinatura;
    const early=['','Links pendentes','Proposta pronta','Em elaboração','Plano aprovado','Financeiro configurado'];
@@ -44,7 +44,7 @@ export async function PATCH(req:Request){
   const r=await fetch(`${SUPABASE_URL}/rest/v1/financeiro_growth?on_conflict=empresa_id`,{method:'POST',headers:{...headers(),Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify({empresa_id,plano_implantacao_id:implementation?.id||null,...data,updated_at:new Date().toISOString()})});
   if(!r.ok)return new Response(await r.text(),{status:r.status,headers:{'Content-Type':'application/json; charset=utf-8'}});
   if(data.status==='Pagamento confirmado'){
-   const payment=data._payment;delete data._payment;
+   const payment=paymentConfirmation!;
    await fetch(`${SUPABASE_URL}/rest/v1/pagamentos_growth`,{method:'POST',headers:{...headers(),Prefer:'return=minimal'},body:JSON.stringify({empresa_id,metodo:payment.metodo,status:'Confirmado',valor:payment.valor,confirmado_em:payment.confirmado_em,confirmado_por:p.email,updated_at:payment.confirmado_em})});
    await advanceJourney({empresaId:empresa_id,status:'Pagamento Confirmado',title:'Pagamento confirmado'});
    await Promise.all([
