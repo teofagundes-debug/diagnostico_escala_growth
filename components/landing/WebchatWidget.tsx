@@ -36,21 +36,15 @@ export function WebchatWidget() {
     };
   }, []);
 
-  const focusOfficialLauncher = () => {
-    const widget = document.getElementById(WIDGET_ID);
-    if (!widget) return;
-    widget.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    widget.focus({ preventScroll: true });
-  };
 
   return (
     <aside className={styles.contactCard} aria-labelledby="webchat-contact-title">
       <h3 id="webchat-contact-title">Fale com nossa equipe</h3>
       <p>Tem dúvidas sobre o diagnóstico ou quer entender como funciona a metodologia Escala Growth? Nossa equipe está pronta para ajudar.</p>
-      <button className={styles.chatButton} type="button" onClick={focusOfficialLauncher}>
-        Iniciar conversa
-      </button>
-      <small>O atendimento será iniciado pelo botão oficial do Webchat.</small>
+      <div className={styles.chatDirection} aria-label="Use o botão verde Converse conosco no canto inferior direito da página">
+        <span aria-hidden="true">↘</span>
+        <strong>Use o botão verde “Converse conosco” no canto inferior direito.</strong>
+      </div>
     </aside>
   );
 }
