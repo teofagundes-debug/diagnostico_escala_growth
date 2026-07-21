@@ -46,10 +46,15 @@ export function LandingPage() {
           <div className={styles.heroContent}>
             <div className={styles.heroCopy}>
               <span className={styles.eyebrow}>Método Escala Growth</span>
-              <h1 id="landing-title">Toda empresa cresce quando consegue acompanhar cada oportunidade.</h1>
+              <h1 id="landing-title">
+                <span>Toda empresa cresce</span>
+                <span>quando consegue</span>
+                <span>acompanhar cada</span>
+                <span>oportunidade.</span>
+              </h1>
               <p className={styles.heroLead}>Descubra os principais gargalos da sua operação comercial e receba uma visão estruturada sobre onde sua empresa precisa evoluir para vender com mais organização, controle e previsibilidade.</p>
               <div className={styles.heroButtons}>
-                <Link className={styles.primaryButton} href="/diagnostico">Descobrir meu Índice Escala Growth</Link>
+                <Link className={styles.primaryButton} href="/diagnostico">Iniciar meu Diagnóstico</Link>
                 <a className={styles.secondaryButton} href="#como-funciona">Conhecer a metodologia</a>
               </div>
               <ul className={styles.heroIndicators} aria-label="Informações sobre o diagnóstico">
@@ -57,7 +62,7 @@ export function LandingPage() {
                 <li><span aria-hidden="true">✓</span> Aproximadamente 8 minutos</li>
                 <li><span aria-hidden="true">✓</span> Relatório imediato</li>
               </ul>
-              <p className={styles.heroNote}>Diagnóstico estratégico para empresas que desejam organizar processos, atendimento, vendas e indicadores.</p>
+              <p className={styles.heroNote}>Ao final do diagnóstico você receberá seu Índice Escala Growth, com uma visão dos pilares Atrair, Converter e Crescer.</p>
             </div>
             <aside className={styles.indexPreview} aria-label="Representação ilustrativa do Índice Escala Growth">
               <div className={styles.previewHeader}><span>Índice Escala Growth</span><small>Representação ilustrativa</small></div>
