@@ -167,11 +167,12 @@ export function LandingPage() {
               <div className={styles.consultantPhotoFrame}>
                 <Image
                   className={styles.consultantPhoto}
-                  src="/teofilo-oliveira-fagundes.png"
+                  src="/teofilo-oliveira-fagundes.jpg"
                   alt="Teófilo Oliveira Fagundes, CEO da Escala Vendas."
-                  width={1664}
-                  height={2080}
+                  width={1200}
+                  height={1500}
                   sizes="(max-width: 820px) calc(100vw - 80px), 380px"
+                  unoptimized
                 />
               </div>
               <div className={styles.consultantContent}>
