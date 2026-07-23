@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "./PublicHeader";
 import { WebchatWidget } from "./WebchatWidget";
+import { LandingMotion } from "./LandingMotion";
 import styles from "./LandingPage.module.css";
 
 const problems = [
@@ -39,7 +40,8 @@ const faqs = [
 
 export function LandingPage() {
   return (
-    <div className={styles.landingPage}>
+    <div className={styles.landingPage} data-landing-page>
+      <LandingMotion />
       <PublicHeader />
       <main>
         <section className={styles.heroSection} aria-labelledby="landing-title">
@@ -49,8 +51,8 @@ export function LandingPage() {
               <h1 id="landing-title">
                 <span>Toda empresa cresce</span>
                 <span>quando consegue</span>
-                <span>acompanhar cada</span>
-                <span>oportunidade.</span>
+                <span>acompanhar <em className={styles.titleHighlight}>cada</em></span>
+                <span><em className={styles.titleHighlight}>oportunidade.</em></span>
               </h1>
               <p className={styles.heroLead}>Descubra os principais gargalos da sua operação comercial e receba uma visão estruturada sobre onde sua empresa precisa evoluir para vender com mais organização, controle e previsibilidade.</p>
               <div className={styles.heroButtons}>
@@ -83,22 +85,22 @@ export function LandingPage() {
 
         <section className={styles.problemSection} aria-labelledby="problem-title">
           <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading}>
+            <div className={styles.sectionHeading} data-reveal>
               <span className={styles.eyebrow}>O desafio</span>
               <h2 id="problem-title">Sua empresa pode estar perdendo oportunidades sem perceber.</h2>
               <p>Muitas empresas recebem contatos, investem em divulgação e possuem uma boa equipe, mas ainda enfrentam dificuldades para acompanhar cada oportunidade até a venda.</p>
             </div>
-            <div className={styles.problemGrid}>
+            <div className={styles.problemGrid} data-reveal-group="problems">
               {problems.map(([number, title, text]) => <article key={number} className={styles.problemItem}><span>{number}</span><h3>{title}</h3><p>{text}</p></article>)}
             </div>
-            <p className={styles.sectionConclusion}>Antes de investir mais para atrair clientes, é preciso garantir que sua empresa consiga acompanhar melhor as oportunidades que já possui.</p>
+            <p className={styles.sectionConclusion} data-reveal>Antes de investir mais para atrair clientes, é preciso garantir que sua empresa consiga acompanhar melhor as oportunidades que já possui.</p>
           </div>
         </section>
 
         <section id="como-funciona" className={styles.methodSection} aria-labelledby="method-title">
           <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading}><span className={styles.eyebrow}>Como funciona</span><h2 id="method-title">Uma metodologia para transformar diagnóstico em evolução.</h2></div>
-            <ol className={styles.stageFlow}>
+            <div className={styles.sectionHeading} data-reveal><span className={styles.eyebrow}>Como funciona</span><h2 id="method-title">Uma metodologia para transformar diagnóstico em evolução.</h2></div>
+            <ol className={styles.stageFlow} data-reveal-group="stages">
               {stages.map(([number, title, text]) => <li key={number}><span>{number}</span><h3>{title}</h3><p>{text}</p></li>)}
             </ol>
           </div>
@@ -106,15 +108,15 @@ export function LandingPage() {
 
         <section id="indice" className={styles.indexSection} aria-labelledby="index-title">
           <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading}>
+            <div className={styles.sectionHeading} data-reveal>
               <span className={styles.eyebrow}>Índice Escala Growth</span>
               <h2 id="index-title">Entenda o nível de estrutura da sua operação comercial.</h2>
               <p>O diagnóstico avalia três pilares essenciais para o crescimento de uma empresa.</p>
             </div>
-            <div className={styles.pillarGrid}>
+            <div className={styles.pillarGrid} data-reveal-group="pillars">
               {pillars.map(([title, text], index) => <article key={title}><span>0{index + 1}</span><h3>{title}</h3><p>{text}</p></article>)}
             </div>
-            <div className={styles.centeredAction}>
+            <div className={styles.centeredAction} data-reveal>
               <p>Ao final, você recebe uma visão clara dos principais pontos de atenção e das áreas com maior potencial de evolução.</p>
               <Link className={styles.primaryButton} href="/diagnostico">Descobrir meu Índice Escala Growth</Link>
             </div>
@@ -123,44 +125,44 @@ export function LandingPage() {
 
         <section id="solucoes" className={styles.solutionsSection} aria-labelledby="solutions-title">
           <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading}>
+            <div className={styles.sectionHeading} data-reveal>
               <span className={styles.eyebrow}>Da estratégia à execução</span>
               <h2 id="solutions-title">A tecnologia certa entra depois que entendemos o problema.</h2>
               <p>A Escala Growth não começa indicando ferramentas. Primeiro identificamos o que precisa ser organizado. Depois definimos quais recursos fazem sentido para a realidade da empresa.</p>
             </div>
-            <ul className={styles.solutionGrid}>{solutions.map(solution => <li key={solution}><span aria-hidden="true">✓</span>{solution}</li>)}</ul>
+            <ul className={styles.solutionGrid} data-reveal-group="solutions">{solutions.map(solution => <li key={solution}><span aria-hidden="true">✓</span>{solution}</li>)}</ul>
             <p className={styles.subtleNote}>As soluções são recomendadas de acordo com o diagnóstico e podem variar conforme o estágio, a estrutura e os objetivos de cada empresa.</p>
           </div>
         </section>
 
         <section className={styles.benefitsSection} aria-labelledby="benefits-title">
           <div className={styles.sectionInner}>
-            <div className={styles.benefitIntro}>
+            <div className={styles.benefitIntro} data-reveal>
               <span className={styles.eyebrow}>O que muda na prática</span>
               <h2 id="benefits-title">Mais clareza para decidir. Mais estrutura para crescer.</h2>
               <blockquote>Tecnologia para organizar.<br />Pessoas para vender.</blockquote>
             </div>
-            <ul className={styles.benefitList}>{benefits.map(benefit => <li key={benefit}><span aria-hidden="true">✓</span>{benefit}</li>)}</ul>
+            <ul className={styles.benefitList} data-reveal-group="benefits">{benefits.map(benefit => <li key={benefit}><span aria-hidden="true">✓</span>{benefit}</li>)}</ul>
           </div>
         </section>
 
         <section className={styles.audienceSection} aria-labelledby="audience-title">
           <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading}><span className={styles.eyebrow}>Para quem é</span><h2 id="audience-title">Para empresas que sabem que podem vender melhor.</h2><p>A metodologia Escala Growth é indicada para empresas que:</p></div>
-            <ul className={styles.audienceGrid}>{audience.map(item => <li key={item}><span aria-hidden="true">→</span>{item}</li>)}</ul>
-            <p className={styles.sectionConclusion}>Não é necessário possuir uma grande equipe ou uma estrutura tecnológica avançada. O diagnóstico considera o momento atual da empresa e indica uma evolução possível e realista.</p>
+            <div className={styles.sectionHeading} data-reveal><span className={styles.eyebrow}>Para quem é</span><h2 id="audience-title">Para empresas que sabem que podem vender melhor.</h2><p>A metodologia Escala Growth é indicada para empresas que:</p></div>
+            <ul className={styles.audienceGrid} data-reveal-group="audience">{audience.map(item => <li key={item}><span aria-hidden="true">→</span>{item}</li>)}</ul>
+            <p className={styles.sectionConclusion} data-reveal>Não é necessário possuir uma grande equipe ou uma estrutura tecnológica avançada. O diagnóstico considera o momento atual da empresa e indica uma evolução possível e realista.</p>
           </div>
         </section>
 
         <section className={styles.aboutSection} aria-labelledby="about-title">
           <div className={styles.sectionInner}>
-            <div className={styles.aboutCopy}>
+            <div className={styles.aboutCopy} data-reveal>
               <span className={styles.eyebrow}>Quem conduz a metodologia</span>
               <h2 id="about-title">Estratégia, tecnologia e experiência comercial trabalhando juntas.</h2>
               <p>A Escala Vendas atua na organização e evolução de operações comerciais por meio de processos, automação e Inteligência Artificial.</p>
               <p>Nossa metodologia une experiência em tecnologia, gestão de projetos e vendas consultivas para ajudar empresas a acompanhar melhor cada oportunidade e construir uma operação mais organizada, mensurável e preparada para crescer.</p>
             </div>
-            <aside className={styles.consultantCard}>
+            <aside className={styles.consultantCard} data-reveal>
               <span>TF</span><div><h3>Teófilo Oliveira Fagundes</h3><p>Especialista em consultoria para implantação de agentes de Inteligência Artificial e organização de operações comerciais.</p><strong>CEO da Escala Vendas</strong></div>
             </aside>
           </div>
@@ -168,13 +170,13 @@ export function LandingPage() {
 
         <section id="faq" className={styles.faqSection} aria-labelledby="faq-title">
           <div className={styles.faqInner}>
-            <div className={styles.sectionHeading}><span className={styles.eyebrow}>Perguntas frequentes</span><h2 id="faq-title">Dúvidas antes de começar?</h2></div>
-            <div className={styles.faqList}>{faqs.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div>
+            <div className={styles.sectionHeading} data-reveal><span className={styles.eyebrow}>Perguntas frequentes</span><h2 id="faq-title">Dúvidas antes de começar?</h2></div>
+            <div className={styles.faqList} data-reveal-group="faq">{faqs.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div>
           </div>
         </section>
 
         <section className={styles.finalCta} aria-labelledby="final-cta-title">
-          <div><span className={styles.eyebrowLight}>Comece pelo diagnóstico</span><h2 id="final-cta-title">Toda oportunidade conta.</h2><p>Descubra onde sua operação comercial está perdendo força e quais áreas precisam evoluir para sua empresa crescer com mais organização e previsibilidade.</p><Link className={styles.lightButton} href="/diagnostico">Fazer meu Diagnóstico Escala Growth</Link><small>O primeiro passo para vender melhor é entender como sua empresa vende hoje.</small></div>
+          <div data-reveal><span className={styles.eyebrowLight}>Comece pelo diagnóstico</span><h2 id="final-cta-title">Toda oportunidade conta.</h2><p>Descubra onde sua operação comercial está perdendo força e quais áreas precisam evoluir para sua empresa crescer com mais organização e previsibilidade.</p><Link className={styles.lightButton} href="/diagnostico">Fazer meu Diagnóstico Escala Growth</Link><small>O primeiro passo para vender melhor é entender como sua empresa vende hoje.</small></div>
         </section>
       </main>
 
