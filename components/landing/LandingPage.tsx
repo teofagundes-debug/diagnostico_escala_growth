@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { PublicHeader } from "./PublicHeader";
 import { WebchatWidget } from "./WebchatWidget";
 import { LandingMotion } from "./LandingMotion";
@@ -157,13 +158,27 @@ export function LandingPage() {
         <section className={styles.aboutSection} aria-labelledby="about-title">
           <div className={styles.sectionInner}>
             <div className={styles.aboutCopy} data-reveal>
-              <span className={styles.eyebrow}>Quem conduz a metodologia</span>
+              <span className={styles.eyebrow}>Conheça quem vai conduzir a evolução da sua empresa</span>
               <h2 id="about-title">Estratégia, tecnologia e experiência comercial trabalhando juntas.</h2>
               <p>A Escala Vendas atua na organização e evolução de operações comerciais por meio de processos, automação e Inteligência Artificial.</p>
               <p>Nossa metodologia une experiência em tecnologia, gestão de projetos e vendas consultivas para ajudar empresas a acompanhar melhor cada oportunidade e construir uma operação mais organizada, mensurável e preparada para crescer.</p>
             </div>
             <aside className={styles.consultantCard} data-reveal>
-              <span>TF</span><div><h3>Teófilo Oliveira Fagundes</h3><p>Especialista em consultoria para implantação de agentes de Inteligência Artificial e organização de operações comerciais.</p><strong>CEO da Escala Vendas</strong></div>
+              <div className={styles.consultantPhotoFrame}>
+                <Image
+                  className={styles.consultantPhoto}
+                  src="/teofilo-oliveira-fagundes.png"
+                  alt="Teófilo Oliveira Fagundes, CEO da Escala Vendas."
+                  width={1664}
+                  height={2080}
+                  sizes="(max-width: 820px) calc(100vw - 80px), 380px"
+                />
+              </div>
+              <div className={styles.consultantContent}>
+                <h3>Teófilo Oliveira Fagundes</h3>
+                <strong>CEO • Escala Vendas</strong>
+                <p>Especialista em Organização Comercial, Automação e Inteligência Artificial.</p>
+              </div>
             </aside>
           </div>
         </section>

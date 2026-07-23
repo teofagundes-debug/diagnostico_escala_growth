@@ -124,7 +124,7 @@
 .solutionGrid li, .benefitList li, .audienceGrid li { display: flex; align-items: flex-start; gap: 12px; border-radius: 12px; background: #fff; font-weight: 700; line-height: 1.45; }
 .solutionGrid li { min-height: 68px; padding: 20px; align-items: center; border: 1px solid var(--landing-line); transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
 .solutionGrid span, .benefitList span { color: var(--landing-green); font-weight: 900; }
-.subtleNote { max-width: 850px; margin: 28px 0 0; color: var(--landing-muted); line-height: 1.65; }
+.subtleNote { width: 100%; max-width: none; margin: 28px 0 0; color: var(--landing-muted); line-height: 1.65; }
 
 .benefitsSection { background: var(--landing-green-dark); color: #fff; }
 .benefitsSection .sectionInner { display: grid; grid-template-columns: .9fr 1.1fr; gap: 90px; }
@@ -138,11 +138,13 @@
 .audienceGrid li { padding: 18px 20px; border: 1px solid var(--landing-line); font-weight: 600; }
 .audienceGrid span { color: var(--landing-green); }
 .aboutSection .sectionInner { display: grid; grid-template-columns: 1.15fr .85fr; align-items: center; gap: 80px; }
-.consultantCard { display: flex; padding: 34px; align-items: flex-start; gap: 22px; border: 1px solid var(--landing-line); border-radius: 20px; background: linear-gradient(145deg, #fff, var(--landing-soft)); box-shadow: 0 20px 55px rgba(23, 32, 27, .08); }
-.consultantCard > span { display: flex; width: 70px; height: 70px; flex: 0 0 70px; align-items: center; justify-content: center; border-radius: 18px; background: var(--landing-green); color: #fff; font-size: 1.3rem; font-weight: 900; }
-.consultantCard h3 { margin-bottom: 10px; font-size: 1.35rem; }
-.consultantCard p { color: var(--landing-muted); line-height: 1.6; }
-.consultantCard strong { color: var(--landing-green-dark); }
+.consultantCard { display: grid; padding: 18px; gap: 24px; border: 1px solid var(--landing-line); border-radius: 20px; background: linear-gradient(145deg, #fff, var(--landing-soft)); box-shadow: 0 20px 55px rgba(23, 32, 27, .08); }
+.consultantPhotoFrame { overflow: hidden; aspect-ratio: 4 / 5; border-radius: 15px; background: #e8eeea; }
+.consultantPhoto { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 34%; }
+.consultantContent { padding: 0 12px 12px; }
+.consultantCard h3 { margin-bottom: 8px; font-size: 1.45rem; line-height: 1.2; }
+.consultantCard strong { display: block; margin-bottom: 14px; color: var(--landing-green-dark); font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+.consultantCard p { margin: 0; color: var(--landing-muted); line-height: 1.6; }
 
 .faqInner { display: grid; grid-template-columns: .72fr 1.28fr; gap: 90px; }
 .faqList { display: grid; gap: 10px; }
@@ -287,7 +289,8 @@
   .pillarGrid article { min-height: 0; padding: 28px; }
   .centeredAction { align-items: stretch; flex-direction: column; }
   .centeredAction .primaryButton { width: 100%; }
-  .consultantCard { padding: 25px; flex-direction: column; }
+  .consultantCard { max-width: 520px; padding: 14px; }
+  .consultantContent { padding: 0 8px 10px; }
   .footerInner { grid-template-columns: 1fr; gap: 34px; }
 }
 
