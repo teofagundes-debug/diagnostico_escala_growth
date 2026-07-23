@@ -51,7 +51,7 @@
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
-  transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease;
+  transition: transform .22s ease, background-color .22s ease, border-color .22s ease, box-shadow .22s ease;
 }
 .primaryButtonSmall { min-height: 42px; padding: 0 18px; background: var(--landing-green); color: #fff !important; font-size: .84rem; }
 .primaryButton, .secondaryButton, .lightButton { padding: 15px 22px; }
@@ -70,13 +70,15 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: linear-gradient(145deg, #fff 10%, #f4f9f6 72%, #eaf5ee);
+  background: radial-gradient(circle at 78% 18%, rgba(84, 207, 133, .11), transparent 28%), radial-gradient(circle at 12% 86%, rgba(31, 122, 76, .06), transparent 24%), linear-gradient(145deg, #fff 10%, #f4f9f6 72%, #eaf5ee);
 }
 .heroSection::after { content: ""; position: absolute; z-index: -1; right: -120px; top: 40px; width: 420px; height: 420px; border: 80px solid rgba(31, 122, 76, .055); border-radius: 50%; }
 .heroContent { display: grid; width: min(1180px, calc(100% - 40px)); min-height: 660px; margin: auto; padding: 86px 0 92px; align-items: center; grid-template-columns: minmax(0, 1.05fr) minmax(430px, .95fr); gap: 64px; }
 .eyebrow, .eyebrowLight { display: inline-block; margin-bottom: 18px; color: var(--landing-green-dark); font-size: .74rem; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
 .heroCopy h1 { max-width: 760px; margin-bottom: 30px; font-size: clamp(2.3rem, 4.35vw, 4.2rem); font-weight: 500; letter-spacing: -.055em; line-height: 1; }
 .heroCopy h1 span { display: block; white-space: nowrap; }
+.titleHighlight { position: relative; color: var(--landing-green-dark); font-style: normal; font-weight: 600; }
+.titleHighlight::after { content: ""; position: absolute; right: 0; bottom: -.06em; left: 0; height: 3px; border-radius: 99px; background: rgba(31, 122, 76, .24); }
 .heroLead { max-width: 740px; margin-bottom: 32px; color: var(--landing-muted); font-size: 1.15rem; line-height: 1.7; }
 .heroButtons { display: flex; flex-wrap: wrap; gap: 12px; }
 .heroIndicators { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 22px 0 0; padding: 0; color: var(--landing-muted); font-size: .86rem; font-weight: 700; list-style: none; }
@@ -100,7 +102,7 @@
 .sectionHeading > p, .aboutCopy > p { color: var(--landing-muted); font-size: 1.05rem; line-height: 1.75; }
 .problemSection, .solutionsSection, .audienceSection, .faqSection { background: var(--landing-soft); }
 .problemGrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
-.problemItem { grid-column: span 2; min-height: 230px; padding: 28px; border: 1px solid var(--landing-line); border-radius: 17px; background: #fff; }
+.problemItem { grid-column: span 2; min-height: 230px; padding: 28px; border: 1px solid var(--landing-line); border-radius: 17px; background: #fff; transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease; }
 .problemItem:nth-child(4), .problemItem:nth-child(5) { grid-column: span 3; }
 .problemItem > span, .pillarGrid article > span { display: inline-flex; width: 36px; height: 36px; margin-bottom: 28px; align-items: center; justify-content: center; border-radius: 10px; background: #e7f4eb; color: var(--landing-green-dark); font-size: .75rem; font-weight: 900; }
 .problemItem h3, .pillarGrid h3, .stageFlow h3 { margin-bottom: 10px; font-size: 1.18rem; }
@@ -108,19 +110,19 @@
 .sectionConclusion { max-width: 940px; margin: 36px auto 0; padding: 24px 30px; border-left: 4px solid var(--landing-green); border-radius: 0 12px 12px 0; background: #e7f4eb; color: var(--landing-green-dark); font-size: 1.08rem; font-weight: 800; line-height: 1.55; }
 
 .stageFlow { position: relative; display: grid; margin: 0; padding: 0; grid-template-columns: repeat(4, 1fr); gap: 28px; list-style: none; }
-.stageFlow::before { content: ""; position: absolute; top: 24px; left: 7%; right: 7%; height: 2px; background: var(--landing-line); }
+.stageFlow::before { content: ""; position: absolute; top: 24px; left: 7%; right: 7%; height: 2px; background: linear-gradient(90deg, var(--landing-green), #86d9a5); transform-origin: left center; }
 .stageFlow li { position: relative; z-index: 1; padding-right: 10px; }
 .stageFlow li > span { display: flex; width: 50px; height: 50px; margin-bottom: 24px; align-items: center; justify-content: center; border: 7px solid #fff; border-radius: 50%; background: var(--landing-green); color: #fff; box-shadow: 0 0 0 1px var(--landing-line); font-weight: 900; }
 .indexSection { border-top: 1px solid var(--landing-line); }
 .pillarGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
-.pillarGrid article { min-height: 280px; padding: 34px; border: 1px solid var(--landing-line); border-radius: 19px; background: #fff; box-shadow: 0 14px 38px rgba(23, 32, 27, .055); }
+.pillarGrid article { min-height: 280px; padding: 34px; border: 1px solid var(--landing-line); border-radius: 19px; background: #fff; box-shadow: 0 14px 38px rgba(23, 32, 27, .055); transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease; }
 .pillarGrid h3 { color: var(--landing-green-dark); font-size: 1.5rem; text-transform: uppercase; }
 .centeredAction { display: flex; margin-top: 38px; padding: 30px; align-items: center; justify-content: space-between; gap: 32px; border-radius: 18px; background: var(--landing-ink); color: #fff; }
 .centeredAction p { max-width: 660px; margin: 0; line-height: 1.65; }
 
 .solutionGrid { display: grid; margin: 0; padding: 0; grid-template-columns: repeat(3, 1fr); gap: 12px; list-style: none; }
 .solutionGrid li, .benefitList li, .audienceGrid li { display: flex; align-items: flex-start; gap: 12px; border-radius: 12px; background: #fff; font-weight: 700; line-height: 1.45; }
-.solutionGrid li { min-height: 68px; padding: 20px; border: 1px solid var(--landing-line); }
+.solutionGrid li { min-height: 68px; padding: 20px; align-items: center; border: 1px solid var(--landing-line); transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
 .solutionGrid span, .benefitList span { color: var(--landing-green); font-weight: 900; }
 .subtleNote { max-width: 850px; margin: 28px 0 0; color: var(--landing-muted); line-height: 1.65; }
 
@@ -150,8 +152,11 @@
 .faqList summary span { color: var(--landing-green); font-size: 1.4rem; }
 .faqList details[open] summary span { transform: rotate(45deg); }
 .faqList details p { margin: 0; padding: 0 22px 22px; color: var(--landing-muted); line-height: 1.7; }
+.faqList details[open] p { animation: faqAnswerIn .24s ease both; }
+.faqList summary span { transition: transform .22s ease; }
 
-.finalCta { padding: 90px 20px; background: linear-gradient(135deg, var(--landing-green-dark), #1f7a4c); color: #fff; text-align: center; }
+.finalCta { position: relative; isolation: isolate; overflow: hidden; padding: 90px 20px; background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, .09), transparent 28%), radial-gradient(circle at 88% 78%, rgba(120, 231, 162, .12), transparent 30%), linear-gradient(135deg, var(--landing-green-dark), #1f7a4c); color: #fff; text-align: center; }
+.finalCta::before { content: ""; position: absolute; z-index: -1; inset: 18px; border: 1px solid rgba(255, 255, 255, .1); border-radius: 26px; pointer-events: none; }
 .finalCta > div { max-width: 860px; margin: auto; }
 .eyebrowLight { color: #a7ebc0; }
 .finalCta h2 { margin-bottom: 18px; font-size: clamp(2.5rem, 6vw, 4.8rem); font-weight: 500; letter-spacing: -.05em; }
@@ -176,6 +181,59 @@
 .copyright { width: min(1180px, 100%); margin: 40px auto 0 !important; padding-top: 22px; border-top: 1px solid #29322c; font-size: .82rem; }
 
 .landingPage a:focus-visible, .landingPage button:focus-visible, .landingPage summary:focus-visible { outline: 3px solid #7ce5a5; outline-offset: 3px; }
+
+
+/* A frase abaixo dos cards usa toda a largura da grade no desktop. */
+.problemSection .sectionConclusion { max-width: none; }
+
+/* Movimento inicial discreto: o conteúdo permanece legível mesmo sem JavaScript. */
+.heroCopy > .eyebrow { animation: heroReveal .58s ease-out both; }
+.heroCopy h1 { animation: heroReveal .68s .08s ease-out both; }
+.heroLead { animation: heroReveal .68s .16s ease-out both; }
+.heroButtons { animation: heroReveal .64s .24s ease-out both; }
+.heroIndicators, .heroNote { animation: heroReveal .62s .32s ease-out both; }
+.indexPreview { animation: heroReveal .76s .18s ease-out both, cardFloat 7s 1.1s ease-in-out infinite; transition: transform .28s ease, box-shadow .28s ease; }
+.previewBar b { transform-origin: left center; animation: barFill .9s .7s ease-out both; }
+
+.landingPage[data-motion-ready="true"] [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.landingPage[data-motion-ready="true"] [data-reveal][data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .62s ease-out var(--reveal-delay, 0ms), transform .62s ease-out var(--reveal-delay, 0ms);
+}
+.landingPage[data-motion-ready="true"] .stageFlow::before { transform: scaleX(0); transition: transform .9s ease-out; }
+.landingPage[data-motion-ready="true"] .stageFlow:has(> [data-visible="true"])::before { transform: scaleX(1); }
+
+.primaryButton:active, .primaryButtonSmall:active, .secondaryButton:active, .lightButton:active { transform: scale(.985); }
+
+@media (hover: hover) and (pointer: fine) {
+  .problemItem:hover { transform: translateY(-6px); border-color: rgba(31, 122, 76, .38); box-shadow: 0 18px 38px rgba(23, 70, 43, .11); }
+  .pillarGrid article:hover { transform: translateY(-4px); border-color: rgba(31, 122, 76, .34); box-shadow: 0 20px 44px rgba(23, 70, 43, .09); }
+  .solutionGrid li:hover { transform: translateY(-3px); border-color: rgba(31, 122, 76, .32); box-shadow: 0 12px 26px rgba(23, 70, 43, .08); }
+  .solutionGrid li:hover span { transform: scale(1.12); }
+  .solutionGrid span { transition: transform .22s ease; }
+  .indexPreview:hover { transform: translateY(-4px); box-shadow: 0 36px 88px rgba(33, 70, 48, .18); }
+}
+
+@keyframes heroReveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes barFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes cardFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -4px; }
+}
+@keyframes faqAnswerIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @media (max-width: 1060px) {
   .desktopNavigation { display: none; }
