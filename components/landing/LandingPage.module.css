@@ -249,7 +249,7 @@
   .brand img { width: 145px; }
   .mobileMenu { display: block; }
   .heroContent { min-height: 0; padding: 64px 0 72px; grid-template-columns: 1fr; }
-  .indexPreview { max-width: 600px; }
+  .indexPreview { max-width: 600px; animation: heroReveal .7s .12s ease-out both; }
   .sectionInner, .faqInner { padding: 76px 0; }
   .stageFlow { grid-template-columns: 1fr 1fr; }
   .stageFlow::before { display: none; }
@@ -270,6 +270,18 @@
   .problemGrid, .stageFlow, .pillarGrid, .solutionGrid, .benefitList, .audienceGrid { grid-template-columns: 1fr; }
   .problemItem:last-child { grid-column: auto; }
   .stageFlow { gap: 36px; }
+  .stageFlow::before {
+    display: block;
+    top: 4px;
+    right: auto;
+    bottom: 4px;
+    left: 24px;
+    width: 2px;
+    height: auto;
+    transform-origin: center top;
+  }
+  .landingPage[data-motion-ready="true"] .stageFlow::before { transform: scaleY(0); }
+  .landingPage[data-motion-ready="true"] .stageFlow:has(> [data-visible="true"])::before { transform: scaleY(1); }
   .stageFlow li { padding-left: 66px; }
   .stageFlow li > span { position: absolute; left: 0; top: -9px; }
   .pillarGrid article { min-height: 0; padding: 28px; }
@@ -281,4 +293,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .landingPage *, .landingPage *::before, .landingPage *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .heroCopy > .eyebrow, .heroCopy h1, .heroLead, .heroButtons, .heroIndicators, .heroNote, .indexPreview, .previewBar b {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+  }
 }
