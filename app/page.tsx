@@ -3,7 +3,7 @@ import { LandingPage } from "@/components/landing/LandingPage";
 
 const title = "Escala Growth | Organize sua operação comercial para crescer";
 const description = "Descubra os gargalos da sua operação comercial com o Diagnóstico Escala Growth e identifique como melhorar processos, atendimento, vendas e indicadores.";
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.escala-growth.escalavendas.com.br").replace(/\/+$/, "");
+const siteUrl = "https://www.escalavendas.com.br";
 const canonicalUrl = siteUrl + "/";
 
 export const metadata: Metadata = {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.escalavendas.com.br"),
   title: "Diagnóstico Escala Growth",
   description: "Descubra onde sua empresa está perdendo oportunidades.",
 };

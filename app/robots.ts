@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://www.escala-growth.escalavendas.com.br";
+const SITE_URL = "https://www.escalavendas.com.br";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -18,6 +18,5 @@ export default function robots(): MetadataRoute.Robots {
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
   };
 }

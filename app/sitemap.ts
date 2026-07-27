@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://www.escala-growth.escalavendas.com.br";
+const SITE_URL = "https://www.escalavendas.com.br";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();

@@ -3,7 +3,7 @@ import { DiagnosticApp } from "@/components/DiagnosticApp";
 
 const title = "Diagnóstico Escala Growth | Descubra seu Índice Escala Growth";
 const description = "Avalie os pilares Atrair, Converter e Crescer e descubra onde sua operação possui maior potencial de evolução.";
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.escala-growth.escalavendas.com.br").replace(/\/+$/, "");
+const siteUrl = "https://www.escalavendas.com.br";
 const canonicalUrl = siteUrl + "/diagnostico";
 
 export const metadata: Metadata = {
