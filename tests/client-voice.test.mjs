@@ -16,19 +16,18 @@ test('API administrativa entrega respostas abertas sem depender de reunião',()=
 
 test('análise mostra Voz do Cliente antes do parecer e preserva a resposta literal',()=>{
  const central=read('components/CentralApp.tsx'),voice=read('components/DiagnosticClientVoice.tsx');
- assert.match(central,/DiagnosticClientVoice diagnosticId=\{data\.id\} answers=\{list\(data\.respostas_abertas\)\}/);
+ assert.match(central,/DiagnosticClientVoice answers=\{list\(data\.respostas_abertas\)\}/);
  assert.ok(central.indexOf('<DiagnosticClientVoice')<central.indexOf('<h3>Parecer do consultor'));
  assert.match(voice,/>VOZ DO CLIENTE</);
  assert.match(voice,/\{item\.resposta\|\|''\}/);
  assert.match(voice,/PREPARA&#199;&#195;O DA REUNI&#195;O/);
 });
 
-test('anotações do consultor usam armazenamento isolado e API exclusiva do Master',()=>{
- const migration=read('database/migration_v38_anotacoes_consultor.sql'),api=read('app/api/diagnostic-notes/route.ts'),voice=read('components/DiagnosticClientVoice.tsx'),portal=read('app/api/portal/route.ts');
- assert.match(migration,/diagnostico_anotacoes_consultor/);
- assert.match(migration,/diagnostico_id uuid not null unique/);
- assert.match(api,/isMaster/);
- assert.match(voice,/ANOTA&#199;&#213;ES DO CONSULTOR/);
- assert.match(voice,/className="admin-section consultant-diagnostic-notes no-print"/);
- assert.doesNotMatch(portal,/diagnostico_anotacoes_consultor/);
+test('anotações da preparação usam o campo persistente da reunião sem interface concorrente',()=>{
+ const meeting=read('components/MeetingPreparation.tsx'),api=read('app/api/meeting-preparation/route.ts'),voice=read('components/DiagnosticClientVoice.tsx'),portal=read('app/api/portal/route.ts');
+ assert.match(meeting,/Perguntas específicas preparadas \/ Anotações/);
+ assert.match(meeting,/value=\{record\.perguntas_especificas\|\|''\}/);
+ assert.match(api,/prepared_specific_questions=body\.perguntas_especificas/);
+ assert.doesNotMatch(voice,/ANOTA&#199;&#213;ES DO CONSULTOR|diagnostic-notes/);
+ assert.doesNotMatch(portal,/prepared_specific_questions|perguntas_especificas/);
 });
