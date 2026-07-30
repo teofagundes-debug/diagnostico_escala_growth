@@ -1,0 +1,33 @@
+'use client';
+
+import {useMemo,useState} from 'react';
+import {joinConsultantContent,splitConsultantContent} from '../lib/strategic-plan-content';
+
+const list=(value:any):any[]=>Array.isArray(value)?value:[];
+
+export function StrategicPlanValidation({data,plan}:{data:any;plan:any;update?:(id:string,body:any)=>void}){
+ const existing=splitConsultantContent(plan.parecer_consultor);
+ const priorities=list(data.relatorio_snapshot?.prioridades),mainPriority=priorities[0]?.label||plan.objetivos||data.menor_pilar||'Organizar';
+ const inherited=useMemo(()=>({
+  resumo:plan.resumo||data.parecer||data.relatorio_snapshot?.parecer||'Resumo consolidado a partir do Diagnóstico Escala Growth e da Reunião Estratégica.',
+  situacao_atual:plan.situacao_atual||`IEG atual: ${data.pontuacao_geral}/100. Nível de maturidade: ${data.nivel_maturidade}. Maior força: ${data.maior_pilar}. Principal gargalo: ${data.menor_pilar}. Potencial de crescimento: ${data.potencial_crescimento}.`,
+  objetivos:plan.objetivos||`${mainPriority}: prioridade estratégica validada durante a Reunião Estratégica.`,
+  prioridades:plan.prioridades||priorities.map((item:any)=>item.label).filter(Boolean).join('\n')||mainPriority,
+  riscos:plan.riscos||`A evolução pode ser limitada pela baixa maturidade em ${data.menor_pilar||'processos prioritários'}, pela ausência de acompanhamento consistente e pela falta de previsibilidade operacional.`,
+  cronograma:plan.cronograma||'30 dias — organizar prioridades, responsáveis e indicadores.\n60 dias — implantar as soluções validadas e acompanhar a adoção.\n90 dias — consolidar a rotina, medir resultados e planejar o próximo ciclo.',
+  proximos_passos:plan.proximos_passos||'Validar o escopo da implantação, confirmar responsáveis, iniciar o cronograma executivo e acompanhar os indicadores definidos.'
+ }),[data,plan,mainPriority,priorities]);
+ const [opinion,setOpinion]=useState(existing.opinion),[observations,setObservations]=useState(existing.observations),[status,setStatus]=useState(['Plano Concluído','Concluído'].includes(plan.status)?'Plano Concluído':['Plano Liberado ao Cliente','Liberado ao cliente'].includes(plan.status)?'Plano Liberado ao Cliente':'Em Consolidação'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const complete=async()=>{if(!opinion.trim()){setMessage('Registre o Parecer Final do Consultor antes de concluir o Plano Estratégico.');return}if(!confirm('Concluir o Plano Estratégico e gerar a versão oficial do documento?'))return;setBusy(true);setMessage('Gerando a versão oficial do Plano Estratégico...');const currentPlan={...inherited,parecer_consultor:joinConsultantContent(opinion,observations)};try{const saved=await fetch('/api/central?resource=strategic-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plano_id:plan.id||null,diagnostico_id:data.id,empresa_id:data.empresa_id,...currentPlan,status:'Plano Concluído'})}),result=await saved.json().catch(()=>({}));if(!saved.ok)throw new Error(result.error||'Não foi possível salvar o Plano Estratégico.');const mirror=await fetch('/api/diagnostics',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:data.id,plano:currentPlan})});if(!mirror.ok){const error=await mirror.json().catch(()=>({}));throw new Error(error.error||'O Plano foi salvo, mas a confirmação de persistência falhou.')}const version=await fetch('/api/central?resource=versions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plano_id:result.plan?.id||plan.id||null,diagnostico_id:data.id,consultor:'Teófilo Oliveira Fagundes',conteudo:currentPlan,status:'Plano Concluído'})});const workflow=await fetch('/api/central?resource=workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({diagnostico_id:data.id,action:'complete'})});setStatus('Plano Concluído');const warnings=[];if(!version.ok)warnings.push('o histórico de versões não foi atualizado');if(!workflow.ok)warnings.push('a jornada não foi atualizada');setMessage(warnings.length?'Plano Estratégico concluído. Atenção: '+warnings.join(' e ')+'.':'Plano Estratégico concluído e versão oficial gerada com sucesso.')}catch(error:any){setMessage(error?.message||'Não foi possível concluir o Plano Estratégico.')}finally{setBusy(false)}};
+ return <section className="admin-section plan-premium strategic-validation" id="plan-editor">
+  <div className="document-brand"><img src="/logo-escala-vendas.png" alt="Escala Vendas"/><span>Plano Estratégico Escala Growth</span></div>
+  <div className="plan-toolbar no-print"><span className="status-pill">{status}</span><p>Valide o conhecimento construído no Diagnóstico e na Reunião Estratégica. Nenhuma etapa reinicia o processo.</p></div>
+  <section className="strategic-readonly"><span className="eyebrow">Conhecimento consolidado</span><h3>Resumo Executivo</h3><p>{inherited.resumo}</p></section>
+  <section className="strategic-readonly"><h3>Situação Atual</h3><p>{inherited.situacao_atual}</p></section>
+  <label className="strategic-final-field"><b>Parecer Final do Consultor <em>Obrigatório</em></b><span>Registre sua análise estratégica final antes da liberação do Plano Estratégico.</span><small>Utilize este espaço para apresentar sua visão consultiva, reforçar as prioridades identificadas e destacar as principais recomendações para a empresa.</small><textarea id="parecer-consultor" rows={8} value={opinion} onChange={event=>setOpinion(event.target.value)} placeholder="Após análise do diagnóstico e validação realizada durante a reunião estratégica, identificamos que..."/></label>
+  <label className="strategic-final-field optional"><b>Observações Complementares <em>Opcional</em></b><span>Registre apenas alguma orientação adicional que não fará parte do parecer principal. Caso fique vazio, nenhuma informação aparecerá no documento final.</span><textarea rows={5} value={observations} onChange={event=>setObservations(event.target.value)} placeholder="Este campo poderá ficar vazio."/></label>
+  <div className="strategic-generation-note"><b>Versão oficial automática</b><p>Ao concluir, o sistema consolidará Diagnóstico, Reunião Estratégica, objetivo validado, plano de evolução, cronograma, soluções recomendadas, Parecer Final e próximos passos.</p></div>
+  <div className="detail-actions no-print"><button className="btn btn-primary" disabled={busy||status==='Plano Liberado ao Cliente'} onClick={complete}>{busy?'Gerando Plano Estratégico...':'✅ Concluir Plano Estratégico'}</button></div>
+  {message&&<p className={message.startsWith('Plano Estratégico concluído')?'success':'error'}>{message}</p>}
+ </section>
+}
