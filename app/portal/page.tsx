@@ -1,3 +1,3 @@
 import {PortalApp} from '../../components/PortalApp';
-export default function Page(){return <PortalApp view="jornada"/>}
+export default function Page(){return <PortalApp view="home"/>}
 
