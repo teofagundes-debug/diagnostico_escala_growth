@@ -15,9 +15,9 @@ test('relacionamento e situação da plataforma usam o documento persistente da 
 
 test('realidade combina confirmações e respostas sem manter a etapa Ajustes',()=>{
  const component=read('components/MeetingPreparation.tsx');
- assert.match(component,/O cliente apresentou as seguintes respostas durante a reunião/);
- assert.match(component,/confirmedRecommendations\.join/);
- assert.match(component,/confirmedOpportunities/);
+ assert.match(component,/O cliente informou que \$\{answer\}/);
+ assert.match(component,/confirmedRecommendations\.map/);
+ assert.match(component,/confirmedGroups/);
  assert.doesNotMatch(component,/<label>Ajustes<textarea/);
 });
 
