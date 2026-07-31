@@ -23,10 +23,10 @@ test('Relatório da Reunião Estratégica é o documento oficial da reunião',()
 });
 
 test('Plano Estratégico continua sendo validação sem repetição',()=>{
- assert.equal((plan.match(/<textarea/g)||[]).length,2);
+ assert.equal((plan.match(/<textarea/g)||[]).length,1);
  assert.ok(plan.includes('Parecer Final do Consultor'));
- assert.ok(plan.includes('Observações Complementares'));
- assert.match(plan,/strategic-readonly/);
+ assert.ok(plan.includes('Documento executivo automático'));
+ assert.doesNotMatch(plan,/Observações Complementares|strategic-readonly/);
 });
 
 test('acervo metodológico possui somente os três documentos oficiais',()=>{
