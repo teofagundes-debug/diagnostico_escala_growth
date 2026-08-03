@@ -5,7 +5,7 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const portal=read('components/PortalApp.tsx');
 
 test('menu principal acompanha a fase de formalização',()=>{
- const labels=['🏠 Início','📋 Plano Estratégico','🚀 Projeto de Evolução','📑 Contrato ou Termo','✅ Aceite','📈 Painel Executivo','🌱 Evolução da Empresa','📄 Documentos','👤 Perfil'];
+ const labels=['🏠 Início','🧭 Formalização','📋 Plano Estratégico','🚀 Projeto de Evolução','📑 Contrato ou Termo','✅ Aceite','📈 Painel Executivo','🌱 Evolução da Empresa','📄 Documentos','👤 Perfil'];
  let previous=-1;for(const label of labels){const current=portal.indexOf(label);assert.ok(current>previous,`${label} deve respeitar a ordem do menu`);previous=current}
 });
 

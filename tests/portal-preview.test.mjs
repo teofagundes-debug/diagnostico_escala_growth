@@ -20,7 +20,7 @@ test('portal identifica visualmente o modo de pré-visualização',()=>{
 });
 
 test('pré-visualização não executa aceite nem pagamento',()=>{
- assert.match(portal,/if\(d\.preview\)return <Document title="Aceite Eletrônico"/);
+ assert.match(portal,/if\(d\.preview\)return <Document title="Aceite do Projeto de Evolução"/);
  assert.match(portal,/if\(!link\|\|d\.preview\)return/);
 });
 

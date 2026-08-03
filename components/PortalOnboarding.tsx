@@ -1,0 +1,31 @@
+'use client';
+import Link from 'next/link';
+
+const fmt=(value:any)=>value?new Date(value).toLocaleString('pt-BR',{dateStyle:'long',timeStyle:'short'}):'';
+const money=(value:any)=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const suffix=()=>typeof location!=='undefined'?location.search:'';
+
+function JourneyProgress({d}:{d:any}){
+ const accepted=Boolean(d.acceptance),formalized=d.project?.status==='Formalizado';
+ const steps=[['Diagnóstico',Boolean(d.latest)],['Reunião Estratégica',Boolean(d.plan)],['Plano Estratégico',Boolean(d.plan)],['Formalização',accepted],['Implantação',formalized],['Método Escala Growth',Boolean(d.methodStarted)]];
+ const current=Math.max(0,steps.findIndex((step:any)=>!step[1]));
+ return <section className="portal-journey-compact" aria-label="Resumo da jornada"><span className="eyebrow">Resumo da jornada</span><div>{steps.map((step:any,index:number)=><article className={step[1]?'done':index===current?'current':''} key={step[0]}><i>{step[1]?'✓':index===current?'●':'○'}</i><b>{step[0]}</b></article>)}</div></section>;
+}
+
+function ActiveHome({d}:{d:any}){
+ const query=suffix(),latestEvents=(d.events||[]).slice(-3).reverse();
+ return <div className="active-client-home"><section className="portal-hero portal-home-hero"><div><span>Bem-vindo novamente</span><h2>{d.company.nome}</h2><p>Método Escala Growth iniciado</p></div><div><small>Próxima missão</small><b>{d.nextMission||'Acompanhar evolução contínua'}</b></div></section><div className="active-home-grid"><Link href={'/portal/radar'+query}><small>Painel Executivo</small><b>Acompanhar indicadores</b></Link><article><small>IEG atual</small><b>{d.latest?.pontuacao_geral||0}</b></article>{d.nextMeeting&&<article><small>Próxima reunião</small><b>{fmt(d.nextMeeting.data)}</b></article>}<Link href={'/portal/evolucao-empresa'+query}><small>Motor de Crescimento</small><b>Evolução da Empresa</b></Link></div>{latestEvents.length>0&&<section className="portal-card"><span className="eyebrow">Últimas evoluções</span>{latestEvents.map((event:any)=><p key={event.id||event.data_evento}><b>{event.titulo}</b><br/><small>{fmt(event.data_evento)}</small></p>)}</section>}</div>;
+}
+
+export function PortalHomeUX({d}:{d:any}){
+ if(d.methodStarted)return <ActiveHome d={d}/>;
+ const consultant=d.company.consultor_responsavel||'Teófilo Oliveira Fagundes',query=suffix(),accepted=Boolean(d.acceptance),formalized=d.project?.status==='Formalizado';
+ const stage=formalized?'Preparando início do Método':accepted?'Formalização concluída':'Aguardando Formalização';
+ return <div className="onboarding-home"><section className="portal-home-welcome"><span className="eyebrow">Bem-vindo ao Método Escala Growth</span><h2>{d.company.nome}</h2><div><span><small>Consultor</small><b>{consultant}</b></span><span><small>Etapa atual</small><b>{stage}</b></span></div></section><section className="onboarding-primary-action"><span className="eyebrow">Próxima ação</span><h2>{accepted?'Sua formalização foi concluída. Estamos preparando o início do Método Escala Growth.':'Revise o Projeto de Evolução, leia o Termo de Adesão e realize o aceite para iniciarmos oficialmente sua jornada no Método Escala Growth.'}</h2><Link className="btn btn-primary" href={(accepted?'/portal/aceite':'/portal/formalizacao')+query}>{accepted?'VER FORMALIZAÇÃO':'CONTINUAR FORMALIZAÇÃO'}</Link></section><JourneyProgress d={d}/>{d.nextMeeting&&<section className="portal-next-meeting"><span className="eyebrow">Próxima reunião</span><b>{fmt(d.nextMeeting.data)}</b>{d.nextMeeting.link&&<a href={d.nextMeeting.link} target="_blank" rel="noreferrer">Acessar reunião</a>}</section>}</div>;
+}
+
+export function FormalizationUX({d}:{d:any}){
+ const query=suffix(),project=d.project||{},accepted=Boolean(d.acceptance);
+ const details=[['Objetivo',project.objetivo],['Resumo',project.resumo||project.descricao],['Implantação',money(project.valor_implantacao_adicional)],['Mensalidade vigente',money(project.mensalidade_atual)],['Mensalidade adicional',money(project.mensalidade_adicional)],['Nova mensalidade',money(project.nova_mensalidade)],['Forma de cobrança',project.forma_cobranca]];
+ return <section className="portal-card formalization-page"><span className="eyebrow">Formalização</span><h2>Revise e confirme sua evolução</h2><p>Siga as etapas abaixo para iniciar oficialmente sua jornada no Método Escala Growth.</p><div className="formalization-flow"><article><i>1</i><div><h3>Plano Estratégico</h3><p>Conheça o direcionamento definido para a evolução da sua empresa.</p><Link className="btn btn-secondary" href={'/portal/plano-estrategico'+query}>Visualizar Plano Estratégico</Link></div></article><article><i>2</i><div><h3>Projeto de Evolução</h3><p>{project.objetivo||project.resumo||project.descricao||'Conheça o projeto preparado para sua empresa.'}</p><dl>{details.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'A definir'}</dd></div>)}</dl><Link className="btn btn-secondary" href={'/portal/projeto-evolucao'+query}>Visualizar Projeto de Evolução</Link></div></article><article><i>3</i><div><h3>{project.formalizacao||'Contrato ou Termo'}</h3><p>Leia o documento de formalização e confira as condições apresentadas.</p><Link className="btn btn-secondary" href={'/portal/contrato'+query}>Visualizar {project.formalizacao||'Contrato'}</Link></div></article><article><i>4</i><div><h3>Aceite</h3><p>{accepted?'Aceite concluído. Sua formalização foi registrada.':'Confirme a leitura dos documentos para iniciar sua jornada.'}</p><Link className="btn btn-primary" href={'/portal/aceite'+query}>{accepted?'VISUALIZAR ACEITE':'REALIZAR ACEITE'}</Link></div></article>{d.noAdditionalPayment&&<article className="no-payment-step"><i>✓</i><div><h3>Pagamento</h3><p>Nenhuma ação necessária. Sua cobrança recorrente atual permanece inalterada.</p></div></article>}</div></section>;
+}
