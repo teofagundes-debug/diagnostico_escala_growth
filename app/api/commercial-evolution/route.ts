@@ -84,8 +84,7 @@ export async function PATCH(req:Request){
    await replaceResources(id,array(body.recursos));return Response.json({ok:true});
   }
   if(body.action==='publish'){
-   if(existing.status!=='Rascunho')return Response.json({error:'Somente Projetos em Rascunho podem ser publicados.'},{status:409});
-   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Publicado',publicado_em:now,updated_at:now})});return Response.json({ok:true});
+   return Response.json({error:'A publicação oficial deve ser realizada em Publicação e Acesso, para manter Projeto, Contrato, versão e convite sincronizados.'},{status:409});
   }
   if(body.action==='cancel-publication'){
    if(existing.status!=='Publicado')return Response.json({error:'Somente Projetos Publicados podem ter a publicação cancelada.'},{status:409});
@@ -98,6 +97,7 @@ export async function PATCH(req:Request){
   if(body.action==='formalize'){
    const checklist=existing.checklist||{},ready=existing.status==='Aceito'&&checklist.contrato_aceito===true&&checklist.documentacao_formalizada===true&&checklist.checklist_concluido===true;
    if(!ready)return Response.json({error:'A promoção exige contrato aceito, documentação formalizada e checklist concluído.'},{status:409});
+   if(existing.exige_pagamento){const financial=(await db(`financeiro_growth?empresa_id=eq.${encodeURIComponent(existing.empresa_id)}&select=status&limit=1`))[0];if(financial?.status!=='Pagamento confirmado')return Response.json({error:'Confirme o pagamento antes da formalização deste projeto.'},{status:409});}
    const rawProjectResources=await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(id)}&select=*`),projectResources=array(rawProjectResources),versions=array(await db(`situacoes_comerciais_versoes?empresa_id=eq.${encodeURIComponent(existing.empresa_id)}&select=versao&order=versao.desc&limit=1`)),start=existing.data_inicio||now.slice(0,10),renewal=new Date(`${start}T12:00:00Z`),previous=(await context(existing.empresa_id)).current,previousResources=array(previous?.recursos),removed=new Set(projectResources.filter((x:any)=>x.movimento==='Remover').map((x:any)=>x.recurso_id)),active=[...previousResources.filter((x:any)=>!removed.has(x.recurso_id)),...projectResources.filter((x:any)=>x.movimento==='Adicionar')];
    renewal.setUTCFullYear(renewal.getUTCFullYear()+1);await db(`situacoes_comerciais_versoes?empresa_id=eq.${encodeURIComponent(existing.empresa_id)}&vigente=eq.true`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({vigente:false})});
    await db('situacoes_comerciais_versoes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({empresa_id:existing.empresa_id,projeto_evolucao_id:id,versao:Number(versions[0]?.versao||0)+1,vigente:true,mensalidade:existing.nova_mensalidade,forma_pagamento:existing.forma_cobranca,status_pagamento:'Ativo',contrato_status:'Ativo',contrato_inicio:start,prazo_meses:12,renovacao_em:renewal.toISOString().slice(0,10),recursos:active,snapshot:{project:existing,resources:projectResources}})});
