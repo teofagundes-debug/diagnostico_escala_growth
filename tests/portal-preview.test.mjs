@@ -24,15 +24,15 @@ test('pré-visualização não executa aceite nem pagamento',()=>{
  assert.match(portal,/if\(!link\|\|d\.preview\)return/);
 });
 
-test('contrato percorre revisão publicação e aceite',()=>{
- for(const status of ['Não iniciado','Dados contratuais pendentes','Contrato em elaboração','Contrato disponível para revisão','Contrato revisado','Contrato publicado','Contrato aceito'])assert.ok(accessApi.includes(status),status);
- assert.ok(accessPanel.includes('Confirmar revisão do Contrato'));
+test('Contrato/Termo percorre revisão publicação e aceite',()=>{
+ for(const status of ['Não iniciado','Dados contratuais pendentes','Contrato/Termo disponível para revisão','Contrato/Termo publicado','Contrato/Termo aceito'])assert.ok(accessApi.includes(status),status);
+ assert.ok(accessPanel.includes('Confirmar revisão do Contrato/Termo'));
  assert.ok(accessPanel.includes('Pré-visualizar Portal do Cliente'));
  assert.match(accessApi,/contract\.status!=='Revisado'/);
  assert.match(portalApi,/status:'Aceito'/);
 });
 
 test('pendências bloqueiam publicação mas não a pré-visualização',()=>{
- for(const text of ['Concluir o Diagnóstico','Preencher o Parecer do Consultor','Concluir o Plano Estratégico','Revisar e confirmar o Contrato','Informar ao menos um link de pagamento'])assert.ok(accessApi.includes(text),text);
+ for(const text of ['Concluir o Diagnóstico','Preencher o Parecer do Consultor','Concluir o Plano Estratégico','Revisar e confirmar o Contrato/Termo','Informar ao menos um link de pagamento'])assert.ok(accessApi.includes(text),text);
  assert.match(accessPanel,/data\.preview_available/);
 });

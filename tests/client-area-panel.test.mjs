@@ -16,7 +16,7 @@ test('cards, próxima ação e timeline cobrem a jornada solicitada',()=>{
 });
 
 test('checklist usa a nomenclatura do fluxo integrado',()=>{
- for(const text of ['Plano Estratégico concluído','Projeto de Evolução preparado','Financeiro configurado','Contrato preparado','Área pronta para publicação','Área publicada','Primeiro acesso','Aceite','Formalização','Kickoff realizado','Implantação técnica concluída','Método Escala Growth iniciado'])assert.ok(component.includes(text),text);
+ for(const text of ['Plano Estratégico concluído','Projeto de Evolução preparado','Financeiro configurado','Contrato/Termo preparado','Área pronta para publicação','Área publicada','Primeiro acesso','Aceite','Formalização','Kickoff realizado','Implantação técnica concluída','Método Escala Growth iniciado'])assert.ok(component.includes(text),text);
 });
 
 test('ações operacionais aparecem de forma progressiva',()=>{

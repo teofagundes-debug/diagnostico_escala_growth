@@ -32,7 +32,7 @@ test('API usa a versão publicada e calcula as três fases',()=>{
 test('aceite sem cobrança adicional não exige pagamento',()=>{
  assert.match(api,/if\(!noAdditionalPayment\)await advanceJourney/);
  assert.match(portal,/d\.noAdditionalPayment\?'\/portal':'\/portal\/contratacao'/);
- assert.ok(portal.includes('Não existe novo pagamento para este Projeto de Evolução. A cobrança recorrente vigente será mantida.'));
+ assert.ok(portal.includes('Nenhuma ação financeira necessária. Sua cobrança recorrente permanece inalterada.'));
 });
 
 test('documentos incluem projeto termo e comprovante de aceite',()=>{

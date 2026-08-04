@@ -24,7 +24,7 @@ test('primeira dobra conduz o cliente para a formalização',()=>{
 });
 
 test('formalização possui as quatro etapas e o cenário sem pagamento',()=>{
- for(const text of ['Plano Estratégico','Projeto de Evolução','Contrato ou Termo','Aceite','Nenhuma ação necessária. Sua cobrança recorrente atual permanece inalterada.'])assert.match(onboarding,new RegExp(text));
+ for(const text of ['Plano Estratégico','Projeto de Evolução','Contrato ou Termo','Aceite','Nenhuma ação financeira necessária. Sua cobrança recorrente permanece inalterada.'])assert.match(onboarding,new RegExp(text));
  assert.ok(existsSync(new URL('../app/portal/formalizacao/page.tsx',import.meta.url)));
  assert.match(portal,/view==='formalizacao'\?<FormalizationUX/);
 });

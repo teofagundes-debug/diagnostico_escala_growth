@@ -9,6 +9,11 @@ async function generateLink(email:string,existing:boolean){const expiresHours=Ma
 async function sendEmail(input:{email:string;name:string;link:string;existing?:boolean}){const key=process.env.RESEND_API_KEY,from=process.env.EMAIL_FROM;if(!key||!from)return{sent:false,error:'Serviço de e-mail ainda não configurado. Copie o link e envie manualmente.'};const subject=input.existing?'Cadastro de senha | Central Escala Growth':'Seu acesso à Central Escala Growth está disponível';const title=input.existing?'Cadastro de senha.':'Seu Plano Estratégico Escala Growth já está disponível.';const button=input.existing?'CADASTRAR NOVA SENHA':'CRIAR MINHA SENHA E ACESSAR';const html=`<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#17231c"><h2>Olá, ${input.name}.</h2><p>${title}</p><p>Na Central você poderá acompanhar diagnóstico, planos, investimento, aceite, documentos, implantação e evolução do IEG.</p><p><a href="${input.link}" style="display:inline-block;background:#15824b;color:white;padding:14px 22px;border-radius:8px;text-decoration:none;font-weight:bold">${button}</a></p><hr><p><b>Escala Vendas</b><br>Toda empresa cresce quando consegue acompanhar cada oportunidade.</p></div>`;const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from,to:[input.email],subject,html})});return r.ok?{sent:true}:{sent:false,error:(await r.text()).slice(0,300)}}
 async function sendWelcomeEmail(input:{email:string;name:string}){const key=process.env.RESEND_API_KEY,from=process.env.EMAIL_FROM;if(!key||!from)return;const portalUrl=APP+'/login',html=`<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#17231c"><h2>Olá, ${input.name}.</h2><p>Seu acesso foi configurado com sucesso.</p><p>Sempre que desejar acessar sua área do cliente utilize:</p><p><a href="${portalUrl}" style="color:#15824b;font-weight:bold">${portalUrl}</a></p><p><b>Usuário:</b><br>${input.email}</p><p>Caso esqueça sua senha, entre em contato com o consultor responsável pelo seu projeto ou com a equipe da Escala Vendas para que possamos gerar um novo acesso.</p><p>Em caso de dúvidas, entre em contato com nossa equipe.</p><p><b>Equipe Escala Vendas</b></p></div>`;await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from,to:[input.email],subject:'Bem-vindo à Escala Growth',html})})}
 async function audit(empresaId:string,diagnosticoId:string|undefined,title:string,description:string){await rest('dossie_eventos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({empresa_id:empresaId,diagnostico_id:diagnosticoId||null,tipo:'Acesso do cliente',titulo:title,descricao:description,data_evento:new Date().toISOString(),concluido:true})})}
+const normalize=(value:any)=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const formalizationType=(project:any)=>String(project?.formalizacao||'Contrato de Prestação de Serviços');
+const usesAdhesionTerm=(project:any)=>normalize(formalizationType(project)).includes('termo');
+const contractFieldsComplete=(company:any)=>['razao_social','cpf_cnpj','endereco','cidade','estado','cep'].every(field=>String(company?.[field]||'').trim());
+const formalizationDocumentReady=(project:any,contract:any,company:any)=>Boolean(project&&(usesAdhesionTerm(project)?contractFieldsComplete(company):contract));
 export async function GET(req:Request){
  try{
   if(!await isMaster(req))return Response.json({error:'Acesso exclusivo do Usuário Master.'},{status:403});
@@ -28,24 +33,24 @@ export async function GET(req:Request){
    rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).catch(()=>[])
   ]);
   const access=profiles?.[0]||null,financial=financials?.[0]||null,publication=publications?.[0]||null,diagnostic=diagnostics?.[0]||null,plan=plans?.[0]||null,implementation=implementations?.[0]||null,project=projects?.[0]||null,contract=contracts?.[0]||null;
-  const requiresPayment=Boolean(project?.exige_pagamento),financialReady=Boolean(financial&&financial.valor_implantacao!=null&&Number(financial.prazo_contratual)>0&&Number(financial.validade_proposta)>0&&(!requiresPayment||financial.link_pix||financial.link_cartao||financial.link_assinatura)),contractDataComplete=['razao_social','cpf_cnpj','endereco','cidade','estado','cep'].every(field=>String(data.company?.[field]||'').trim()),contractStatus=acceptances?.[0]?.concorda_contrato?'Contrato aceito':publication?'Contrato publicado':contract?.status==='Revisado'?'Contrato revisado':contract?.status==='Em elaboração'?'Contrato em elaboração':contract&&contractDataComplete?'Contrato disponível para revisão':contract?'Dados contratuais pendentes':'Não iniciado';
+  const requiresPayment=Boolean(project?.exige_pagamento),noAdditionalPayment=Boolean(project&&Number(project.valor_implantacao_adicional||0)===0&&Number(project.mensalidade_adicional||0)===0&&['Cobrança recorrente existente','Sem cobrança imediata'].includes(project.forma_cobranca)),financialReady=Boolean(financial&&financial.valor_implantacao!=null&&Number(financial.prazo_contratual)>0&&Number(financial.validade_proposta)>0&&(!requiresPayment||financial.link_pix||financial.link_cartao||financial.link_assinatura)),contractDataComplete=contractFieldsComplete(data.company),documentType=formalizationType(project),documentReady=formalizationDocumentReady(project,contract,data.company),contractStatus=acceptances?.[0]?.concorda_contrato?'Contrato/Termo aceito':publication?'Contrato/Termo publicado':documentReady?'Contrato/Termo disponível para revisão':project&&!contractDataComplete?'Dados contratuais pendentes':'Não iniciado';
   const checklist=[
    {label:'Plano Estratégico concluído',done:Boolean(plan&&['Plano Concluído','Concluído','Plano Liberado ao Cliente'].includes(plan.status))},
    {label:'Projeto de Evolução preparado',done:Boolean(project&&['Rascunho','Publicado','Aceito','Formalizado'].includes(project.status))},
    {label:'Financeiro configurado',done:financialReady},
-   {label:'Contrato preparado',done:Boolean(contract)},
-   {label:'Área pronta para publicação',done:Boolean(plan&&project&&financialReady&&contract)},
+   {label:'Contrato/Termo preparado',done:documentReady,detail:documentReady?documentType:undefined},
+   {label:'Área pronta para publicação',done:Boolean(plan&&project&&financialReady&&documentReady)},
    {label:'Área publicada',done:Boolean(publication||financial?.publicada_em)},
    {label:'Primeiro acesso',done:Boolean(access?.primeiro_acesso_em)},
    {label:'Aceite',done:Boolean(acceptances?.[0])},
    {label:'Contrato',done:Boolean(acceptances?.[0]?.concorda_contrato)},
-   {label:'Pagamento confirmado',done:Boolean(financial?.status==='Pagamento confirmado'||payments?.[0]&&String(payments[0].status||'').toLowerCase().includes('confirm'))},
+   {label:'Pagamento',done:Boolean(noAdditionalPayment||financial?.status==='Pagamento confirmado'||payments?.[0]&&String(payments[0].status||'').toLowerCase().includes('confirm')),detail:noAdditionalPayment?'Nenhuma ação financeira necessária':undefined},
    {label:'Formalização',done:Boolean(project?.status==='Formalizado')},
    {label:'Kickoff realizado',done:Boolean(diagnostic&&['Kickoff','Kickoff realizado','Implantação','Implantação em andamento','Implantação concluída','Cliente Ativo'].includes(diagnostic.status))},
    {label:'Implantação concluída',done:Boolean(diagnostic&&['Implantação concluída','Cliente Ativo'].includes(diagnostic.status))},
    {label:'Cliente Ativo',done:Boolean(diagnostic?.status==='Cliente Ativo')}
   ];
-  return Response.json({company:data.company,responsible:data.responsible,access,financial,publication,project,contract,contract_status:contractStatus,contract_data_complete:contractDataComplete,preview_available:Boolean(diagnostic||project),checklist});
+  return Response.json({company:data.company,responsible:data.responsible,access,financial,publication,project,contract,formalization_type:documentType,formalization_document_ready:documentReady,contract_status:contractStatus,contract_data_complete:contractDataComplete,preview_available:Boolean(diagnostic||project),checklist});
  }catch(e:any){return Response.json({error:e?.message||'Não foi possível carregar a Publicação.'},{status:500})}
 }
 export async function POST(req:Request){
@@ -98,12 +103,13 @@ export async function POST(req:Request){
     rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&select=versao&order=versao.desc&limit=1`).then(x=>x?.[0]).catch(()=>null)
    ]);
    const pending:string[]=[];
+   const documentType=formalizationType(project),documentReady=formalizationDocumentReady(project,contract,data.company),termSelected=usesAdhesionTerm(project);
    if(!diagnostic)pending.push('Concluir o Diagnóstico');
    if(!String(plan?.parecer_consultor||diagnostic?.parecer_consultor||diagnostic?.parecer||'').trim())pending.push('Preencher o Parecer do Consultor');
    if(!plan||!['Plano Concluído','Concluído','Plano Liberado ao Cliente'].includes(plan.status))pending.push('Concluir o Plano Estratégico');
    if(!project)pending.push('Preparar um Projeto de Evolução em Rascunho');
-   if(!contract)pending.push('Preparar o Contrato ou Termo');
-   if(contract&&contract.status!=='Revisado')pending.push('Revisar e confirmar o Contrato');
+   if(!documentReady)pending.push('Prepare o Contrato/Termo para continuar.');
+   if(!termSelected&&contract&&contract.status!=='Revisado')pending.push('Revisar e confirmar o Contrato/Termo');
    for(const [field,label] of [['razao_social','Razão Social'],['cpf_cnpj','CPF/CNPJ'],['endereco','Endereço'],['cidade','Cidade'],['estado','Estado'],['cep','CEP']] as const)if(!String(data.company?.[field]||'').trim())pending.push(`Completar ${label}`);
    if(!financial)pending.push('Salvar o Financeiro');
    if(financial?.valor_implantacao==null)pending.push('Definir o valor da implantação');
@@ -114,11 +120,12 @@ export async function POST(req:Request){
    const isExisting=Boolean(existing?.auth_user_id||existing?.primeiro_acesso_em),generated=await generateLink(email,isExisting),now=new Date().toISOString(),version=Number(lastPublication?.versao||0)+1;
    const accessPayload={email,nome:name,telefone:phone,empresa_id:empresaId,perfil:'cliente',ativo:true,auth_user_id:generated.authUserId||existing?.auth_user_id||null,status_acesso:'Convite enviado',convite_enviado_em:existing?.convite_enviado_em||now,convite_reenviado_em:existing?now:null,convite_expira_em:generated.expiresAt,convite_link:generated.link,updated_at:now};
    const saved=await rest('portal_usuarios?on_conflict=email',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(accessPayload)});
-   const snapshot={financial,plan,implementation,project,contract,orientacoes_iniciais:'Revise o Plano Estratégico, o Projeto de Evolução e o Contrato. Em seguida, conclua o aceite para dar continuidade ao Método Escala Growth.',published_at:now,version};
+   const formalizationDocument=contract||{titulo:documentType,status:'Publicado',tipo:'Termo de Adesão',gerado_automaticamente:true,created_at:now,updated_at:now};
+   const snapshot={financial,plan,implementation,project,contract:formalizationDocument,formalization_document:formalizationDocument,orientacoes_iniciais:'Revise o Plano Estratégico, o Projeto de Evolução e o Contrato/Termo. Em seguida, conclua o aceite para dar continuidade ao Método Escala Growth.',published_at:now,version};
    await rest('proposta_publicacoes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({empresa_id:empresaId,diagnostico_id:ctx.diagnosticoId||null,plano_estrategico_id:plan.id,plano_implantacao_id:implementation?.id||null,projeto_evolucao_id:project.id,versao:version,status:'PUBLICADA',snapshot,publicada_por:String(body.usuario||'Usuário Master'),publicada_em:now})});
    await Promise.all([
     rest(`projetos_evolucao?id=eq.${encodeURIComponent(project.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Publicado',publicado_em:now,updated_at:now})}),
-    rest(`contratos_growth?id=eq.${encodeURIComponent(contract.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({projeto_evolucao_id:project.id,status:'Publicado',updated_at:now})})
+    contract?rest(`contratos_growth?id=eq.${encodeURIComponent(contract.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({projeto_evolucao_id:project.id,status:'Publicado',updated_at:now})}):Promise.resolve()
    ]);
    await rest(`financeiro_growth?empresa_id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Portal publicado',publicada_em:now,publicada_por:String(body.usuario||'Usuário Master'),versao_publicada:version,snapshot_publicado:snapshot,updated_at:now})});
    const mail=await sendEmail({email,name,link:generated.link,existing:isExisting});
