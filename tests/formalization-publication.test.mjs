@@ -32,3 +32,9 @@ test('Portal publica Contrato/Termo sem rascunhos',()=>{
  assert.match(onboarding,/Visualizar Contrato\/Termo/);
  assert.doesNotMatch(onboarding,/Rascunho/);
 });
+
+test('publicação parcial não é apresentada como concluída',()=>{
+ assert.match(api,/publication=financial\?\.snapshot_publicado\?publications\?\.\[0\]/);
+ assert.match(api,/detail\.includes\('projetos_evolucao_status_check'\)/);
+ assert.match(api,/Execute a migration de governança dos projetos/);
+});
