@@ -1,4 +1,5 @@
 import {isMaster} from '../../../lib/access';
+import {composeGrowthProject} from '../../../lib/motor-growth';
 
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
@@ -20,13 +21,16 @@ async function identity(req:Request){
  return rows[0]?{role:'cliente',empresa_id:rows[0].empresa_id}:null;
 }
 async function context(empresaId:string){
- const id=encodeURIComponent(empresaId),[rawVersions,rawProjects,rawCatalog,rawFinancials]=await Promise.all([
+ const id=encodeURIComponent(empresaId),[rawVersions,rawProjects,rawCatalog,rawFinancials,rawDiagnostics,rawMeetings,rawPlans]=await Promise.all([
   db(`situacoes_comerciais_versoes?empresa_id=eq.${id}&select=*&order=versao.desc`),
   db(`projetos_evolucao?empresa_id=eq.${id}&select=*,projeto_evolucao_recursos(*)&order=created_at.desc`),
   db('catalogo_recursos?ativo=eq.true&select=id,codigo,nome,tipo,valor_mensal,valor_avulso,ui,categoria&order=categoria,nome'),
-  db(`financeiro_growth?empresa_id=eq.${id}&select=valor_mensalidade,status&limit=1`)
- ]),versions=array(rawVersions),projects=array(rawProjects),catalog=array(rawCatalog),financials=array(rawFinancials),current=versions.find((row:any)=>row.vigente)||null;
- return{current,history:versions,projects,catalog,suggestion:{mensalidade:Number(financials[0]?.valor_mensalidade||0),status:financials[0]?.status||null,requiresConfirmation:versions.length===0}};
+  db(`financeiro_growth?empresa_id=eq.${id}&select=valor_mensalidade,status&limit=1`),
+  db(`diagnosticos?empresa_id=eq.${id}&select=id,menor_pilar,relatorio_snapshot&order=created_at.desc&limit=1`),
+  db(`reunioes_estrategicas?empresa_id=eq.${id}&select=tipo_relacionamento,situacao_plataforma,dados_reuniao&order=created_at.desc&limit=1`),
+  db(`planos_estrategicos?empresa_id=eq.${id}&select=objetivos,prioridades&order=created_at.desc&limit=1`)
+ ]),versions=array(rawVersions),projects=array(rawProjects),catalog=array(rawCatalog),financials=array(rawFinancials),current=versions.find((row:any)=>row.vigente)||null,diagnostic=array(rawDiagnostics)[0]||{},meeting=array(rawMeetings)[0]||{},plan=array(rawPlans)[0]||{},meetingData=meeting.dados_reuniao||{},activeNames=array(current?.recursos).map((item:any)=>item.nome_snapshot||item.nome).filter(Boolean),relationship=meeting.tipo_relacionamento||meetingData.tipo_relacionamento,baseClient=relationship==='Cliente da Base',priority=plan.objetivos||plan.prioridades||diagnostic.menor_pilar||'Organizar',platform=meeting.situacao_plataforma||meetingData.situacao_plataforma||{},motor=composeGrowthProject({catalog,activeResources:activeNames,priority,baseClient,signals:{possui_marketing:Boolean(platform['Google Ads']||platform['Meta Ads']),possui_agencia:Boolean(meetingData.possui_agencia),realiza_campanhas:Boolean(platform['Campanhas WhatsApp']||platform['Google Ads']||platform['Meta Ads'])}});
+ return{current,history:versions,projects,catalog,motor,suggestion:{mensalidade:Number(financials[0]?.valor_mensalidade||0),status:financials[0]?.status||null,requiresConfirmation:versions.length===0}};
 }
 const projectPayload=(body:any,current:any)=>{const additional=amount(body.mensalidade_adicional),implantation=amount(body.valor_implantacao_adicional),charge=body.forma_cobranca||'Sem cobrança imediata',noCharge=['Cobrança recorrente existente','Sem cobrança imediata'].includes(charge);return{
  empresa_id:String(body.empresa_id),nome:String(body.nome||'Novo Projeto de Evolução'),tipo:body.tipo||'Inclusão de novo recurso',descricao:body.descricao||null,objetivo:body.objetivo||null,
@@ -39,7 +43,7 @@ const projectPayload=(body:any,current:any)=>{const additional=amount(body.mensa
 async function replaceResources(projectId:string,resources:any[]){
  await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(projectId)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
  if(!resources.length)return;
- await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>({projeto_evolucao_id:projectId,recurso_id:item.id||item.recurso_id,nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:amount(item.valor_implantacao),valor_mensal:amount(item.valor_mensal)})))});
+ await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>({projeto_evolucao_id:projectId,recurso_id:item.id||item.recurso_id,nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:amount(item.valor_implantacao),valor_mensal:amount(item.valor_mensal),classificacao:item.classificacao||'Recomendado',origem:item.origem||'Consultor',peso:item.peso||null,fase:item.fase||'Recomendações Estratégicas'})))});
 }
 
 export async function GET(req:Request){

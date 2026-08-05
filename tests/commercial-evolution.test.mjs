@@ -42,7 +42,7 @@ test('interface adapta recursos e preenche a adesão ao Método',()=>{
  assert.match(component,/const adhesionDefaults=/);
  assert.match(component,/typeMode\.include/);
  assert.match(component,/typeMode\.remove/);
- assert.ok(component.includes('Recursos que passarão a fazer parte do contrato'));
+ assert.ok(component.includes('Estrutura do Projeto: Obrigatória + Recomendações Estratégicas + Expansões'));
  assert.ok(component.includes('Recursos que deixarão de fazer parte do contrato'));
 });
 
