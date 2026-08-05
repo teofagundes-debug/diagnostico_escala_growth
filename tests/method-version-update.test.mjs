@@ -18,7 +18,7 @@ test('context compares plan version against current method version',()=>{
 test('update preview explains new and preserved content before confirmation',()=>{
  assert.match(ui,/method-update-modal/);assert.match(ui,/Novidades que serão incorporadas/);assert.match(ui,/Conteúdo preservado/);
  for(const item of ['Diagnóstico','Reunião Estratégica','Anotações','Histórico','Documentos','Parecer Final do Consultor'])assert.match(ui,new RegExp(item));
- assert.match(ui,/Cancelar/);assert.match(ui,/Atualizar Plano Estratégico/);
+ assert.match(ui,/Cancelar/);assert.match(ui,/selectedAction\[1\]/);
 });
 
 test('history records previous and new method versions with motive, user and time',()=>{
@@ -38,4 +38,10 @@ test('all regeneration actions persist the calculated history version',()=>{
  assert.match(api,/const version=Math\.max/);
  assert.match(api,/tipo,versao:version,metodo_versao/);
  assert.doesNotMatch(api,/tipo,versao,metodo_versao/);
+});
+
+test('non-plan actions remain available after the strategic plan reaches the current version',()=>{
+ assert.match(ui,/selected==='Plano Estratégico'&&!context\?\.method\?\.update_available/);
+ assert.match(ui,/<h2 id="method-update-title">\{selectedAction\[1\]\}<\/h2>/);
+ assert.match(ui,/busy\?'Atualizando\.\.\.':selectedAction\[1\]/);
 });
