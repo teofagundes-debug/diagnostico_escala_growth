@@ -26,7 +26,8 @@ test('Plano Estratégico continua sendo validação sem repetição',()=>{
  assert.equal((plan.match(/<textarea/g)||[]).length,1);
  assert.ok(plan.includes('Parecer Final do Consultor'));
  assert.ok(plan.includes('Documento executivo automático'));
- assert.doesNotMatch(plan,/Observações Complementares|strategic-readonly/);
+ assert.doesNotMatch(plan,/Observações Complementares/);
+ assert.match(plan,/strategic-readonly/);
 });
 
 test('acervo metodológico possui somente os três documentos oficiais',()=>{

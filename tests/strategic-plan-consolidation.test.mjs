@@ -14,7 +14,7 @@ test('consolidação usa o novo componente consultivo',()=>{
 
 test('consultor produz somente o Parecer Final',()=>{
  assert.ok(validation.includes('Documento executivo automático'));
- assert.doesNotMatch(validation,/strategic-readonly/);
+ assert.match(validation,/strategic-readonly/);
  assert.equal((validation.match(/<textarea/g)||[]).length,1);
 });
 
