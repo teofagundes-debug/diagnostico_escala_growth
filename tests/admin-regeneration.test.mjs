@@ -16,7 +16,7 @@ test('central is exclusive to Master and exposed in the administrative menu',()=
 });
 
 test('offers every regeneration action and the strategic plan options',()=>{
- for(const label of ['Regenerar Diagnóstico','Regenerar Plano Estratégico','Regenerar Projeto de Evolução','Regenerar Cronograma','Atualizar Recomendações','Atualizar Biblioteca de Soluções'])assert.match(ui,new RegExp(label));
+ for(const label of ['Regenerar Diagnóstico','Atualizar para a Versão Atual do Método','Regenerar Projeto de Evolução','Regenerar Cronograma','Atualizar Recomendações','Atualizar Biblioteca de Soluções'])assert.match(ui,new RegExp(label));
  for(const option of ['Atualizar Cronograma','Atualizar Recomendações','Atualizar Biblioteca de Soluções','Manter Parecer Final do Consultor','Gerar novo Parecer utilizando IA'])assert.match(ui,new RegExp(option));
 });
 
@@ -38,7 +38,7 @@ test('migration records version metadata and snapshots',()=>{
 });
 
 test('Escala Vendas scenario uses method 2.3, current schedule, mandatory structure and preserved opinion',()=>{
- assert.match(api,/METHOD_VERSION='2\.3'/);
+ assert.match(api,/METHOD_VERSION_FALLBACK='2\.4'/);
  assert.match(api,/createSchedule\(ctx\.motor\)/);
  assert.match(api,/ctx\.motor\.mandatory/);
  assert.match(api,/ctx\.motor\.strategic/);
