@@ -32,3 +32,10 @@ test('active projects require explicit Master confirmation',()=>{
  assert.match(ui,/Recomendamos criar um novo Projeto de Evolução/);
  assert.match(api,/isMaster\(req\)/);
 });
+
+test('all regeneration actions persist the calculated history version',()=>{
+ for(const action of ['Diagnóstico','Plano Estratégico','Projeto de Evolução','Cronograma','Recomendações','Biblioteca de Soluções'])assert.match(ui,new RegExp(action));
+ assert.match(api,/const version=Math\.max/);
+ assert.match(api,/tipo,versao:version,metodo_versao/);
+ assert.doesNotMatch(api,/tipo,versao,metodo_versao/);
+});
