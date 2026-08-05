@@ -26,6 +26,13 @@ const aliases:Record<string,string[]>={
 };
 const find=(catalog:any[],name:string)=>catalog.find(item=>[name,...(aliases[name]||[])].some(alias=>normalize(item.nome)===normalize(alias)))||null;
 const has=(names:string[],name:string)=>[name,...(aliases[name]||[])].some(alias=>names.some(current=>normalize(current)===normalize(alias)));
+const motorPendingDefinitions=(resources:any[])=>{const names=resources.map(item=>item.nome),hasAny=(values:string[])=>names.some(name=>values.some(value=>normalize(name).includes(normalize(value))||normalize(value).includes(normalize(name))));return[
+ {codigo:'MARKETING_PARAMETROS',titulo:'Configurar Parâmetros de Marketing',when:['Google Ads','Meta Ads','Landing Page','Campanhas WhatsApp','Estratégia Comercial Digital']},
+ {codigo:'CRM_PIPELINE',titulo:'Definir Pipeline Comercial',when:['CRM Comercial','CRM Avançado']},
+ {codigo:'IA_ESCOPO',titulo:'Definir Escopo do Agente',when:['Agente de IA']},
+ {codigo:'DASHBOARD_INDICADORES',titulo:'Definir Indicadores',when:['Dashboard Executivo']},
+ {codigo:'WHATSAPP_NUMERO',titulo:'Validar Número do WhatsApp',when:['WhatsApp Oficial']}
+].filter(item=>hasAny(item.when))};
 
 export function composeGrowthProject({catalog,activeResources=[],priority='Organizar',baseClient=false,signals={}}:{catalog:any[];activeResources?:string[];priority?:string;baseClient?:boolean;signals?:Record<string,unknown>}){
  const objective=Object.keys(STRATEGY).find(key=>normalize(priority).includes(key))||'organizar';
@@ -34,5 +41,6 @@ export function composeGrowthProject({catalog,activeResources=[],priority='Organ
  const needsAcquisition=objective==='atrair'&&(!signals.possui_marketing||!signals.possui_agencia||!signals.realiza_campanhas);
  if(needsAcquisition)strategic=strategic.map(item=>['Gestão Google Ads','Gestão Meta Ads','Landing Page Institucional','Campanhas WhatsApp','Estratégia Comercial Digital'].some(name=>normalize(name)===normalize(item.nome))?{...item,classificacao:'Recomendado' as GrowthClassification,peso:10,origem:'Gatilho automático de aquisição'}:item);
  strategic.sort((a,b)=>b.peso-a.peso);
- return{objective,baseClient,mandatory,strategic:strategic.filter(item=>item.classificacao==='Recomendado'),future:strategic.filter(item=>item.classificacao==='Opcional'),all:[...mandatory,...strategic],schedule:[{fase:'Estrutura Obrigatória',items:mandatory},{fase:'Recomendações Estratégicas',items:strategic.filter(item=>item.classificacao==='Recomendado')},{fase:'Evoluções Futuras',items:strategic.filter(item=>item.classificacao==='Opcional')}]};
+ const all=[...mandatory,...strategic],pendencies=motorPendingDefinitions(all);
+ return{objective,baseClient,mandatory,strategic:strategic.filter(item=>item.classificacao==='Recomendado'),future:strategic.filter(item=>item.classificacao==='Opcional'),all,pendencies,nextActions:pendencies.map(item=>item.titulo),schedule:[{fase:'Estrutura Obrigatória',items:mandatory},{fase:'Recomendações Estratégicas',items:strategic.filter(item=>item.classificacao==='Recomendado')},{fase:'Evoluções Futuras',items:strategic.filter(item=>item.classificacao==='Opcional')}]};
 }

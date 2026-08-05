@@ -19,7 +19,7 @@ export async function GET(req:Request){
   if(!await isMaster(req))return Response.json({error:'Acesso exclusivo do Usuário Master.'},{status:403});
   const empresaId=new URL(req.url).searchParams.get('empresa_id');
   if(!empresaId)return Response.json({error:'Empresa não informada.'},{status:400});
-  const [data,profiles,financials,publications,diagnostics,plans,implementations,acceptances,payments,projects,contracts]=await Promise.all([
+  const [data,profiles,financials,publications,diagnostics,plans,implementations,acceptances,payments,projects,contracts,intelligentPendencies]=await Promise.all([
    companyData(empresaId),
    rest(`portal_usuarios?empresa_id=eq.${encodeURIComponent(empresaId)}&perfil=eq.cliente&select=*&limit=1`),
    rest(`financeiro_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&limit=1`),
@@ -30,7 +30,8 @@ export async function GET(req:Request){
    rest(`aceites_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=aceito_em.desc&limit=1`).catch(()=>[]),
    rest(`pagamentos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=created_at.desc&limit=1`).catch(()=>[]),
    rest(`projetos_evolucao?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=created_at.desc&limit=1`).catch(()=>[]),
-   rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).catch(()=>[])
+   rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).catch(()=>[]),
+   rest(`pendencias_inteligentes?empresa_id=eq.${encodeURIComponent(empresaId)}&status=neq.Dispensada&select=*&order=created_at`).catch(()=>[])
   ]);
   const access=profiles?.[0]||null,financial=financials?.[0]||null,publication=financial?.snapshot_publicado?publications?.[0]||null:null,diagnostic=diagnostics?.[0]||null,plan=plans?.[0]||null,implementation=implementations?.[0]||null,project=projects?.[0]||null,contract=contracts?.[0]||null;
   const requiresPayment=Boolean(project?.exige_pagamento),noAdditionalPayment=Boolean(project&&Number(project.valor_implantacao_adicional||0)===0&&Number(project.mensalidade_adicional||0)===0&&['Cobrança recorrente existente','Sem cobrança imediata'].includes(project.forma_cobranca)),financialReady=Boolean(financial&&financial.valor_implantacao!=null&&Number(financial.prazo_contratual)>0&&Number(financial.validade_proposta)>0&&(!requiresPayment||financial.link_pix||financial.link_cartao||financial.link_assinatura)),contractDataComplete=contractFieldsComplete(data.company),documentType=formalizationType(project),documentReady=formalizationDocumentReady(project,contract,data.company),contractStatus=acceptances?.[0]?.concorda_contrato?'Contrato/Termo aceito':publication?'Contrato/Termo publicado':documentReady?'Contrato/Termo disponível para revisão':project&&!contractDataComplete?'Dados contratuais pendentes':'Não iniciado';
@@ -50,7 +51,7 @@ export async function GET(req:Request){
    {label:'Implantação concluída',done:Boolean(diagnostic&&['Implantação concluída','Cliente Ativo'].includes(diagnostic.status))},
    {label:'Cliente Ativo',done:Boolean(diagnostic?.status==='Cliente Ativo')}
   ];
-  return Response.json({company:data.company,responsible:data.responsible,access,financial,publication,project,contract,formalization_type:documentType,formalization_document_ready:documentReady,contract_status:contractStatus,contract_data_complete:contractDataComplete,preview_available:Boolean(diagnostic||project),checklist});
+  return Response.json({company:data.company,responsible:data.responsible,access,financial,publication,project,contract,formalization_type:documentType,formalization_document_ready:documentReady,contract_status:contractStatus,contract_data_complete:contractDataComplete,preview_available:Boolean(diagnostic||project),checklist,intelligent_pendencies:intelligentPendencies});
  }catch(e:any){return Response.json({error:e?.message||'Não foi possível carregar a Publicação.'},{status:500})}
 }
 export async function POST(req:Request){
@@ -97,7 +98,7 @@ export async function POST(req:Request){
     rest(`financeiro_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&limit=1`).then(x=>x?.[0]),
     rest(`planos_estrategicos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
     rest(`planos_implantacao?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
-    rest(`projetos_evolucao?empresa_id=eq.${encodeURIComponent(empresaId)}&status=eq.Rascunho&select=*,projeto_evolucao_recursos(*)&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
+    rest(`projetos_evolucao?empresa_id=eq.${encodeURIComponent(empresaId)}&status=eq.Rascunho&select=*,projeto_evolucao_recursos(*),pendencias_inteligentes(*)&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
     rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
     rest(`diagnosticos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=created_at.desc&limit=1`).then(x=>x?.[0]),
     rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&select=versao&order=versao.desc&limit=1`).then(x=>x?.[0]).catch(()=>null)
@@ -117,6 +118,8 @@ export async function POST(req:Request){
    if(!Number(financial?.validade_proposta||0))pending.push('Definir a validade da proposta');
    if(project?.exige_pagamento&&!String(financial?.link_pix||financial?.link_cartao||financial?.link_assinatura||'').trim())pending.push('Informar ao menos um link de pagamento');
    if(pending.length)return Response.json({error:'Existem pendências antes da publicação.',pending},{status:409});
+   const intelligentPendencies=await rest(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&status=eq.Pendente&select=titulo`);
+   if(intelligentPendencies?.length&&!body.confirm_pendencies)return Response.json({error:'Atenção. Ainda existem configurações recomendadas que deverão ser concluídas durante a implantação.',pending:intelligentPendencies.map((item:any)=>item.titulo),code:'INTELLIGENT_PENDENCIES'},{status:409});
    const isExisting=Boolean(existing?.auth_user_id||existing?.primeiro_acesso_em),generated=await generateLink(email,isExisting),now=new Date().toISOString(),version=Number(lastPublication?.versao||0)+1;
    const accessPayload={email,nome:name,telefone:phone,empresa_id:empresaId,perfil:'cliente',ativo:true,auth_user_id:generated.authUserId||existing?.auth_user_id||null,status_acesso:'Convite enviado',convite_enviado_em:existing?.convite_enviado_em||now,convite_reenviado_em:existing?now:null,convite_expira_em:generated.expiresAt,convite_link:generated.link,updated_at:now};
    const saved=await rest('portal_usuarios?on_conflict=email',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(accessPayload)});

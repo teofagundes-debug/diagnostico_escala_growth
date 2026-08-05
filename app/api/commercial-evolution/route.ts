@@ -1,5 +1,6 @@
 import {isMaster} from '../../../lib/access';
 import {composeGrowthProject} from '../../../lib/motor-growth';
+import {pendingDefinitions} from '../../../lib/intelligent-pendencies';
 
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
@@ -23,7 +24,7 @@ async function identity(req:Request){
 async function context(empresaId:string){
  const id=encodeURIComponent(empresaId),[rawVersions,rawProjects,rawCatalog,rawFinancials,rawDiagnostics,rawMeetings,rawPlans]=await Promise.all([
   db(`situacoes_comerciais_versoes?empresa_id=eq.${id}&select=*&order=versao.desc`),
-  db(`projetos_evolucao?empresa_id=eq.${id}&select=*,projeto_evolucao_recursos(*)&order=created_at.desc`),
+  db(`projetos_evolucao?empresa_id=eq.${id}&select=*,projeto_evolucao_recursos(*),pendencias_inteligentes(*)&order=created_at.desc`),
   db('catalogo_recursos?ativo=eq.true&select=id,codigo,nome,tipo,valor_mensal,valor_avulso,ui,categoria&order=categoria,nome'),
   db(`financeiro_growth?empresa_id=eq.${id}&select=valor_mensalidade,status&limit=1`),
   db(`diagnosticos?empresa_id=eq.${id}&select=id,menor_pilar,relatorio_snapshot&order=created_at.desc&limit=1`),
@@ -44,6 +45,11 @@ async function replaceResources(projectId:string,resources:any[]){
  await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(projectId)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
  if(!resources.length)return;
  await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>({projeto_evolucao_id:projectId,recurso_id:item.id||item.recurso_id,nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:amount(item.valor_implantacao),valor_mensal:amount(item.valor_mensal),classificacao:item.classificacao||'Recomendado',origem:item.origem||'Consultor',peso:item.peso||null,fase:item.fase||'Recomendações Estratégicas'})))});
+}
+async function syncPendencies(project:any,resources:any[]){
+ const definitions=pendingDefinitions(resources),activeCodes=definitions.map(item=>item.codigo),now=new Date().toISOString(),existing=array(await db(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=id,codigo,status`));
+ for(const item of definitions){const current=existing.find((row:any)=>row.codigo===item.codigo);await db('pendencias_inteligentes?on_conflict=projeto_evolucao_id,codigo',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({empresa_id:project.empresa_id,projeto_evolucao_id:project.id,codigo:item.codigo,titulo:item.titulo,categoria:item.categoria,rota_configuracao:item.rota||null,solucoes_origem:item.solutions,status:current?.status==='Concluída'?'Concluída':'Pendente',updated_at:now})})}
+ for(const item of existing.filter((row:any)=>!activeCodes.includes(row.codigo)))await db(`pendencias_inteligentes?id=eq.${encodeURIComponent(item.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Dispensada',updated_at:now})});
 }
 
 export async function GET(req:Request){
@@ -66,13 +72,13 @@ export async function POST(req:Request){
    if(!source)return Response.json({error:'Projeto não encontrado.'},{status:404});
    const current=(await context(source.empresa_id)).current,payload=projectPayload({...source,empresa_id:source.empresa_id,nome:`${source.nome} — Cópia`},current);
    const saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...payload,status:'Rascunho'})}))[0];
-   await replaceResources(saved.id,array(source.projeto_evolucao_recursos));return Response.json({ok:true,project:saved},{status:201});
+   await replaceResources(saved.id,array(source.projeto_evolucao_recursos));await syncPendencies(saved,array(source.projeto_evolucao_recursos));return Response.json({ok:true,project:saved},{status:201});
   }
   const empresaId=String(body.empresa_id||'');if(!empresaId)return Response.json({error:'Empresa não informada.'},{status:400});
   const currentContext=await context(empresaId),duplicate=currentContext.projects.find((project:any)=>project.status==='Rascunho'&&project.tipo===body.tipo);
   if(duplicate&&!body.allow_duplicate)return Response.json({error:'Já existe um Projeto de Evolução deste tipo em andamento.',code:'DUPLICATE_DRAFT',project:duplicate},{status:409});
   const saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...projectPayload(body,currentContext.current),status:'Rascunho'})}))[0];
-  await replaceResources(saved.id,array(body.recursos));return Response.json({ok:true,project:saved},{status:201});
+  await replaceResources(saved.id,array(body.recursos));await syncPendencies(saved,array(body.recursos));return Response.json({ok:true,project:saved},{status:201});
  }catch(error:any){return Response.json({error:error?.message||'Não foi possível criar o Projeto de Evolução.'},{status:500})}
 }
 
@@ -85,7 +91,7 @@ export async function PATCH(req:Request){
    if(existing.status!=='Rascunho')return Response.json({error:'Somente Projetos em Rascunho podem ser editados.'},{status:409});
    const current=(await context(existing.empresa_id)).current,payload=projectPayload({...body,empresa_id:existing.empresa_id},current);
    await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,updated_at:now,responsavel_atualizacao:body.responsavel_atualizacao||'Usuário Master'})});
-   await replaceResources(id,array(body.recursos));return Response.json({ok:true});
+   await replaceResources(id,array(body.recursos));await syncPendencies(existing,array(body.recursos));return Response.json({ok:true});
   }
   if(body.action==='publish'){
    return Response.json({error:'A publicação oficial deve ser realizada em Publicação e Acesso, para manter Projeto, Contrato, versão e convite sincronizados.'},{status:409});
