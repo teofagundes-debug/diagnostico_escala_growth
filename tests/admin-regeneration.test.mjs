@@ -38,7 +38,7 @@ test('migration records version metadata and snapshots',()=>{
 });
 
 test('Escala Vendas scenario uses method 2.3, current schedule, mandatory structure and preserved opinion',()=>{
- assert.match(api,/METHOD_VERSION_FALLBACK='2\.4'/);
+ assert.match(api,/METHOD_VERSION_FALLBACK='2\.5'/);
  assert.match(api,/createSchedule\(ctx\.motor\)/);
  assert.match(api,/ctx\.motor\.mandatory/);
  assert.match(api,/ctx\.motor\.strategic/);
