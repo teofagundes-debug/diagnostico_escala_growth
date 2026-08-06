@@ -25,12 +25,12 @@ type Candidate={item:any;weight:number;reasons:string[]};
 export const solutionParameters=(item:any)=>({
  objetivo_padrao:item.objetivo_padrao||null,resultado_esperado:item.resultado_esperado||null,
  criterios_recomendacao:list(item.criterios_recomendacao),quando_recomendar:item.quando_recomendar||null,quando_nao_recomendar:item.quando_nao_recomendar||null,
- tipo_implantacao:item.tipo_implantacao||null,tempo_medio_implantacao:item.tempo_medio_implantacao||null,
- ordem_implantacao:item.ordem_implantacao||null,semana_sugerida:item.semana_sugerida||null,duracao_padrao:item.duracao_padrao||null,
+ tipo:item.tipo||'Implantação',recorrencia_ativa_apos_implantacao:item.tipo==='Implantação + Mensalidade',tempo_medio_implantacao:item.tipo==='Mensalidade'?null:(item.tempo_medio_implantacao||null),
+ ordem_implantacao:item.tipo==='Mensalidade'?null:(item.ordem_implantacao||null),semana_sugerida:item.tipo==='Mensalidade'?null:(item.semana_sugerida||null),duracao_padrao:item.tipo==='Mensalidade'?null:(item.tempo_medio_implantacao||item.duracao_padrao||null),
  treinamento_obrigatorio:item.treinamento_obrigatorio===true,gera_pendencias:item.gera_pendencias===true,codigo_pendencia_padrao:item.codigo_pendencia_padrao||null,titulo_pendencia_padrao:item.titulo_pendencia_padrao||null,rota_configuracao_padrao:item.rota_configuracao_padrao||null,
  abre_planejamento_operacional:item.abre_planejamento_operacional===true,permite_executor_terceiro:item.permite_executor_terceiro!==false,permite_equipe_interna:item.permite_equipe_interna!==false,
  impacta_financeiro:item.impacta_financeiro!==false,impacta_cronograma:item.impacta_cronograma!==false,impacta_implantacao:item.impacta_implantacao!==false,cria_checklist:item.cria_checklist===true,disponivel_evolucao_futura:item.disponivel_evolucao_futura!==false,
- investimento_minimo_recomendado:Number(item.investimento_minimo_recomendado||0),investimento_ideal_minimo:item.investimento_ideal_minimo==null?null:Number(item.investimento_ideal_minimo),investimento_ideal_maximo:item.investimento_ideal_maximo==null?null:Number(item.investimento_ideal_maximo),
+ investimento_minimo_recomendado:Number(item.investimento_minimo_recomendado||0),
  valor_implantacao_padrao:item.valor_implantacao_padrao==null?null:Number(item.valor_implantacao_padrao),valor_mensalidade_padrao:item.valor_mensalidade_padrao==null?null:Number(item.valor_mensalidade_padrao),
  recursos_relacionados:list(item.recursos_relacionados),dependencias_estruturadas:list(item.dependencias_estruturadas),criterios_conclusao:list(item.criterios_conclusao),entregas_padrao:list(item.entregas_padrao),
  observacoes_estrategicas:item.observacoes_estrategicas||null
@@ -42,7 +42,7 @@ export function composeGrowthProject({catalog,activeResources=[],priority='Organ
  const scores=signals.pillarScores||{},scoreEntries=Object.entries(scores).filter(([,score])=>Number.isFinite(Number(score))),lowestPillar=[...scoreEntries].sort((a,b)=>Number(a[1])-Number(b[1]))[0]?.[0];
  const objective=pillarKey(signals.meetingPriority)||pillarKey(lowestPillar)||pillarKey(priority)||'organizar';
  const activeCatalog=catalog.filter(item=>item.ativo!==false);
- const mandatory=baseClient?[]:activeCatalog.filter(item=>item.classificacao_comercial==='Obrigatório'||item.obrigatoriedade==='Obrigatório').filter(item=>!has(activeResources,item.nome)).map(item=>({...withLibraryParameters(item),classificacao:'Obrigatório' as GrowthClassification,origem:'Estrutura Obrigatória definida na Biblioteca',peso:10,fase:'Estrutura Obrigatória'}));
+ const mandatory=baseClient?[]:activeCatalog.filter(item=>item.classificacao_comercial==='Obrigatória').filter(item=>!has(activeResources,item.nome)).map(item=>({...withLibraryParameters(item),classificacao:'Obrigatório' as GrowthClassification,origem:'Estrutura Obrigatória definida na Biblioteca',peso:10,fase:'Estrutura Obrigatória'}));
  const weakQuestions=(signals.questionScores||[]).filter(item=>Number(item.valor)<=2);
  const evidence=[objective,priority,signals.meetingPriority,weakQuestions.map(item=>`${item.pilar||''} ${item.pergunta||''}`),(signals.openAnswers||[]).map((item:any)=>typeof item==='string'?item:`${item.pergunta||''} ${item.resposta||''}`)].flat(Infinity).join(' ');
  const evidenceNormalized=normalize(evidence),removed=textList(signals.removedRecommendations),approved=[...textList(signals.approvedRecommendations),...textList(signals.newRecommendations)];
