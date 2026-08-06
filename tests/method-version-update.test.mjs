@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
-const migration=read('database/migration_v42_versao_metodo.sql')+read('database/migration_v43_motor_decisao_25.sql'),api=read('app/api/regeneration/route.ts'),ui=read('components/RegenerationCenter.tsx');
+const migration=read('database/migration_v42_versao_metodo.sql')+read('database/migration_v43_motor_decisao_25.sql')+read('database/migration_v44_integracao_marketing_26.sql'),api=read('app/api/regeneration/route.ts'),ui=read('components/RegenerationCenter.tsx');
 
-test('version 2.5 is centralized and strategic plans remain permanently stamped',()=>{
- assert.match(migration,/metodo_growth_versoes/);assert.match(migration,/\s*'2\.5',/);
+test('version 2.6 is centralized and strategic plans remain permanently stamped',()=>{
+ assert.match(migration,/metodo_growth_versoes/);assert.match(migration,/\s*'2\.6',/);
  for(const field of ['metodo_nome','metodo_versao','metodo_aplicado_em'])assert.match(migration,new RegExp(field));
  assert.match(migration,/before insert on public\.planos_estrategicos/);
 });

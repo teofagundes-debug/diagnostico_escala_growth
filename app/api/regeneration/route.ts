@@ -1,14 +1,28 @@
 import {isMaster} from '../../../lib/access';
 import {composeGrowthProject} from '../../../lib/motor-growth';
+import {pendingDefinitions} from '../../../lib/intelligent-pendencies';
 
 const SUPABASE_URL=process.env.SUPABASE_URL;
 const SERVICE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
-const METHOD_VERSION_FALLBACK='2.5';
+const METHOD_VERSION_FALLBACK='2.6';
 const headers=()=>({'Content-Type':'application/json',apikey:SERVICE_KEY!,Authorization:`Bearer ${SERVICE_KEY}`});
 async function db(path:string,init?:RequestInit){if(!SUPABASE_URL||!SERVICE_KEY)throw new Error('Supabase não configurado.');const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init?.headers||{})},cache:'no-store'});if(!response.ok)throw new Error(await response.text());const text=await response.text();return text?JSON.parse(text):[]}
 const array=(value:any):any[]=>Array.isArray(value)?value:[];
 const names=(items:any[])=>items.map(item=>item.nome||item.nome_snapshot).filter(Boolean);
 const createSchedule=(motor:any)=>motor.schedule.map((phase:any)=>`${phase.fase}\n${phase.items.map((item:any)=>`• ${item.nome}`).join('\n')||'Nenhum item novo.'}`).join('\n\n');
+
+async function syncGrowthProject(empresaId:string,motor:any,usuario:string){
+ const marketing=pendingDefinitions(array(motor.strategic)).find(item=>item.codigo==='MARKETING_PARAMETROS');
+ if(!marketing)return{project_id:null,marketing_pendency:false};
+ let project=(await db(`projetos_evolucao?empresa_id=eq.${encodeURIComponent(empresaId)}&status=eq.Rascunho&select=*&order=updated_at.desc&limit=1`))[0];
+ if(!project){project=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({empresa_id:empresaId,nome:'Projeto de Evolução — Motor de Crescimento',tipo:'Inclusão de novo recurso',descricao:'Projeto preparado automaticamente a partir das recomendações estratégicas do Método Escala Growth.',objetivo:`Evoluir a prioridade ${motor.objective}.`,status:'Rascunho',valor_implantacao_adicional:0,implantacao_modalidade:'Sem cobrança',mensalidade_atual:0,mensalidade_adicional:0,desconto_recorrente:0,exige_contrato:false,exige_aditivo:false,exige_aceite:true,exige_pagamento:false,forma_cobranca:'Sem cobrança imediata',formalizacao:'Termo de adesão ao Método Escala Growth',checklist:{marketing_parametros:false},criado_por:usuario,responsavel_atualizacao:usuario})}))[0]}
+ const marketingResources=array(motor.strategic).filter((item:any)=>marketing.solutions.includes(item.nome));
+ for(const item of marketingResources)await db('projeto_evolucao_recursos?on_conflict=projeto_evolucao_id,recurso_id,movimento',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({projeto_evolucao_id:project.id,recurso_id:item.id,nome_snapshot:item.nome,tipo_snapshot:item.tipo||'Implantação',movimento:'Adicionar',valor_implantacao:0,valor_mensal:Number(item.valor_mensal||0),classificacao:'Recomendado',origem:item.origem||'Motor de Decisão',peso:Math.min(10,Math.max(1,Number(item.peso||1))),fase:'Recomendações Estratégicas'})});
+ const existing=(await db(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&codigo=eq.MARKETING_PARAMETROS&select=*&limit=1`))[0],completed=existing?.status==='Concluída',now=new Date().toISOString(),checklist={...(project.checklist||{}),marketing_parametros:completed};
+ await db('pendencias_inteligentes?on_conflict=projeto_evolucao_id,codigo',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({empresa_id:empresaId,projeto_evolucao_id:project.id,codigo:marketing.codigo,titulo:marketing.titulo,categoria:marketing.categoria,rota_configuracao:marketing.rota,solucoes_origem:marketing.solutions,status:completed?'Concluída':'Pendente',concluida_em:completed?existing.concluida_em:null,concluida_por:completed?existing.concluida_por:null,updated_at:now})});
+ await db(`projetos_evolucao?id=eq.${encodeURIComponent(project.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,responsavel_atualizacao:usuario,updated_at:now})});
+ return{project_id:project.id,marketing_pendency:true,marketing_pendency_status:completed?'Concluída':'Pendente'};
+}
 
 async function context(empresaId:string){
  const id=encodeURIComponent(empresaId);
@@ -42,9 +56,10 @@ export async function POST(req:Request){
   const versions=await db(`plano_estrategico_versoes?diagnostico_id=eq.${encodeURIComponent(ctx.diagnostic.id)}&select=versao&order=versao.desc&limit=1`),documentVersion=Number(versions[0]?.versao||0)+1;
   await db('plano_estrategico_versoes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({plano_id:ctx.plan.id,diagnostico_id:ctx.diagnostic.id,versao:documentVersion,consultor:body.usuario||'Usuário Master',conteudo:next,status:next.status||'Em Consolidação',motivo,metodo_versao:METHOD_VERSION,comparacao:comparison})});
   await db(`planos_estrategicos?id=eq.${encodeURIComponent(ctx.plan.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(next)});
+  const projectSync=await syncGrowthProject(empresaId,ctx.motor,body.usuario||'Usuário Master');
   const version=Math.max(0,...ctx.history.filter((item:any)=>item.tipo===tipo).map((item:any)=>Number(item.versao||0)))+1;
   await db('regeneracoes_metodo',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({empresa_id:empresaId,diagnostico_id:ctx.diagnostic.id,plano_id:ctx.plan.id,tipo,versao:version,metodo_versao:METHOD_VERSION,versao_metodo_anterior:previousMethodVersion,versao_metodo_nova:METHOD_VERSION,motivo,usuario:body.usuario||'Usuário Master',opcoes:body,versao_anterior:previous,versao_nova:next,comparacao:comparison})});
   await db('dossie_eventos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({empresa_id:empresaId,diagnostico_id:ctx.diagnostic.id,tipo:'Atualização do Método',titulo:`${tipo} atualizado`,descricao:`O ${tipo} foi atualizado da versão ${previousMethodVersion} para a versão ${METHOD_VERSION} do Método Escala Growth.`,data_evento:new Date().toISOString(),concluido:true})});
-  return Response.json({ok:true,version,document_version:documentVersion,previous_method_version:previousMethodVersion,method_version:METHOD_VERSION,comparison,plan:next,message:`${tipo} atualizado para o Método Escala Growth ${METHOD_VERSION}.`});
+  return Response.json({ok:true,version,document_version:documentVersion,previous_method_version:previousMethodVersion,method_version:METHOD_VERSION,comparison,plan:next,project_sync:projectSync,message:`${tipo} atualizado para o Método Escala Growth ${METHOD_VERSION}.`});
  }catch(error:any){return Response.json({error:error?.message||'Não foi possível concluir a regeneração.'},{status:500})}
 }

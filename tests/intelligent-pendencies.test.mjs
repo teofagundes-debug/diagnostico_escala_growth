@@ -8,6 +8,7 @@ const rules=read('lib/intelligent-pendencies.ts');
 const evolutionApi=read('app/api/commercial-evolution/route.ts');
 const evolutionUi=read('components/CommercialEvolutionPanel.tsx');
 const marketingApi=read('app/api/commercial/route.ts');
+const regenerationApi=read('app/api/regeneration/route.ts');
 const clientAccess=read('app/api/client-access/route.ts');
 const portal=read('components/PortalApp.tsx');
 const css=read('app/globals.css');
@@ -29,15 +30,31 @@ test('project persists and renders intelligent pendencies automatically',()=>{
  assert.match(evolutionUi,/Pendências do Projeto/);assert.match(evolutionUi,/Configurar/);
 });
 
+test('regeneration synchronizes Marketing recommendations with the Evolution Project',()=>{
+ assert.match(regenerationApi,/syncGrowthProject/);
+ assert.match(regenerationApi,/pendingDefinitions\(array\(motor\.strategic\)\)/);
+ assert.match(regenerationApi,/codigo:marketing\.codigo/);
+ assert.match(regenerationApi,/rota_configuracao:marketing\.rota/);
+ assert.match(regenerationApi,/status:completed\?'Concluída':'Pendente'/);
+ assert.match(regenerationApi,/project_sync:projectSync/);
+});
+
 test('saving existing Marketing parameters concludes the linked pendency',()=>{
  assert.match(marketingApi,/codigo=eq\.MARKETING_PARAMETROS/);
  assert.match(marketingApi,/status:'Concluída'/);
  assert.match(marketingApi,/concluida_em/);assert.match(marketingApi,/dados_configuracao/);
 });
 
+test('Marketing pendency opens the existing module and displays both checklist states',()=>{
+ assert.match(evolutionUi,/\?empresa=\$\{companyId\}&projeto=\$\{project\.id\}/);
+ assert.match(evolutionUi,/Parâmetros de Marketing configurados/);
+ assert.match(marketingApi,/concluida_por:'Usuário Master'/);
+});
+
 test('operational checklist warns but permits publication by Master confirmation',()=>{
  assert.match(clientAccess,/INTELLIGENT_PENDENCIES/);
  assert.match(clientAccess,/confirm_pendencies/);
+ assert.match(clientAccess,/Existem recomendações de Marketing sem parâmetros definidos\./);
  assert.match(read('components/ClientAreaPanel.tsx'),/Pendências Inteligentes/);
 });
 
