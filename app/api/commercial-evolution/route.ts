@@ -29,9 +29,9 @@ async function context(empresaId:string){
   db(`financeiro_growth?empresa_id=eq.${id}&select=valor_mensalidade,status&limit=1`),
   db(`diagnosticos?empresa_id=eq.${id}&select=id,menor_pilar,relatorio_snapshot&order=created_at.desc&limit=1`),
   db(`reunioes_estrategicas?empresa_id=eq.${id}&select=tipo_relacionamento,situacao_plataforma,dados_reuniao&order=created_at.desc&limit=1`),
-  db(`planos_estrategicos?empresa_id=eq.${id}&select=objetivos,prioridades&order=created_at.desc&limit=1`)
+  db(`planos_estrategicos?empresa_id=eq.${id}&select=objetivos,prioridades,proximos_passos&order=created_at.desc&limit=1`)
  ]),versions=array(rawVersions),projects=array(rawProjects),catalog=array(rawCatalog),financials=array(rawFinancials),current=versions.find((row:any)=>row.vigente)||null,diagnostic=array(rawDiagnostics)[0]||{},meeting=array(rawMeetings)[0]||{},plan=array(rawPlans)[0]||{},meetingData=meeting.dados_reuniao||{},activeNames=array(current?.recursos).map((item:any)=>item.nome_snapshot||item.nome).filter(Boolean),relationship=meeting.tipo_relacionamento||meetingData.tipo_relacionamento,baseClient=relationship==='Cliente da Base',priority=plan.objetivos||plan.prioridades||diagnostic.menor_pilar||'Organizar',platform=meeting.situacao_plataforma||meetingData.situacao_plataforma||{},motor=composeGrowthProject({catalog,activeResources:activeNames,priority,baseClient,signals:{possui_marketing:Boolean(platform['Google Ads']||platform['Meta Ads']),possui_agencia:Boolean(meetingData.possui_agencia),realiza_campanhas:Boolean(platform['Campanhas WhatsApp']||platform['Google Ads']||platform['Meta Ads'])}});
- return{current,history:versions,projects,catalog,motor,suggestion:{mensalidade:Number(financials[0]?.valor_mensalidade||0),status:financials[0]?.status||null,requiresConfirmation:versions.length===0}};
+ return{current,history:versions,projects,catalog,motor,plan,suggestion:{mensalidade:Number(financials[0]?.valor_mensalidade||0),status:financials[0]?.status||null,requiresConfirmation:versions.length===0}};
 }
 const projectPayload=(body:any,current:any)=>{const additional=amount(body.mensalidade_adicional),implantation=amount(body.valor_implantacao_adicional),charge=body.forma_cobranca||'Sem cobrança imediata',noCharge=['Cobrança recorrente existente','Sem cobrança imediata'].includes(charge);return{
  empresa_id:String(body.empresa_id),nome:String(body.nome||'Novo Projeto de Evolução'),tipo:body.tipo||'Inclusão de novo recurso',descricao:body.descricao||null,objetivo:body.objetivo||null,
@@ -52,13 +52,37 @@ async function syncPendencies(project:any,resources:any[]){
  for(const item of existing.filter((row:any)=>!activeCodes.includes(row.codigo)))await db(`pendencias_inteligentes?id=eq.${encodeURIComponent(item.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Dispensada',updated_at:now})});
 }
 
+const normalize=(value:unknown)=>String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const marketingRecommendations=(result:any)=>{
+ const planText=normalize(result.plan?.proximos_passos),motorResources=array(result.motor?.strategic),catalog=array(result.catalog);
+ const planResources=catalog.filter((item:any)=>pendingDefinitions([item]).some(definition=>definition.codigo==='MARKETING_PARAMETROS')&&planText.includes(normalize(item.nome)));
+ return [...new Map([...motorResources,...planResources].map((item:any)=>[item.id||normalize(item.nome),item])).values()];
+};
+async function reconcileMotorPendencies(empresaId:string,result:any){
+ const recommended=marketingRecommendations(result),marketing=pendingDefinitions(recommended).find(item=>item.codigo==='MARKETING_PARAMETROS');
+ if(!marketing)return result;
+ let project=array(result.projects).find((item:any)=>item.status==='Rascunho');
+ if(!project){
+  project=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...projectPayload({empresa_id:empresaId,nome:'Projeto de Evolução — Motor de Crescimento',tipo:'Inclusão de novo recurso',descricao:'Projeto preparado automaticamente a partir das recomendações estratégicas do Método Escala Growth.',objetivo:`Evoluir a prioridade ${result.motor?.objective||'definida no diagnóstico'}.`,checklist:{marketing_parametros:false},criado_por:'Usuário Master'},result.current),status:'Rascunho'})}))[0];
+ }
+ const existingResources=array(project.projeto_evolucao_recursos),existingIds=new Set(existingResources.map((item:any)=>String(item.recurso_id||item.id)));
+ const missing=recommended.filter((item:any)=>item.id&&!existingIds.has(String(item.id)));
+ for(const item of missing)await db('projeto_evolucao_recursos?on_conflict=projeto_evolucao_id,recurso_id,movimento',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({projeto_evolucao_id:project.id,recurso_id:item.id,nome_snapshot:item.nome,tipo_snapshot:item.tipo||'Implantação',movimento:'Adicionar',valor_implantacao:amount(item.valor_implantacao),valor_mensal:amount(item.valor_mensal),classificacao:'Recomendado',origem:item.origem||'Motor de Decisão',peso:Math.min(10,Math.max(1,Number(item.peso||1))),fase:'Recomendações Estratégicas'})});
+ const combined=[...existingResources,...recommended];
+ await syncPendencies(project,combined);
+ const now=new Date().toISOString(),completed=array(await db(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&codigo=eq.MARKETING_PARAMETROS&status=eq.Conclu%C3%ADda&select=id&limit=1`)).length>0;
+ await db(`projetos_evolucao?id=eq.${encodeURIComponent(project.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist:{...(project.checklist||{}),marketing_parametros:completed},responsavel_atualizacao:'Usuário Master',updated_at:now})});
+ return context(empresaId);
+}
+
 export async function GET(req:Request){
  try{
   const actor=await identity(req);if(!actor)return Response.json({error:'Não autorizado.'},{status:403});
   const requested=new URL(req.url).searchParams.get('empresa_id'),empresaId=actor.role==='master'?requested:actor.empresa_id;
   if(!empresaId)return Response.json({error:'Empresa não informada.'},{status:400});
-  const result=await context(empresaId);
+  let result=await context(empresaId);
   if(actor.role==='cliente')return Response.json({current:result.current,projects:result.projects.filter((project:any)=>['Publicado','Aceito','Formalizado'].includes(project.status)).slice(0,1).map(({observacoes_internas,checklist,criado_por,responsavel_atualizacao,...safe}:any)=>safe)});
+  result=await reconcileMotorPendencies(empresaId,result);
   return Response.json(result);
  }catch(error:any){return Response.json({error:error?.message||'Não foi possível carregar o histórico comercial.'},{status:500})}
 }
