@@ -27,6 +27,7 @@ test('Atrair creates one consolidated Marketing configuration pendency',()=>{
 test('project persists and renders intelligent pendencies automatically',()=>{
  assert.match(migration,/unique \(projeto_evolucao_id, codigo\)/);
  assert.match(evolutionApi,/syncPendencies/);assert.match(evolutionApi,/pendingDefinitions/);
+ assert.doesNotMatch(evolutionApi,/select=tipo_relacionamento,situacao_plataforma/);
  assert.match(evolutionUi,/Pendências do Projeto/);assert.match(evolutionUi,/Configurar/);
 });
 
