@@ -1,7 +1,7 @@
 export type IntelligentPendencyDefinition={codigo:string;titulo:string;categoria:string;rota?:string;matches:string[]};
 
 export const INTELLIGENT_PENDENCY_RULES:IntelligentPendencyDefinition[]=[
- {codigo:'MARKETING_PARAMETROS',titulo:'Configurar Parâmetros de Marketing',categoria:'Marketing',rota:'/central/parametros-marketing',matches:['Google Ads','Meta Ads','Landing Page','Campanhas WhatsApp','Estratégia Comercial Digital','Gestão Google Ads','Gestão Meta Ads']},
+ {codigo:'MARKETING_PARAMETROS',titulo:'Planejamento Operacional das Campanhas',categoria:'Implantação',rota:'/central/parametros-marketing',matches:['Google Ads','Meta Ads','Landing Page','Campanhas WhatsApp','Estratégia Comercial Digital','Gestão Google Ads','Gestão Meta Ads']},
  {codigo:'CRM_PIPELINE',titulo:'Definir Pipeline Comercial',categoria:'Gestão Comercial',matches:['CRM Comercial','CRM Avançado']},
  {codigo:'IA_ESCOPO',titulo:'Definir Escopo do Agente',categoria:'Inteligência Artificial',matches:['Agente de IA','Ativação e Treinamento de Agente de IA']},
  {codigo:'IA_BASE',titulo:'Enviar Base de Conhecimento',categoria:'Inteligência Artificial',matches:['Agente de IA','Ativação e Treinamento de Agente de IA']},

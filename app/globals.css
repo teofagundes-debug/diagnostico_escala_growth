@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+.implementation-configuration .execution-parameters{display:none}
+.operational-planning-action{margin-top:16px;border-left:5px solid var(--green)}
+
 :root { --green:#1f7a4c; --green-dark:#145c39; --ink:#17201b; --muted:#617067; --line:#dce5df; --soft:#f3f7f4; }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }

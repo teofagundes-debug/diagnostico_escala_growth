@@ -80,6 +80,15 @@ export async function POST(req:Request){
     rest(`empresas?id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status_implantacao:stage.project,proxima_missao:{titulo:stage.mission,responsavel:'Escala Vendas e cliente',status:'Pendente'},updated_at:new Date().toISOString()})}),
     body.stage==='implementation'?rest(`planos_implantacao?empresa_id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Implantação Concluída',updated_at:new Date().toISOString()})}):Promise.resolve()
    ]);
+   if(body.stage==='kickoff'){
+    const project=(await rest(`projetos_evolucao?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*,projeto_evolucao_recursos(*)&order=created_at.desc&limit=1`))?.[0],now=new Date().toISOString();
+    if(project){
+     await rest(`projetos_evolucao?id=eq.${encodeURIComponent(project.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Kickoff realizado',updated_at:now})});
+     const marketing=(project.projeto_evolucao_recursos||[]).filter((item:any)=>item.implantar_nesta_fase===true&&['google ads','meta ads','landing page','campanhas whatsapp'].some(name=>String(item.nome_snapshot||'').toLowerCase().includes(name)));
+     for(const item of marketing){const name=String(item.nome_snapshot||''),platform=/google/i.test(name)?'Google Ads':/meta/i.test(name)?'Meta Ads':/landing/i.test(name)?'Landing Page':'Campanhas WhatsApp';await rest('planejamentos_campanhas?on_conflict=projeto_evolucao_id,recurso_id,plataforma',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({empresa_id:empresaId,projeto_evolucao_id:project.id,recurso_id:item.recurso_id,plataforma:platform,objetivo:item.executor_dados?.objetivo||null,investimento_recomendado:Number(item.investimento_recomendado||0),investimento_aprovado:Number(item.investimento_aprovado||0),executor:item.executor||null,responsavel_configuracao:'Equipe de Implantação',status:'Planejamento',updated_at:now})})}
+     if(marketing.length){const existingPendency=(await rest(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&codigo=eq.MARKETING_PARAMETROS&select=id&limit=1`))?.[0],pendency={empresa_id:empresaId,projeto_evolucao_id:project.id,codigo:'MARKETING_PARAMETROS',titulo:'Planejamento Operacional das Campanhas',categoria:'Implantação',status:'Pendente',rota_configuracao:'/central/parametros-marketing',updated_at:now};await rest(existingPendency?`pendencias_inteligentes?id=eq.${encodeURIComponent(existingPendency.id)}`:'pendencias_inteligentes',{method:existingPendency?'PATCH':'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(pendency)})}
+    }
+   }
    await audit(empresaId,ctx.diagnosticoId,stage.project,`Etapa operacional atualizada manualmente para ${stage.project}.`);
    return Response.json({ok:true,message:`${stage.project} registrado com sucesso.`});
   }
