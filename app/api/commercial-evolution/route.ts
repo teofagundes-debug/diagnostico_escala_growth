@@ -6,6 +6,8 @@ const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROL
 const headers=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
 const array=(value:any)=>Array.isArray(value)?value:[];
 const amount=(value:unknown)=>Math.max(0,Number(value)||0);
+const executorOptions=['Escala Vendas','Parceiro do Cliente','Equipe Interna do Cliente','Não executar neste momento'];
+const executionChecklist=(resources:any[],current:any={})=>{const recommended=array(resources).filter((item:any)=>item.recomendado_metodo||['Recomendado','Opcional'].includes(item.classificacao)),marketing=recommended.filter((item:any)=>pendingDefinitions([item]).some(rule=>rule.codigo==='MARKETING_PARAMETROS')),executorDefined=recommended.length>0&&recommended.every((item:any)=>executorOptions.includes(item.executor)),needsMarketingParameters=marketing.some((item:any)=>item.executor==='Escala Vendas');return{...current,estrategia_marketing_definida:marketing.length===0||marketing.every((item:any)=>executorOptions.includes(item.executor)),executor_definido:executorDefined,marketing_parametros:needsMarketingParameters?current.marketing_parametros===true:true}};
 
 async function db(path:string,init?:RequestInit){
  const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init?.headers||{})},cache:'no-store'});
@@ -22,17 +24,18 @@ async function identity(req:Request){
  return rows[0]?{role:'cliente',empresa_id:rows[0].empresa_id}:null;
 }
 async function context(empresaId:string){
- const id=encodeURIComponent(empresaId),[rawVersions,rawProjects,rawPendencies,rawCatalog,rawFinancials,rawDiagnostics,rawMeetings,rawPlans]=await Promise.all([
+ const id=encodeURIComponent(empresaId),[rawVersions,rawProjects,rawPendencies,rawExecutionHistory,rawCatalog,rawFinancials,rawDiagnostics,rawMeetings,rawPlans]=await Promise.all([
   db(`situacoes_comerciais_versoes?empresa_id=eq.${id}&select=*&order=versao.desc`),
   db(`projetos_evolucao?empresa_id=eq.${id}&select=*,projeto_evolucao_recursos(*),pendencias_inteligentes(*)&order=created_at.desc`),
   db(`pendencias_inteligentes?empresa_id=eq.${id}&select=*&order=created_at`),
+  db(`estrategia_execucao_historico?empresa_id=eq.${id}&select=*&order=created_at.desc`).catch(()=>[]),
   db('catalogo_recursos?ativo=eq.true&select=id,codigo,nome,tipo,valor_mensal,valor_avulso,ui,categoria&order=categoria,nome'),
   db(`financeiro_growth?empresa_id=eq.${id}&select=valor_mensalidade,status&limit=1`),
   db(`diagnosticos?empresa_id=eq.${id}&select=id,menor_pilar,relatorio_snapshot&order=created_at.desc&limit=1`),
   db(`reunioes_estrategicas?empresa_id=eq.${id}&select=dados_reuniao&order=created_at.desc&limit=1`),
   db(`planos_estrategicos?empresa_id=eq.${id}&select=objetivos,prioridades,proximos_passos&order=created_at.desc&limit=1`)
- ]),versions=array(rawVersions),pendencies=array(rawPendencies),projects=array(rawProjects).map((project:any)=>({...project,pendencias_inteligentes:pendencies.filter((item:any)=>item.projeto_evolucao_id===project.id)})),catalog=array(rawCatalog),financials=array(rawFinancials),current=versions.find((row:any)=>row.vigente)||null,diagnostic=array(rawDiagnostics)[0]||{},meeting=array(rawMeetings)[0]||{},plan=array(rawPlans)[0]||{},meetingData=meeting.dados_reuniao||{},activeNames=array(current?.recursos).map((item:any)=>item.nome_snapshot||item.nome).filter(Boolean),relationship=meetingData.tipo_relacionamento,baseClient=relationship==='Cliente da Base',priority=plan.objetivos||plan.prioridades||diagnostic.menor_pilar||'Organizar',platform=meetingData.situacao_plataforma||{},motor=composeGrowthProject({catalog,activeResources:activeNames,priority,baseClient,signals:{possui_marketing:Boolean(platform['Google Ads']||platform['Meta Ads']),possui_agencia:Boolean(meetingData.possui_agencia),realiza_campanhas:Boolean(platform['Campanhas WhatsApp']||platform['Google Ads']||platform['Meta Ads'])}});
- return{current,history:versions,projects,catalog,motor,plan,suggestion:{mensalidade:Number(financials[0]?.valor_mensalidade||0),status:financials[0]?.status||null,requiresConfirmation:versions.length===0}};
+ ]),versions=array(rawVersions),pendencies=array(rawPendencies),projects=array(rawProjects).map((project:any)=>{const projectPendencies=pendencies.filter((item:any)=>item.projeto_evolucao_id===project.id),marketingConfigured=projectPendencies.some((item:any)=>item.codigo==='MARKETING_PARAMETROS'&&item.status==='Concluída');return{...project,checklist:{...(project.checklist||{}),marketing_parametros:marketingConfigured||project.checklist?.marketing_parametros===true},pendencias_inteligentes:projectPendencies}}),catalog=array(rawCatalog),financials=array(rawFinancials),current=versions.find((row:any)=>row.vigente)||null,diagnostic=array(rawDiagnostics)[0]||{},meeting=array(rawMeetings)[0]||{},plan=array(rawPlans)[0]||{},meetingData=meeting.dados_reuniao||{},activeNames=array(current?.recursos).map((item:any)=>item.nome_snapshot||item.nome).filter(Boolean),relationship=meetingData.tipo_relacionamento,baseClient=relationship==='Cliente da Base',priority=plan.objetivos||plan.prioridades||diagnostic.menor_pilar||'Organizar',platform=meetingData.situacao_plataforma||{},motor=composeGrowthProject({catalog,activeResources:activeNames,priority,baseClient,signals:{possui_marketing:Boolean(platform['Google Ads']||platform['Meta Ads']),possui_agencia:Boolean(meetingData.possui_agencia),realiza_campanhas:Boolean(platform['Campanhas WhatsApp']||platform['Google Ads']||platform['Meta Ads'])}});
+ return{current,history:versions,projects,executionHistory:array(rawExecutionHistory),catalog,motor,plan,suggestion:{mensalidade:Number(financials[0]?.valor_mensalidade||0),status:financials[0]?.status||null,requiresConfirmation:versions.length===0}};
 }
 const projectPayload=(body:any,current:any)=>{const additional=amount(body.mensalidade_adicional),implantation=amount(body.valor_implantacao_adicional),charge=body.forma_cobranca||'Sem cobrança imediata',noCharge=['Cobrança recorrente existente','Sem cobrança imediata'].includes(charge);return{
  empresa_id:String(body.empresa_id),nome:String(body.nome||'Novo Projeto de Evolução'),tipo:body.tipo||'Inclusão de novo recurso',descricao:body.descricao||null,objetivo:body.objetivo||null,
@@ -45,12 +48,16 @@ const projectPayload=(body:any,current:any)=>{const additional=amount(body.mensa
 async function replaceResources(projectId:string,resources:any[]){
  await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(projectId)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
  if(!resources.length)return;
- await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>({projeto_evolucao_id:projectId,recurso_id:item.id||item.recurso_id,nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:amount(item.valor_implantacao),valor_mensal:amount(item.valor_mensal),classificacao:item.classificacao||'Recomendado',origem:item.origem||'Consultor',peso:item.peso||null,fase:item.fase||'Recomendações Estratégicas'})))});
+ await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>({projeto_evolucao_id:projectId,recurso_id:item.id||item.recurso_id,nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:amount(item.valor_implantacao),valor_mensal:amount(item.valor_mensal),classificacao:item.classificacao||'Recomendado',origem:item.origem||'Consultor',peso:item.peso||null,fase:item.fase||'Recomendações Estratégicas',recomendado_metodo:Boolean(item.recomendado_metodo||['Recomendado','Opcional'].includes(item.classificacao)),contratado:item.executor==='Escala Vendas',executor:executorOptions.includes(item.executor)?item.executor:null,executor_dados:item.executor_dados||{},decisao_em:item.executor?new Date().toISOString():null,decisao_por:item.executor?(item.decisao_por||'Usuário Master'):null})))});
 }
 async function syncPendencies(project:any,resources:any[]){
- const definitions=pendingDefinitions(resources),activeCodes=definitions.map(item=>item.codigo),now=new Date().toISOString(),existing=array(await db(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=id,codigo,status`));
+ const definitions=pendingDefinitions(resources.filter((item:any)=>item.executor==='Escala Vendas')),activeCodes=definitions.map(item=>item.codigo),now=new Date().toISOString(),existing=array(await db(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=id,codigo,status`));
  for(const item of definitions){const current=existing.find((row:any)=>row.codigo===item.codigo);await db('pendencias_inteligentes?on_conflict=projeto_evolucao_id,codigo',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({empresa_id:project.empresa_id,projeto_evolucao_id:project.id,codigo:item.codigo,titulo:item.titulo,categoria:item.categoria,rota_configuracao:item.rota||null,solucoes_origem:item.solutions,status:current?.status==='Concluída'?'Concluída':'Pendente',updated_at:now})})}
  for(const item of existing.filter((row:any)=>!activeCodes.includes(row.codigo)))await db(`pendencias_inteligentes?id=eq.${encodeURIComponent(item.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Dispensada',updated_at:now})});
+}
+async function recordExecutionHistory(project:any,resources:any[],usuario='Usuário Master'){
+ const previous=array(await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=recurso_id,nome_snapshot,executor,executor_dados`)),rows=resources.flatMap((item:any)=>{const recursoId=item.id||item.recurso_id,current=previous.find((row:any)=>row.recurso_id===recursoId),nextExecutor=executorOptions.includes(item.executor)?item.executor:null,nextData=item.executor_dados||{};if(current&&current.executor===nextExecutor&&JSON.stringify(current.executor_dados||{})===JSON.stringify(nextData))return[];if(!nextExecutor&&!current?.executor)return[];return[{empresa_id:project.empresa_id,projeto_evolucao_id:project.id,recurso_id:recursoId||null,nome_snapshot:item.nome||item.nome_snapshot||'Solução recomendada',executor_anterior:current?.executor||null,executor_novo:nextExecutor,dados_anteriores:current?.executor_dados||{},dados_novos:nextData,alterado_por:usuario,motivo:item.motivo_alteracao_executor||'Definição da Estratégia de Execução'}]});
+ if(rows.length)await db('estrategia_execucao_historico',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(rows)});
 }
 
 const normalize=(value:unknown)=>String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
@@ -97,13 +104,13 @@ export async function POST(req:Request){
    if(!source)return Response.json({error:'Projeto não encontrado.'},{status:404});
    const current=(await context(source.empresa_id)).current,payload=projectPayload({...source,empresa_id:source.empresa_id,nome:`${source.nome} — Cópia`},current);
    const saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...payload,status:'Rascunho'})}))[0];
-   await replaceResources(saved.id,array(source.projeto_evolucao_recursos));await syncPendencies(saved,array(source.projeto_evolucao_recursos));return Response.json({ok:true,project:saved},{status:201});
+   await recordExecutionHistory(saved,array(source.projeto_evolucao_recursos),body.usuario||'Usuário Master');await replaceResources(saved.id,array(source.projeto_evolucao_recursos));await syncPendencies(saved,array(source.projeto_evolucao_recursos));return Response.json({ok:true,project:saved},{status:201});
   }
   const empresaId=String(body.empresa_id||'');if(!empresaId)return Response.json({error:'Empresa não informada.'},{status:400});
   const currentContext=await context(empresaId),duplicate=currentContext.projects.find((project:any)=>project.status==='Rascunho'&&project.tipo===body.tipo);
   if(duplicate&&!body.allow_duplicate)return Response.json({error:'Já existe um Projeto de Evolução deste tipo em andamento.',code:'DUPLICATE_DRAFT',project:duplicate},{status:409});
-  const saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...projectPayload(body,currentContext.current),status:'Rascunho'})}))[0];
-  await replaceResources(saved.id,array(body.recursos));await syncPendencies(saved,array(body.recursos));return Response.json({ok:true,project:saved},{status:201});
+  const resources=array(body.recursos),saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...projectPayload({...body,checklist:executionChecklist(resources,body.checklist)},currentContext.current),status:'Rascunho'})}))[0];
+  await recordExecutionHistory(saved,resources,body.usuario||'Usuário Master');await replaceResources(saved.id,resources);await syncPendencies(saved,resources);return Response.json({ok:true,project:saved},{status:201});
  }catch(error:any){return Response.json({error:error?.message||'Não foi possível criar o Projeto de Evolução.'},{status:500})}
 }
 
@@ -112,11 +119,21 @@ export async function PATCH(req:Request){
   if(!await isMaster(req))return Response.json({error:'Acesso exclusivo do Usuário Master.'},{status:403});
   const body=await req.json(),id=String(body.id||''),now=new Date().toISOString();if(!id)return Response.json({error:'Projeto não informado.'},{status:400});
   const existing=(await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}&select=*&limit=1`))[0];if(!existing)return Response.json({error:'Projeto não encontrado.'},{status:404});
+  if(body.action==='execution-strategy'){
+   if(existing.status!=='Rascunho')return Response.json({error:'A Estratégia de Execução somente pode ser alterada em projetos em Rascunho.'},{status:409});
+   const resources=array(body.recursos),checklist=executionChecklist(resources,existing.checklist);
+   await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master');
+   await replaceResources(id,resources);
+   await syncPendencies(existing,resources);
+   const monthly=resources.filter((item:any)=>item.movimento==='Adicionar'&&item.executor==='Escala Vendas').reduce((sum:number,item:any)=>sum+amount(item.valor_mensal),0),newMonthly=Math.max(0,amount(existing.mensalidade_atual)+monthly-amount(existing.desconto_recorrente));
+   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:monthly,nova_mensalidade:newMonthly,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
+   return Response.json({ok:true,checklist,mensalidade_adicional:monthly,nova_mensalidade:newMonthly});
+  }
   if(body.action==='update'){
    if(existing.status!=='Rascunho')return Response.json({error:'Somente Projetos em Rascunho podem ser editados.'},{status:409});
-   const current=(await context(existing.empresa_id)).current,payload=projectPayload({...body,empresa_id:existing.empresa_id},current);
+   const resources=array(body.recursos),current=(await context(existing.empresa_id)).current,payload=projectPayload({...body,empresa_id:existing.empresa_id,checklist:executionChecklist(resources,existing.checklist)},current);
    await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,updated_at:now,responsavel_atualizacao:body.responsavel_atualizacao||'Usuário Master'})});
-   await replaceResources(id,array(body.recursos));await syncPendencies(existing,array(body.recursos));return Response.json({ok:true});
+   await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master');await replaceResources(id,resources);await syncPendencies(existing,resources);return Response.json({ok:true});
   }
   if(body.action==='publish'){
    return Response.json({error:'A publicação oficial deve ser realizada em Publicação e Acesso, para manter Projeto, Contrato, versão e convite sincronizados.'},{status:409});
