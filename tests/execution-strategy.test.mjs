@@ -25,7 +25,7 @@ test('expõe a decisão de fase, os três executores e a visão do cliente',()=>
  const portal=read('components/PortalApp.tsx');
  for(const executor of ['Escala Vendas','Parceiro do Cliente','Equipe Interna do Cliente'])assert.match(panel,new RegExp(executor));
  assert.match(panel,/Será implantado nesta fase/);
- assert.match(panel,/Investimento recomendado pelo Método/);
+ assert.match(panel,/Investimento mínimo recomendado/);
  assert.match(panel,/Investimento aprovado para esta fase/);
  assert.match(portal,/Estratégia de Execução/);
 });

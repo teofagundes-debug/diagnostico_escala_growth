@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 
 const statuses=['Planejamento','Aguardando Material','Em Configuração','Em Aprovação','Publicada','Otimização','Pausada','Finalizada'];
 const checklistLabels:Record<string,string>={objetivo_confirmado:'Objetivo confirmado',publico_definido:'Público definido',regiao_definida:'Região definida',contas_informadas:'Contas informadas',landing_configurada:'Landing Page configurada',conversoes_configuradas:'Conversões configuradas',pronta_publicacao:'Campanha pronta para publicação'};
-const platformName=(name:string)=>/google/i.test(name)?'Google Ads':/meta/i.test(name)?'Meta Ads':/landing/i.test(name)?'Landing Page':'Campanhas WhatsApp';
+const platformName=(name:string)=>/google/i.test(name)?'Google Ads':/meta/i.test(name)?'Meta Ads':/landing/i.test(name)?'Landing Page':/whatsapp/i.test(name)?'Campanhas WhatsApp':name;
 
 export function MarketingParameters(){
  const [context,setContext]=useState<any>(null),[plans,setPlans]=useState<any[]>([]),[error,setError]=useState(''),[message,setMessage]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
