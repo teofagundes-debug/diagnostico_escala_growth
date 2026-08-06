@@ -1,36 +1,15 @@
 export type GrowthClassification='Obrigatório'|'Recomendado'|'Opcional';
 
-const normalize=(value:unknown)=>String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
-const BASE=['Plataforma Nimble','WhatsApp Oficial','CRM Comercial','Dashboard Executivo','Treinamento Comercial','Implantação Operacional'];
-const STRATEGY:Record<string,string[]>={
- atrair:['Gestão Google Ads','Gestão Meta Ads','Landing Page','Campanhas WhatsApp','Estratégia Comercial Digital','SEO','Conteúdo','LinkedIn'],
- organizar:['CRM Avançado','Integrações','Automações','Dashboard Executivo','Padronização'],
- acompanhar:['CRM Comercial','Dashboard Executivo','Cadência Comercial','Automações','Reuniões de Evolução'],
- converter:['Agente de IA','Treinamento Comercial','Cadência Comercial','Qualificação','Automações'],
- crescer:['Dashboard Executivo','Business Intelligence','Indicadores','Reuniões de Evolução','Escalabilidade']
-};
-export const GROWTH_WEIGHTS:Record<string,Record<string,number>>={
- 'Gestão Google Ads':{atrair:10,organizar:1,converter:2,crescer:8},
- 'Gestão Meta Ads':{atrair:10,organizar:1,converter:3,crescer:8},
- 'CRM Comercial':{atrair:3,organizar:10,converter:9,crescer:8},
- 'Dashboard Executivo':{atrair:2,organizar:8,converter:7,crescer:10},
- 'Agente de IA':{atrair:4,organizar:7,converter:10,crescer:8}
-};
-const aliases:Record<string,string[]>={
- 'Plataforma Nimble':['Licença Plataforma Nimble'],
- 'Landing Page':['Landing Page Institucional'],
- 'Treinamento Comercial':['Treinamento da Equipe'],
- 'Implantação Operacional':['Implantação Técnica'],
- 'Business Intelligence':['BI'],
- 'Automações':['Integrações e Automações'],
- 'Agente de IA':['Ativação e Treinamento de Agente de IA','Gestão de Agente de IA']
-};
-const find=(catalog:any[],name:string)=>catalog.find(item=>[name,...(aliases[name]||[])].some(alias=>normalize(item.nome)===normalize(alias)))||null;
-const has=(names:string[],name:string)=>[name,...(aliases[name]||[])].some(alias=>names.some(current=>normalize(current)===normalize(alias)));
+const normalize=(value:unknown)=>String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const compact=(value:unknown)=>normalize(value).replace(/\s/g,'');
 const list=(value:unknown):any[]=>Array.isArray(value)?value:value===null||value===undefined||value===''?[]:[value];
 const textList=(value:unknown):string[]=>list(value).flatMap(item=>{if(typeof item==='string'){const trimmed=item.trim();if(trimmed.startsWith('[')||trimmed.startsWith('{')){try{return textList(JSON.parse(trimmed))}catch{}}return item.split(/[\n,;]+/)}if(item?.nome)return[item.nome];if(item&&typeof item==='object')return Object.values(item).flatMap(textList);return[]}).map(item=>String(item).trim()).filter(Boolean);
+const sameSolution=(a:unknown,b:unknown)=>{const left=compact(a),right=compact(b);return left===right||left.includes(right)||right.includes(left)};
+const find=(catalog:any[],name:string)=>catalog.find(item=>sameSolution(item.nome,name))||null;
+const has=(names:string[],name:string)=>names.some(current=>sameSolution(current,name));
 const pillarKey=(value:unknown)=>['atrair','organizar','acompanhar','converter','crescer'].find(key=>normalize(value).includes(key));
-const includesAny=(text:string,terms:string[])=>terms.some(term=>text.includes(normalize(term)));
+const tokens=(value:unknown)=>textList(value).flatMap(item=>normalize(item).split(/\s+/)).filter(item=>item.length>=4);
+
 type DecisionSignals={
  pillarScores?:Record<string,number>;
  questionScores?:Array<{pilar?:string;pergunta?:string;valor?:number}>;
@@ -39,48 +18,46 @@ type DecisionSignals={
  approvedRecommendations?:unknown;
  removedRecommendations?:unknown;
  newRecommendations?:unknown;
- possui_marketing?:boolean|null;
- possui_agencia?:boolean|null;
- realiza_campanhas?:boolean|null;
  [key:string]:unknown;
 };
-type Candidate={name:string;weight:number;reasons:string[]};
-const addCandidate=(map:Map<string,Candidate>,name:string,weight:number,reason:string)=>{const key=normalize(name),current=map.get(key);if(!current||weight>current.weight)map.set(key,{name,weight,reasons:[...(current?.reasons||[]),reason]});else if(!current.reasons.includes(reason))current.reasons.push(reason)};
-const solutionParameters=(item:any)=>({objetivo_padrao:item.objetivo_padrao||null,tipo_implantacao:item.tipo_implantacao||null,tempo_medio_implantacao:item.tempo_medio_implantacao||null,treinamento_obrigatorio:item.treinamento_obrigatorio===true,gera_pendencias:item.gera_pendencias===true,abre_planejamento_operacional:item.abre_planejamento_operacional===true,permite_executor_terceiro:item.permite_executor_terceiro!==false,permite_equipe_interna:item.permite_equipe_interna!==false,investimento_minimo_recomendado:Number(item.investimento_minimo_recomendado||0),investimento_ideal_minimo:item.investimento_ideal_minimo==null?null:Number(item.investimento_ideal_minimo),investimento_ideal_maximo:item.investimento_ideal_maximo==null?null:Number(item.investimento_ideal_maximo),observacoes_estrategicas:item.observacoes_estrategicas||null});
+type Candidate={item:any;weight:number;reasons:string[]};
+
+export const solutionParameters=(item:any)=>({
+ objetivo_padrao:item.objetivo_padrao||null,resultado_esperado:item.resultado_esperado||null,
+ criterios_recomendacao:list(item.criterios_recomendacao),quando_recomendar:item.quando_recomendar||null,quando_nao_recomendar:item.quando_nao_recomendar||null,
+ tipo_implantacao:item.tipo_implantacao||null,tempo_medio_implantacao:item.tempo_medio_implantacao||null,
+ ordem_implantacao:item.ordem_implantacao||null,semana_sugerida:item.semana_sugerida||null,duracao_padrao:item.duracao_padrao||null,
+ treinamento_obrigatorio:item.treinamento_obrigatorio===true,gera_pendencias:item.gera_pendencias===true,codigo_pendencia_padrao:item.codigo_pendencia_padrao||null,titulo_pendencia_padrao:item.titulo_pendencia_padrao||null,rota_configuracao_padrao:item.rota_configuracao_padrao||null,
+ abre_planejamento_operacional:item.abre_planejamento_operacional===true,permite_executor_terceiro:item.permite_executor_terceiro!==false,permite_equipe_interna:item.permite_equipe_interna!==false,
+ impacta_financeiro:item.impacta_financeiro!==false,impacta_cronograma:item.impacta_cronograma!==false,impacta_implantacao:item.impacta_implantacao!==false,cria_checklist:item.cria_checklist===true,disponivel_evolucao_futura:item.disponivel_evolucao_futura!==false,
+ investimento_minimo_recomendado:Number(item.investimento_minimo_recomendado||0),investimento_ideal_minimo:item.investimento_ideal_minimo==null?null:Number(item.investimento_ideal_minimo),investimento_ideal_maximo:item.investimento_ideal_maximo==null?null:Number(item.investimento_ideal_maximo),
+ valor_implantacao_padrao:item.valor_implantacao_padrao==null?null:Number(item.valor_implantacao_padrao),valor_mensalidade_padrao:item.valor_mensalidade_padrao==null?null:Number(item.valor_mensalidade_padrao),
+ recursos_relacionados:list(item.recursos_relacionados),dependencias_estruturadas:list(item.dependencias_estruturadas),criterios_conclusao:list(item.criterios_conclusao),entregas_padrao:list(item.entregas_padrao),
+ observacoes_estrategicas:item.observacoes_estrategicas||null
+});
 const withLibraryParameters=(item:any)=>({...item,parametros_metodo:solutionParameters(item),investimento_recomendado:Number(item.investimento_minimo_recomendado||0)});
-const motorPendingDefinitions=(resources:any[])=>{const enabled=resources.filter(item=>item.gera_pendencias!==false),names=enabled.map(item=>item.nome),hasAny=(values:string[])=>names.some(name=>values.some(value=>normalize(name).includes(normalize(value))||normalize(value).includes(normalize(name))));return[
- {codigo:'MARKETING_PARAMETROS',titulo:'Configurar Parâmetros de Marketing',when:['Google Ads','Meta Ads','Landing Page','Campanhas WhatsApp','Estratégia Comercial Digital']},
- {codigo:'CRM_PIPELINE',titulo:'Definir Pipeline Comercial',when:['CRM Comercial','CRM Avançado']},
- {codigo:'IA_ESCOPO',titulo:'Definir Escopo do Agente',when:['Agente de IA']},
- {codigo:'DASHBOARD_INDICADORES',titulo:'Definir Indicadores',when:['Dashboard Executivo']},
- {codigo:'WHATSAPP_NUMERO',titulo:'Validar Número do WhatsApp',when:['WhatsApp Oficial']}
-].filter(item=>hasAny(item.when))};
+const pendingCode=(item:any)=>`SOLUCAO_${String(item.codigo||item.id||item.nome).toUpperCase().replace(/[^A-Z0-9]+/g,'_')}`;
 
 export function composeGrowthProject({catalog,activeResources=[],priority='Organizar',baseClient=false,signals={}}:{catalog:any[];activeResources?:string[];priority?:string;baseClient?:boolean;signals?:DecisionSignals}){
- const scores=signals.pillarScores||{},scoreEntries=Object.entries(scores).filter(([,score])=>Number.isFinite(Number(score))),lowestPillar=scoreEntries.sort((a,b)=>Number(a[1])-Number(b[1]))[0]?.[0];
+ const scores=signals.pillarScores||{},scoreEntries=Object.entries(scores).filter(([,score])=>Number.isFinite(Number(score))),lowestPillar=[...scoreEntries].sort((a,b)=>Number(a[1])-Number(b[1]))[0]?.[0];
  const objective=pillarKey(signals.meetingPriority)||pillarKey(lowestPillar)||pillarKey(priority)||'organizar';
- const mandatory=baseClient?[]:BASE.map(name=>find(catalog,name)).filter(Boolean).filter(item=>!has(activeResources,item.nome)).map(item=>({...withLibraryParameters(item),classificacao:'Obrigatório' as GrowthClassification,origem:'Estrutura Base do Método',peso:10,fase:'Estrutura Obrigatória'}));
+ const activeCatalog=catalog.filter(item=>item.ativo!==false);
+ const mandatory=baseClient?[]:activeCatalog.filter(item=>item.classificacao_comercial==='Obrigatório'||item.obrigatoriedade==='Obrigatório').filter(item=>!has(activeResources,item.nome)).map(item=>({...withLibraryParameters(item),classificacao:'Obrigatório' as GrowthClassification,origem:'Estrutura Obrigatória definida na Biblioteca',peso:10,fase:'Estrutura Obrigatória'}));
+ const weakQuestions=(signals.questionScores||[]).filter(item=>Number(item.valor)<=2);
+ const evidence=[objective,priority,signals.meetingPriority,weakQuestions.map(item=>`${item.pilar||''} ${item.pergunta||''}`),(signals.openAnswers||[]).map((item:any)=>typeof item==='string'?item:`${item.pergunta||''} ${item.resposta||''}`)].flat(Infinity).join(' ');
+ const evidenceNormalized=normalize(evidence),removed=textList(signals.removedRecommendations),approved=[...textList(signals.approvedRecommendations),...textList(signals.newRecommendations)];
  const candidates=new Map<string,Candidate>();
- STRATEGY[objective].forEach((name,index)=>addCandidate(candidates,name,Math.max(5,9-index),`Prioridade calculada: ${objective}`));
- for(const [pillar,score] of scoreEntries){if(Number(score)>60)continue;(STRATEGY[pillarKey(pillar)||'']||[]).slice(0,3).forEach((name,index)=>addCandidate(candidates,name,8-index,`${pillar}: maturidade de ${Number(score)}%`))}
- const questionText=signals.questionScores||[];
- const weakQuestions=questionText.filter(item=>Number(item.valor)<=2),weakText=normalize(weakQuestions.map(item=>`${item.pilar} ${item.pergunta}`).join(' '));
- const openText=normalize((signals.openAnswers||[]).map((item:any)=>typeof item==='string'?item:`${item.pergunta||''} ${item.resposta||''}`).join(' '));
- const evidenceText=`${weakText}${openText}`;
- if(includesAny(evidenceText,['canais','origem','campanha','lead','oportunidade','divulgação','tráfego']))for(const name of ['Gestão Google Ads','Gestão Meta Ads','Landing Page','Campanhas WhatsApp'])addCandidate(candidates,name,10,'Diagnóstico aponta necessidade de aquisição e rastreio de oportunidades');
- if(includesAny(evidenceText,['centralizadas','responsável','distribuição','histórico','registrar','organização','controle']))for(const name of ['CRM Comercial','WhatsApp Oficial','Integrações','Dashboard Executivo'])addCandidate(candidates,name,10,'Diagnóstico aponta falha de organização comercial');
- if(includesAny(evidenceText,['retorno','andamento','etapas','paradas','acompanhamento','demora','esquec']))for(const name of ['CRM Comercial','Dashboard Executivo','Cadência Comercial','Automações'])addCandidate(candidates,name,10,'Diagnóstico aponta perda no acompanhamento das oportunidades');
- if(includesAny(evidenceText,['qualificar','conversão','motivos de perda','próximo passo','vendas']))for(const name of ['Treinamento Comercial','Agente de IA','Cadência Comercial','Qualificação'])addCandidate(candidates,name,10,'Diagnóstico aponta gargalo de conversão');
- if(includesAny(evidenceText,['indicadores','metas','prever','previsibilidade','dados','crescimento']))for(const name of ['Dashboard Executivo','Business Intelligence','Indicadores','Reuniões de Evolução'])addCandidate(candidates,name,10,'Diagnóstico aponta necessidade de gestão por indicadores');
- const hasMarketing=signals.possui_marketing===true||activeResources.some(name=>includesAny(normalize(name),['googleads','metaads','marketing']));
- const needsAcquisition=objective==='atrair'&&!hasMarketing&&(signals.possui_agencia!==true||signals.realiza_campanhas!==true);
- if(needsAcquisition)for(const name of ['Gestão Google Ads','Gestão Meta Ads','Landing Page','Campanhas WhatsApp','Estratégia Comercial Digital'])addCandidate(candidates,name,12,'Gatilho automático de aquisição: objetivo Atrair sem estrutura de Marketing identificada');
- for(const name of textList(signals.approvedRecommendations))addCandidate(candidates,name,100,'Solução validada na Reunião Estratégica');
- for(const name of textList(signals.newRecommendations))addCandidate(candidates,name,90,'Nova recomendação registrada na Reunião Estratégica');
- const removed=textList(signals.removedRecommendations);
- const unavailable=[...activeResources,...mandatory.map((item:any)=>item.nome)];
- let strategic=[...candidates.values()].filter(candidate=>!removed.some(name=>normalize(name)===normalize(candidate.name))).map(candidate=>{const item=find(catalog,candidate.name);return item?{...withLibraryParameters(item),classificacao:(candidate.weight>=8?'Recomendado':'Opcional') as GrowthClassification,origem:candidate.reasons.join(' · '),motivos_decisao:candidate.reasons,peso:candidate.weight,fase:candidate.weight>=8?'Recomendações Estratégicas':'Evoluções Futuras'}:null}).filter(Boolean).filter((item:any)=>!has(unavailable,item.nome));
- strategic.sort((a,b)=>b.peso-a.peso);
- const all=[...mandatory,...strategic],pendencies=motorPendingDefinitions(all);
- return{objective,baseClient,mandatory,strategic:strategic.filter((item:any)=>item.classificacao==='Recomendado'),future:strategic.filter((item:any)=>item.classificacao==='Opcional'),all,pendencies,nextActions:pendencies.map(item=>item.titulo),decisionEvidence:{pillarScores:scores,weakQuestions:weakQuestions.map(item=>item.pergunta),meetingPriority:signals.meetingPriority||null,approved:textList(signals.approvedRecommendations),removed},schedule:[{fase:'Estrutura Obrigatória',items:mandatory},{fase:'Recomendações Estratégicas',items:strategic.filter((item:any)=>item.classificacao==='Recomendado')},{fase:'Evoluções Futuras',items:strategic.filter((item:any)=>item.classificacao==='Opcional')}]};
+ const add=(item:any,weight:number,reason:string)=>{const key=compact(item.nome),current=candidates.get(key);if(!current||weight>current.weight)candidates.set(key,{item,weight,reasons:[...(current?.reasons||[]),reason]});else if(!current.reasons.includes(reason))current.reasons.push(reason)};
+ for(const item of activeCatalog){
+  if(mandatory.some((required:any)=>required.id===item.id)||has(activeResources,item.nome)||removed.some(name=>sameSolution(name,item.nome)))continue;
+  const excluded=tokens(item.quando_nao_recomendar).some(token=>evidenceNormalized.includes(token));if(excluded)continue;
+  const criteria=tokens(item.criterios_recomendacao),matched=criteria.filter(token=>evidenceNormalized.includes(token));
+  const whenMatched=tokens(item.quando_recomendar).filter(token=>evidenceNormalized.includes(token));
+  if(matched.length||whenMatched.length)add(item,Math.min(10,5+matched.length+whenMatched.length),`Critérios da Biblioteca correspondem ao diagnóstico (${[...matched,...whenMatched].join(', ')})`);
+  if(approved.some(name=>sameSolution(name,item.nome)))add(item,10,'Solução validada na Reunião Estratégica');
+ }
+ const strategic=[...candidates.values()].map(({item,weight,reasons})=>({...withLibraryParameters(item),classificacao:(weight>=8?'Recomendado':'Opcional') as GrowthClassification,origem:reasons.join(' · '),motivos_decisao:reasons,peso:weight,fase:weight>=8?'Recomendações Estratégicas':'Evoluções Futuras'})).sort((a,b)=>b.peso-a.peso);
+ const all=[...mandatory,...strategic];
+ const pendencies=[...all.filter((item:any)=>item.gera_pendencias===true).reduce((map:Map<string,any>,item:any)=>{const codigo=item.codigo_pendencia_padrao||pendingCode(item),current=map.get(codigo);map.set(codigo,{codigo,titulo:item.titulo_pendencia_padrao||`Configurar ${item.nome}`,recurso_id:item.id,solucoes:[...(current?.solucoes||[]),item.nome]});return map},new Map()).values()];
+ return{objective,baseClient,mandatory,strategic:strategic.filter(item=>item.classificacao==='Recomendado'),future:strategic.filter(item=>item.classificacao==='Opcional'),all,pendencies,nextActions:pendencies.map(item=>item.titulo),decisionEvidence:{pillarScores:scores,weakQuestions:weakQuestions.map(item=>item.pergunta),meetingPriority:signals.meetingPriority||null,approved,removed},schedule:[{fase:'Estrutura Obrigatória',items:mandatory.filter((item:any)=>item.impacta_cronograma!==false)},{fase:'Recomendações Estratégicas',items:strategic.filter((item:any)=>item.classificacao==='Recomendado'&&item.impacta_cronograma!==false)},{fase:'Evoluções Futuras',items:strategic.filter((item:any)=>item.classificacao==='Opcional'&&item.impacta_cronograma!==false)}]};
 }

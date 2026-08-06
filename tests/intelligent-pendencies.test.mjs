@@ -15,20 +15,20 @@ const css=read('app/globals.css');
 
 test('Motor recommends products, configurations and next actions',()=>{
  const motor=read('lib/motor-growth.ts');
- assert.match(motor,/pendencies/);assert.match(motor,/nextActions/);assert.match(motor,/motorPendingDefinitions\(all\)/);
+ assert.match(motor,/pendencies/);assert.match(motor,/nextActions/);assert.match(motor,/codigo_pendencia_padrao/);
 });
 
-test('Atrair creates one consolidated Marketing configuration pendency',()=>{
- for(const solution of ['Google Ads','Meta Ads','Landing Page','Campanhas WhatsApp','Estratégia Comercial Digital'])assert.match(rules,new RegExp(solution));
- assert.equal((rules.match(/codigo:'MARKETING_PARAMETROS'/g)||[]).length,1);
- assert.match(rules,/Configurar Parâmetros de Marketing/);
+test('Library parameters create consolidated pendencies without fixed solution rules in code',()=>{
+ assert.match(rules,/parameters\.codigo_pendencia_padrao/);
+ assert.match(rules,/reduce/);
+ assert.doesNotMatch(rules,/Google Ads|Meta Ads|CRM Comercial/);
 });
 
 test('project persists and renders intelligent pendencies automatically',()=>{
  assert.match(migration,/unique \(projeto_evolucao_id, codigo\)/);
  assert.match(evolutionApi,/syncPendencies/);assert.match(evolutionApi,/pendingDefinitions/);
  assert.doesNotMatch(evolutionApi,/select=tipo_relacionamento,situacao_plataforma/);
- assert.match(evolutionUi,/Pendências do Projeto/);assert.match(evolutionUi,/Configurar/);
+ assert.match(evolutionUi,/Configurações do Projeto/);assert.match(evolutionUi,/Configurar/);
 });
 
 test('regeneration synchronizes Marketing recommendations with the Evolution Project',()=>{
