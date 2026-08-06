@@ -109,8 +109,11 @@ export async function POST(req:Request){
    if(!String(plan?.parecer_consultor||diagnostic?.parecer_consultor||diagnostic?.parecer||'').trim())pending.push('Preencher o Parecer do Consultor');
    if(!plan||!['Plano Concluído','Concluído','Plano Liberado ao Cliente'].includes(plan.status))pending.push('Concluir o Plano Estratégico');
    if(!project)pending.push('Preparar um Projeto de Evolução em Rascunho');
+   if(project&&!project.checklist?.configuracoes_implantacao_concluidas)pending.push('Concluir as Configurações da Implantação');
    if(project&&!project.checklist?.executor_definido)pending.push('Definir a Estratégia de Execução e o executor de cada solução recomendada');
    if(project&&!project.checklist?.estrategia_marketing_definida)pending.push('Definir a Estratégia de Marketing');
+   if(project&&!project.checklist?.investimento_aprovado_registrado)pending.push('Registrar o investimento aprovado para esta fase');
+   if(project&&!project.checklist?.resumo_financeiro_atualizado)pending.push('Atualizar o Resumo Financeiro');
    if(!documentReady)pending.push('Prepare o Contrato/Termo para continuar.');
    if(!termSelected&&contract&&contract.status!=='Revisado')pending.push('Revisar e confirmar o Contrato/Termo');
    for(const [field,label] of [['razao_social','Razão Social'],['cpf_cnpj','CPF/CNPJ'],['endereco','Endereço'],['cidade','Cidade'],['estado','Estado'],['cep','CEP']] as const)if(!String(data.company?.[field]||'').trim())pending.push(`Completar ${label}`);
