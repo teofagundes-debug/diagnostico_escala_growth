@@ -30,12 +30,12 @@ export const solutionParameters=(item:any)=>({
  treinamento_obrigatorio:item.treinamento_obrigatorio===true,gera_pendencias:item.gera_pendencias===true,codigo_pendencia_padrao:item.codigo_pendencia_padrao||null,titulo_pendencia_padrao:item.titulo_pendencia_padrao||null,rota_configuracao_padrao:item.rota_configuracao_padrao||null,
  abre_planejamento_operacional:item.abre_planejamento_operacional===true,permite_executor_terceiro:item.permite_executor_terceiro!==false,permite_equipe_interna:item.permite_equipe_interna!==false,
  impacta_financeiro:item.impacta_financeiro!==false,impacta_cronograma:item.impacta_cronograma!==false,impacta_implantacao:item.impacta_implantacao!==false,cria_checklist:item.cria_checklist===true,disponivel_evolucao_futura:item.disponivel_evolucao_futura!==false,
- investimento_minimo_recomendado:Number(item.investimento_minimo_recomendado||0),
+ utiliza_investimento_recomendado:item.utiliza_investimento_recomendado===true,investimento_minimo_recomendado:item.utiliza_investimento_recomendado===true?Number(item.investimento_minimo_recomendado||0):0,
  valor_implantacao_padrao:item.valor_implantacao_padrao==null?null:Number(item.valor_implantacao_padrao),valor_mensalidade_padrao:item.valor_mensalidade_padrao==null?null:Number(item.valor_mensalidade_padrao),
  recursos_relacionados:list(item.recursos_relacionados),dependencias_estruturadas:list(item.dependencias_estruturadas),criterios_conclusao:list(item.criterios_conclusao),entregas_padrao:list(item.entregas_padrao),
  observacoes_estrategicas:item.observacoes_estrategicas||null
 });
-const withLibraryParameters=(item:any)=>({...item,parametros_metodo:solutionParameters(item),investimento_recomendado:Number(item.investimento_minimo_recomendado||0)});
+const withLibraryParameters=(item:any)=>({...item,parametros_metodo:solutionParameters(item),investimento_recomendado:item.utiliza_investimento_recomendado===true?Number(item.investimento_minimo_recomendado||0):0});
 const pendingCode=(item:any)=>`SOLUCAO_${String(item.codigo||item.id||item.nome).toUpperCase().replace(/[^A-Z0-9]+/g,'_')}`;
 
 export function composeGrowthProject({catalog,activeResources=[],priority='Organizar',baseClient=false,signals={}}:{catalog:any[];activeResources?:string[];priority?:string;baseClient?:boolean;signals?:DecisionSignals}){
