@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {acquisitionReadiness,evidenceFromAnswerMap,READINESS_CAPABILITIES,structuredOperationalContext} from '../lib/evidenceEngine.ts';
+
+const evidence=(capability,score)=>({evidence_code:`TEST_${capability}_${score}`,dimension:'CONVERTER',capability,score,severity:score<=1?'CRITICO':score===2?'ATENCAO':'ESTRUTURADO',fact:`${capability} ${score}`,source_question:capability,source_question_id:capability});
+const readiness=(scores)=>acquisitionReadiness(Object.entries(scores).map(([capability,score])=>evidence(capability,score)));
+const all=(score)=>Object.fromEntries(READINESS_CAPABILITIES.map(capability=>[capability,score]));
+
+test('1. todos os componentes em 4 resultam em prontidão alta sem limitador',()=>{const result=readiness(all(4));assert.equal(result.score_base,100);assert.equal(result.classification,'ALTA');assert.deepEqual(result.limiters,[])});
+test('2. velocidade crítica impede classificação alta',()=>{const result=readiness({...all(4),VELOCIDADE_ATENDIMENTO:1});assert.ok(result.score_base>=75);assert.equal(result.classification,'MEDIA');assert.match(result.limiters.join(' '),/Velocidade/)});
+test('3. responsabilidade crítica impede classificação alta',()=>{const result=readiness({...all(4),RESPONSABILIDADE:1});assert.equal(result.classification,'MEDIA');assert.match(result.limiters.join(' '),/Responsabilidade/)});
+test('4. controle de retorno crítico impede classificação alta',()=>{const result=readiness({...all(4),CONTROLE_RETORNO:1});assert.equal(result.classification,'MEDIA');assert.match(result.limiters.join(' '),/retorno/)});
+test('5. três componentes críticos limitam a classificação a baixa',()=>{const result=readiness({...all(4),VELOCIDADE_ATENDIMENTO:1,RESPONSABILIDADE:1,CONTROLE_RETORNO:1});assert.equal(result.classification,'BAIXA');assert.match(result.limiters.join(' '),/Três ou mais/)});
+test('6. componente ausente não entra como zero no denominador',()=>{const scores=all(4);delete scores.VELOCIDADE_ATENDIMENTO;const result=readiness(scores);assert.equal(result.score_base,100);assert.ok(result.components_missing.includes('VELOCIDADE_ATENDIMENTO'))});
+test('6b. diagnóstico sem componentes fica não calculado, sem evidência falsa',()=>{const result=acquisitionReadiness([]);assert.equal(result.available,false);assert.equal(result.score_base,null);assert.equal(result.classification,null)});
+test('7. necessidade de aquisição e prontidão baixa coexistem sem correção artificial',()=>{const answers={'atrair-5':0,'atrair-6':0,'atrair-7':0,'converter-5':0,'organizar-0':0,'organizar-1':0,'organizar-2':0,'organizar-3':0,'organizar-4':0,'acompanhar-0':0,'acompanhar-1':0},evidences=evidenceFromAnswerMap(answers),result=acquisitionReadiness(evidences);assert.equal(evidences.find(item=>item.capability==='DEMANDA')?.severity,'CRITICO');assert.equal(result.classification,'BAIXA')});
+test('8. Sprint não altera Biblioteca nem motor de recomendações',()=>{const engine=fs.readFileSync(new URL('../lib/evidenceEngine.ts',import.meta.url),'utf8');assert.doesNotMatch(engine,/catalogo_recursos|Biblioteca de Soluções|Gestão Google Ads|Gestão Meta Ads|CRM Comercial|Agente de IA/)});
+test('9. evidências usam IDs estáveis e versões 1.0',()=>{const items=evidenceFromAnswerMap({'atrair-5':0,'atrair-6':4});assert.equal(items[0].evidence_code,'ACQ_VOLUME_CRITICAL');assert.equal(items[0].source_question_id,'atrair-5');assert.equal(items[1].evidence_code,'ACQ_PREDICTABILITY_STRONG')});
+test('10. contexto operacional é estruturado sem score',()=>{const context=structuredOperationalContext({volume_contatos:'100',canais:['WhatsApp'],quantidade_pessoas:'2',ferramentas:['CRM'],ferramenta_atual:'Fornecedor',indicadores:['Vendas']});assert.equal(context.monthly_contact_volume,'100');assert.deepEqual(context.current_providers,['Fornecedor']);assert.equal('score' in context,false)});
