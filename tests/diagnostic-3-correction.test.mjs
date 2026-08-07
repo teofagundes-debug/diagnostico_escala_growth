@@ -63,3 +63,9 @@ test('11. diagnósticos antigos permanecem compatíveis',()=>{
  assert.match(briefing,/Não informado/);
  assert.match(rules,/value===undefined/);
 });
+
+test('12. preparação legada não é mais renderizada junto à Voz do Cliente',()=>{
+ const voice=read('../components/DiagnosticClientVoice.tsx');
+ assert.doesNotMatch(voice,/diagnostic-preparation|PREPARA&#199;&#195;O DA REUNI&#195;O/);
+ assert.match(voice,/VOZ DO CLIENTE/);
+});

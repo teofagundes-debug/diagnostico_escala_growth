@@ -20,12 +20,12 @@ test('análise mostra Voz do Cliente antes do parecer e preserva a resposta lite
  assert.ok(central.indexOf('<DiagnosticClientVoice')<central.indexOf('<h3>Parecer do consultor'));
  assert.match(voice,/>VOZ DO CLIENTE</);
  assert.match(voice,/\{item\.resposta\|\|''\}/);
- assert.match(voice,/PREPARA&#199;&#195;O DA REUNI&#195;O/);
+ assert.doesNotMatch(voice,/PREPARA&#199;&#195;O DA REUNI&#195;O|diagnostic-preparation/);
 });
 
 test('anotações da preparação usam o campo persistente da reunião sem interface concorrente',()=>{
  const meeting=read('components/MeetingPreparation.tsx'),api=read('app/api/meeting-preparation/route.ts'),voice=read('components/DiagnosticClientVoice.tsx'),portal=read('app/api/portal/route.ts');
- assert.match(meeting,/Perguntas específicas preparadas \/ Anotações/);
+ assert.match(meeting,/perguntas_especificas/);
  assert.match(meeting,/value=\{record\.perguntas_especificas\|\|''\}/);
  assert.match(api,/prepared_specific_questions=body\.perguntas_especificas/);
  assert.doesNotMatch(voice,/ANOTA&#199;&#213;ES DO CONSULTOR|diagnostic-notes/);
