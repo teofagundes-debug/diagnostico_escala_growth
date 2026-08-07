@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {DiagnosticConsultantBriefing,DiagnosticResponsesGrouped} from './DiagnosticConsultantBriefing';
 
 const recommendedNames=['CRM Comercial','Agente de IA','WhatsApp Oficial','Dashboard Executivo'];
 const platformResources=['CRM','WhatsApp Oficial','Dashboard','Agente de IA','Campanhas WhatsApp','Integrações','Motor de Crescimento','Outro'];
@@ -52,9 +53,11 @@ export function MeetingPreparation({data,onComplete}:{data:any;onComplete:(planI
  const meetingCompleted=loaded&&(record.status==='Concluída'||record.meeting?.status==='Realizada');
  if(meetingCompleted)return <MeetingOfficialReport content={validations.conclusao?.resumo_executivo||createExecutiveSummary()} company={company} meeting={record.meeting}/>;
  return <section className="meeting-preparation admin-section" onBlurCapture={()=>{if(dirtyRef.current)void persist(false,true)}}><div className="meeting-title-row"><div><span className="eyebrow">Método Escala Growth</span><h2>Reunião Estratégica</h2></div><div className="meeting-save-reference"><small>Referência da reunião: {meetingId?String(meetingId).slice(0,8):"Vínculo não localizado"}</small><button type="button" className={"autosave-status "+(autoStatus.startsWith("Erro")?"error":"")} onClick={()=>autoStatus.startsWith("Erro")&&persist(true)}>{autoStatus}</button>{autoStatus.startsWith("Erro")&&message&&<small className="autosave-detail">{message}</small>}</div></div>
-  <details className="meeting-preparation-details"><summary>Preparação da Reunião <small>Uso interno</small></summary><div className="meeting-preparation-content">
+  <details className="meeting-preparation-details" open><summary>Preparação da Reunião <small>Uso interno</small></summary><div className="meeting-preparation-content">
+   <DiagnosticConsultantBriefing data={data}/>
    <section className="preparation-support-block"><h3>Hipóteses levantadas pelo Diagnóstico</h3><p>{diagnosticReality}</p><label>Hipótese inicial do consultor<textarea rows={4} value={record.hipotese_inicial||''} onChange={e=>setRecord({...record,hipotese_inicial:e.target.value})}/></label></section>
-   <section className="preparation-support-block"><h3>Perguntas sugeridas</h3><label>Perguntas específicas preparadas<textarea rows={6} value={record.perguntas_especificas||''} onChange={e=>setRecord({...record,perguntas_especificas:e.target.value})}/></label></section>
+    <section className="preparation-support-block"><h3>Perguntas sugeridas</h3><label>Perguntas específicas para a reunião<textarea rows={6} value={record.perguntas_especificas||''} onChange={e=>setRecord({...record,perguntas_especificas:e.target.value})}/></label></section>
+    <section className="preparation-support-block grouped-diagnostic-answers"><h3>Respostas do Diagnóstico</h3><DiagnosticResponsesGrouped answers={Array.isArray(data.respostas)?data.respostas:[]}/></section>
    <section className="preparation-support-block"><h3>Pontos que precisam ser validados</h3><p><b>Principal gargalo:</b> {data.menor_pilar}</p>{recommendations.map((item:string)=><p key={item}>☐ {item}</p>)}</section>
    <section className="preparation-support-block"><h3>Oportunidades que deverão ser confirmadas</h3>{opportunityGroups.length?opportunityGroups.map((group:any,index:number)=><article key={group.title+index}><b>{group.title}</b>{group.items.map((item:string)=><p key={item}>☐ {item}</p>)}</article>):<p>Nenhuma oportunidade sugerida automaticamente.</p>}</section>
   </div></details>
