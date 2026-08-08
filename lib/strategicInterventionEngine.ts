@@ -1,0 +1,97 @@
+import type {Evidence,Severity} from './evidenceEngine';
+import type {StrategicDecision,StrategicDimension} from './strategicEngine';
+
+export const STRATEGIC_INTERVENTION_ENGINE_VERSION='1.0';
+type PriorityLevel='P1'|'P2'|'P3'|'P4';
+type StrategicClassification={dimension:StrategicDimension;priority_level:PriorityLevel;priority_reason:string;strategic_priority_source:string;timing:StrategicIntervention['timing']};
+type Definition={intervention_code:string;capability:string;dimensions:StrategicDimension[];title:string;attention_title:string;objective:string;positive_state:string;depends_on:string[]};
+export type StrategicIntervention={intervention_code:string;dimension:StrategicDimension;capability:string;title:string;objective:string;severity:Severity;evidence_score:number;priority_level:PriorityLevel;priority_reason:string;strategic_priority_source:string;source_evidence_code:string;source_question_id:string;timing:'IMEDIATO'|'PARALELO'|'POSTERIOR'|'COMPLEMENTAR';depends_on:string[]};
+export type PreservedStrength={capability:string;dimension:StrategicDimension;title:string;source_evidence_code:string;source_question_id:string};
+export type DiscardedIntervention={capability:string;title:string;reason:'evidência estruturada'|'baixa relevância estratégica'|'limite do card'|'duplicidade'|'não aplicável ao acquisition_movement'};
+export type StrategicInterventions={primary_interventions:StrategicIntervention[];parallel_interventions:StrategicIntervention[];acquisition_interventions:StrategicIntervention[];strengths_to_preserve:PreservedStrength[];all_interventions:StrategicIntervention[];discarded_interventions:DiscardedIntervention[];intervention_summary:string;engine_version:'1.0'};
+
+const d=(code:string,capability:string,dimensions:StrategicDimension[],title:string,attention:string,objective:string,positive:string,depends_on:string[]=[]):Definition=>({intervention_code:code,capability,dimensions,title,attention_title:attention,objective,positive_state:positive,depends_on});
+export const STRATEGIC_INTERVENTION_CATALOG:Definition[]=[
+ d('INT_ABS_RESPONSE_SPEED','VELOCIDADE_ATENDIMENTO',['ABSORVER'],'Estruturar velocidade de atendimento','Fortalecer velocidade de atendimento','Estabelecer um padrão de resposta que reduza perdas no primeiro contato.','Atendimento ágil e consistente'),
+ d('INT_ABS_CENTRALIZATION','CENTRALIZACAO',['ABSORVER'],'Centralizar atendimento','Fortalecer centralização do atendimento','Concentrar as conversas comerciais para assegurar continuidade e visibilidade.','Conversas comerciais centralizadas'),
+ d('INT_ABS_OWNERSHIP','RESPONSABILIDADE',['ABSORVER'],'Definir responsáveis pelas oportunidades','Fortalecer responsabilidade pelas oportunidades','Garantir que cada oportunidade possua um responsável claramente definido.','Oportunidades com responsáveis definidos'),
+ d('INT_ABS_DISTRIBUTION','DISTRIBUICAO',['ABSORVER'],'Estruturar distribuição de oportunidades','Aprimorar distribuição de oportunidades','Estabelecer critérios consistentes para distribuir oportunidades entre os responsáveis.','Distribuição de oportunidades estruturada'),
+ d('INT_ABS_HISTORY','HISTORICO',['ABSORVER'],'Criar histórico comercial do cliente','Fortalecer histórico comercial do cliente','Assegurar acesso contínuo ao contexto e às interações de cada cliente.','Histórico comercial acessível'),
+ d('INT_ABS_RECORD_STANDARD','PADRAO_REGISTRO',['ABSORVER'],'Estabelecer padrão de registro comercial','Padronizar registro comercial','Definir informações mínimas e consistentes para registrar oportunidades.','Registro comercial padronizado'),
+ d('INT_ABS_RETURN_CONTROL','CONTROLE_RETORNO',['ABSORVER','CONVERTER'],'Estruturar controle de retorno','Fortalecer controle de retorno','Garantir visibilidade sobre contatos que aguardam retorno e seus prazos.','Retornos comerciais controlados'),
+ d('INT_ABS_PIPELINE','VISAO_PIPELINE',['ABSORVER'],'Criar visibilidade do pipeline','Ampliar visibilidade do pipeline','Permitir a visualização consolidada das oportunidades em andamento.','Pipeline comercial visível'),
+ d('INT_CONV_QUALIFICATION','QUALIFICACAO',['CONVERTER'],'Estruturar qualificação comercial','Fortalecer qualificação comercial','Estabelecer critérios para identificar e priorizar oportunidades com maior potencial.','Qualificação comercial estruturada'),
+ d('INT_CONV_FOLLOW_UP','ROTINA_ACOMPANHAMENTO',['CONVERTER'],'Criar rotina de acompanhamento','Fortalecer rotina de acompanhamento','Estabelecer frequência e responsabilidade para acompanhar oportunidades.','Acompanhamento comercial consistente'),
+ d('INT_CONV_NEXT_STEP','PROXIMO_PASSO',['CONVERTER'],'Definir próximo passo das negociações','Fortalecer definição dos próximos passos','Assegurar que cada negociação possua ação seguinte, responsável e prazo.','Negociações com próximo passo definido'),
+ d('INT_CONV_STAGES','ETAPAS_COMERCIAIS',['CONVERTER'],'Estruturar etapas comerciais','Aprimorar etapas comerciais','Definir etapas visíveis e critérios de avanço para o processo comercial.','Etapas comerciais estruturadas'),
+ d('INT_CONV_STALLED','OPORTUNIDADES_PARADAS',['CONVERTER'],'Criar identificação de oportunidades paradas','Fortalecer identificação de oportunidades paradas','Detectar negociações sem evolução para permitir ação gerencial.','Oportunidades paradas identificadas'),
+ d('INT_CONV_LOSS','MOTIVOS_PERDA',['CONVERTER'],'Estruturar registro de motivos de perda','Padronizar motivos de perda','Registrar causas de perda para orientar melhorias no processo comercial.','Motivos de perda registrados'),
+ d('INT_CONV_MEASUREMENT','MENSURACAO_CONVERSAO',['CONVERTER'],'Criar mensuração da conversão comercial','Fortalecer mensuração da conversão comercial','Medir a transformação de oportunidades em vendas ao longo das etapas.','Conversão comercial mensurada',['ETAPAS_COMERCIAIS']),
+ d('INT_GROWTH_REPORTS','RELATORIOS_AUTOMATIZADOS',['GERIR'],'Estruturar acesso contínuo aos relatórios','Fortalecer acesso aos relatórios comerciais','Reduzir dependência de consolidações manuais para acompanhar a operação.','Acesso estruturado aos relatórios comerciais'),
+ d('INT_GROWTH_GOALS','METAS_RESULTADOS',['GERIR'],'Definir metas e resultados','Fortalecer metas e resultados','Estabelecer metas comerciais claras e resultados esperados.','Metas e resultados definidos'),
+ d('INT_GROWTH_PREDICTABILITY','PREVISIBILIDADE_COMERCIAL',['GERIR'],'Criar previsibilidade comercial','Fortalecer previsibilidade comercial','Permitir projeção consistente das oportunidades e resultados.','Operação comercial previsível'),
+ d('INT_GROWTH_AUTONOMY','AUTONOMIA_OPERACIONAL',['GERIR'],'Reduzir dependência operacional do gestor','Fortalecer autonomia operacional','Estruturar responsabilidades e rotinas menos dependentes do gestor.','Operação com autonomia'),
+ d('INT_GROWTH_DATA_DECISIONS','DECISAO_POR_DADOS',['GERIR'],'Estabelecer decisões orientadas por dados','Fortalecer decisões por dados','Utilizar evidências e indicadores para orientar ações comerciais.','Decisões orientadas por dados'),
+ d('INT_GROWTH_INDICATOR_CENTRALIZATION','CENTRALIZACAO_INDICADORES',['GERIR'],'Centralizar indicadores comerciais','Fortalecer centralização dos indicadores','Permitir acompanhamento consolidado dos indicadores comerciais.','Indicadores comerciais centralizados',['METAS_RESULTADOS']),
+ d('INT_GROWTH_ROUTINE','ROTINA_GESTAO',['GERIR'],'Criar rotina de gestão','Fortalecer rotina de gestão','Estabelecer cadência para analisar resultados e acompanhar ações.','Rotina de gestão consistente'),
+ d('INT_ACQ_TRACEABILITY','RASTREABILIDADE_AQUISICAO',['ATRAIR'],'Estruturar rastreabilidade da aquisição','Fortalecer rastreabilidade da aquisição','Identificar com consistência a origem das oportunidades.','Aquisição rastreável'),
+ d('INT_ACQ_CHANNEL_EFFICIENCY','EFICIENCIA_CANAIS',['ATRAIR'],'Criar análise de eficiência dos canais','Aprimorar análise de eficiência dos canais','Comparar os canais pelos resultados que efetivamente geram.','Eficiência dos canais conhecida'),
+ d('INT_ACQ_IDEAL_CUSTOMER','CLIENTE_IDEAL',['ATRAIR'],'Definir cliente ideal','Aprimorar definição do cliente ideal','Estabelecer critérios para reconhecer clientes de maior aderência.','Cliente ideal definido'),
+ d('INT_ACQ_MEASUREMENT','MENSURACAO_AQUISICAO',['ATRAIR'],'Criar mensuração do custo por oportunidade','Fortalecer mensuração da aquisição','Mensurar o esforço de aquisição em relação às oportunidades.','Aquisição mensurada'),
+ d('INT_ACQ_DEMAND','DEMANDA',['ATRAIR'],'Estruturar geração de demanda','Fortalecer geração de demanda','Produzir volume de oportunidades aderente às metas comerciais.','Demanda comercial consistente'),
+ d('INT_ACQ_PREDICTABILITY','PREVISIBILIDADE_AQUISICAO',['ATRAIR'],'Criar previsibilidade da aquisição','Fortalecer previsibilidade da aquisição','Estabelecer continuidade e previsibilidade na geração de oportunidades.','Aquisição previsível'),
+ d('INT_ACQ_STRATEGY','ESTRATEGIA_AQUISICAO',['ATRAIR'],'Estruturar estratégia de aquisição','Fortalecer estratégia de aquisição','Definir uma estratégia contínua e acompanhada para gerar oportunidades.','Estratégia de aquisição estruturada'),
+ d('INT_ACQ_REACTIVATION','REATIVACAO_BASE',['ATRAIR'],'Criar rotina de reativação da base','Fortalecer reativação da base','Aproveitar contatos e clientes existentes para gerar oportunidades.','Base reativada de forma consistente')
+];
+
+const byCapability=new Map(STRATEGIC_INTERVENTION_CATALOG.map(item=>[item.capability,item]));
+const severityOrder:Record<Severity,number>={CRITICO:0,ATENCAO:1,ESTRUTURADO:2};
+const priorityOrder:Record<PriorityLevel,number>={P1:0,P2:1,P3:2,P4:3};
+const acquisitionCapabilities=new Set(STRATEGIC_INTERVENTION_CATALOG.filter(item=>item.dimensions.includes('ATRAIR')).map(item=>item.capability));
+
+function strategicClass(item:Definition,decision:StrategicDecision):StrategicClassification{
+ const primary=decision.primary_priority;
+ if(primary&&item.dimensions.includes(primary as StrategicDimension))return{dimension:primary as StrategicDimension,priority_level:'P1' as const,priority_reason:'Ligada diretamente à prioridade principal.',strategic_priority_source:'PRIMARY_PRIORITY_'+primary,timing:'IMEDIATO' as const};
+ const parallel=decision.parallel_priorities.find(dimension=>item.dimensions.includes(dimension));
+ if(parallel)return{dimension:parallel,priority_level:'P2' as const,priority_reason:'Ligada a uma prioridade estratégica paralela.',strategic_priority_source:'PARALLEL_PRIORITY_'+parallel,timing:'PARALELO' as const};
+ const attention=decision.attention_dimensions.find(entry=>item.dimensions.includes(entry.dimension));
+ if(attention)return{dimension:attention.dimension,priority_level:'P3' as const,priority_reason:'Ligada a uma dimensão estratégica de atenção.',strategic_priority_source:'ATTENTION_DIMENSION_'+attention.dimension,timing:'PARALELO' as const};
+ return{dimension:item.dimensions[0],priority_level:'P4' as const,priority_reason:'Melhoria complementar sustentada pela evidência.',strategic_priority_source:'COMPLEMENTARY_EVIDENCE',timing:'COMPLEMENTAR' as const};
+}
+function acquisitionClass(item:Definition,decision:StrategicDecision,current:StrategicClassification,severity:Severity):StrategicClassification{
+ if(!acquisitionCapabilities.has(item.capability))return current;
+ const movement=decision.acquisition_movement;
+ if(movement==='ESTRUTURAR_ANTES_DE_ACELERAR')return{dimension:'ATRAIR' as const,priority_level:'P3' as const,priority_reason:'Necessária para expansão futura, após estruturar capacidades prioritárias.',strategic_priority_source:'ACQUISITION_MOVEMENT_POSTERIOR',timing:'POSTERIOR' as const};
+ if(movement==='EXPANDIR_CONTROLADAMENTE')return{dimension:'ATRAIR' as const,priority_level:decision.primary_priority==='ATRAIR'?'P1' as const:'P2' as const,priority_reason:'Sustenta expansão controlada sem substituir a prioridade principal.',strategic_priority_source:'ACQUISITION_MOVEMENT_CONTROLLED',timing:'PARALELO' as const};
+ if(movement==='ACELERAR')return{dimension:'ATRAIR' as const,priority_level:decision.primary_priority==='ATRAIR'?'P1' as const:'P2' as const,priority_reason:'Sustenta o movimento de aceleração da aquisição.',strategic_priority_source:'ACQUISITION_MOVEMENT_ACCELERATE',timing:decision.primary_priority==='ATRAIR'?'IMEDIATO' as const:'PARALELO' as const};
+ if(movement==='MANTER_OTIMIZAR')return{dimension:'ATRAIR' as const,priority_level:'P3' as const,priority_reason:'Aprimoramento sustentado para manter e otimizar a aquisição.',strategic_priority_source:'ACQUISITION_MOVEMENT_OPTIMIZE',timing:'PARALELO' as const};
+ if(movement==='NAO_PRIORIZAR_EXPANSAO'&&severity==='CRITICO')return{dimension:'ATRAIR' as const,priority_level:'P3' as const,priority_reason:'Organização crítica da aquisição, sem expansão imediata.',strategic_priority_source:'ACQUISITION_MOVEMENT_ORGANIZE',timing:'POSTERIOR' as const};
+ return current;
+}
+function buildSummary(primary:StrategicIntervention[],parallel:StrategicIntervention[],acquisition:StrategicIntervention[],strengths:PreservedStrength[],decision:StrategicDecision){
+ const parallelText=parallel.slice(0,2).map(item=>item.title.toLowerCase()).join(' e ');
+ const movement=decision.acquisition_movement==='ESTRUTURAR_ANTES_DE_ACELERAR'?'A aquisição deve aguardar a estruturação das capacidades críticas antes de acelerar.':decision.acquisition_movement==='EXPANDIR_CONTROLADAMENTE'?'A aquisição pode avançar de forma controlada e coordenada com essas intervenções.':decision.acquisition_movement==='ACELERAR'?'As capacidades de aquisição identificadas devem sustentar a aceleração planejada.':decision.acquisition_movement==='MANTER_OTIMIZAR'?'A aquisição deve ser mantida e otimizada com base nas evidências.':'A expansão da aquisição não deve ser priorizada neste momento.';
+ return[primary[0]?'A primeira capacidade a evoluir é '+primary[0].title.toLowerCase()+'.':'As evidências não indicaram uma intervenção corretiva principal.',parallelText?'Em paralelo, é necessário '+parallelText+'.':'',strengths[0]?'Também é importante '+strengths[0].title.toLowerCase()+'.':'',acquisition.length||decision.acquisition_movement?movement:''].filter(Boolean).join(' ');
+}
+
+export function strategicInterventions(decision:StrategicDecision,evidences:Evidence[]):StrategicInterventions{
+ const discarded:DiscardedIntervention[]=[],unique=new Map<string,Evidence>();
+ for(const evidence of evidences){const previous=unique.get(evidence.capability);if(previous){if(evidence.score<previous.score)unique.set(evidence.capability,evidence);discarded.push({capability:evidence.capability,title:byCapability.get(evidence.capability)?.title||evidence.capability,reason:'duplicidade'})}else unique.set(evidence.capability,evidence)}
+ const strengths:PreservedStrength[]=[],active:StrategicIntervention[]=[];
+ for(const evidence of unique.values()){
+  const item=byCapability.get(evidence.capability);
+  if(!item){discarded.push({capability:evidence.capability,title:evidence.capability,reason:'baixa relevância estratégica'});continue}
+  if(evidence.severity==='ESTRUTURADO'){
+   const relevant=item.dimensions.includes(decision.primary_priority as StrategicDimension)||item.dimensions.some(dimension=>decision.parallel_priorities.includes(dimension))||item.dimensions.includes('ATRAIR')&&decision.acquisition_movement!=='NAO_PRIORIZAR_EXPANSAO';
+   if(relevant)strengths.push({capability:item.capability,dimension:item.dimensions[0],title:'Preservar '+item.positive_state.toLowerCase(),source_evidence_code:evidence.evidence_code,source_question_id:evidence.source_question_id});
+   discarded.push({capability:item.capability,title:item.title,reason:'evidência estruturada'});continue;
+  }
+  let strategic=strategicClass(item,decision);strategic=acquisitionClass(item,decision,strategic,evidence.severity);
+  if(acquisitionCapabilities.has(item.capability)&&decision.acquisition_movement==='NAO_PRIORIZAR_EXPANSAO'&&evidence.severity!=='CRITICO'){discarded.push({capability:item.capability,title:item.title,reason:'não aplicável ao acquisition_movement'});continue}
+  active.push({intervention_code:item.intervention_code,dimension:strategic.dimension,capability:item.capability,title:evidence.severity==='ATENCAO'?item.attention_title:item.title,objective:item.objective,severity:evidence.severity,evidence_score:evidence.score,priority_level:strategic.priority_level,priority_reason:strategic.priority_reason,strategic_priority_source:strategic.strategic_priority_source,source_evidence_code:evidence.evidence_code,source_question_id:evidence.source_question_id,timing:strategic.timing,depends_on:item.depends_on});
+ }
+ active.sort((a,b)=>priorityOrder[a.priority_level]-priorityOrder[b.priority_level]||severityOrder[a.severity]-severityOrder[b.severity]||a.evidence_score-b.evidence_score||STRATEGIC_INTERVENTION_CATALOG.findIndex(item=>item.capability===a.capability)-STRATEGIC_INTERVENTION_CATALOG.findIndex(item=>item.capability===b.capability));
+ const limited=(items:StrategicIntervention[])=>{const selected:StrategicIntervention[]=[],counts=new Map<string,number>();for(const item of items){const count=counts.get(item.dimension)||0;if(count>=3){discarded.push({capability:item.capability,title:item.title,reason:'limite do card'});continue}counts.set(item.dimension,count+1);selected.push(item)}return selected};
+ const primary=limited(active.filter(item=>item.priority_level==='P1')),acquisitionSet=new Set(active.filter(item=>item.dimension==='ATRAIR'&&item.priority_level!=='P1').map(item=>item.capability)),acquisition=limited(active.filter(item=>acquisitionSet.has(item.capability))),parallel=limited(active.filter(item=>item.priority_level!=='P1'&&!acquisitionSet.has(item.capability)&&item.priority_level!=='P4')),preserved=strengths.slice(0,3);
+ return{primary_interventions:primary,parallel_interventions:parallel,acquisition_interventions:acquisition,strengths_to_preserve:preserved,all_interventions:active,discarded_interventions:discarded,intervention_summary:buildSummary(primary,parallel,acquisition,preserved,decision),engine_version:STRATEGIC_INTERVENTION_ENGINE_VERSION};
+}
