@@ -1,0 +1,23 @@
+import {acquisitionReadiness,attractionNeed,conversionCapacity,evidenceFromStoredAnswers,growthManagementCapacity,EVIDENCE_ENGINE_VERSION,READINESS_ENGINE_VERSION,ATTRACTION_NEED_ENGINE_VERSION,CONVERSION_CAPACITY_ENGINE_VERSION,GROWTH_MANAGEMENT_CAPACITY_ENGINE_VERSION} from './evidenceEngine';
+import {strategicDecision,STRATEGIC_ENGINE_VERSION} from './strategicEngine';
+import {strategicInterventions,STRATEGIC_INTERVENTION_ENGINE_VERSION} from './strategicInterventionEngine';
+import {strategicActionPlan,STRATEGIC_ACTION_PLAN_ENGINE_VERSION} from './strategicActionPlanEngine';
+
+export type EnginePersistenceRow={layer:string;runtime:string;persisted:string;status:'OK'|'MATERIALIZADO'|'AUSENTE'};
+export class EngineMaterializationError extends Error{layer:string;missingInputs:string[];constructor(layer:string,missingInputs:string[]){super('Não foi possível materializar '+layer+' porque faltam: '+missingInputs.join(', ')+'.');this.layer=layer;this.missingInputs=missingInputs}}
+const list=(value:any)=>Array.isArray(value)?value:[];
+const indicatorText=(value:any)=>{const score=value?.need_score??value?.score_base;return(score===null||score===undefined?'—':score+'%')+' '+(value?.classification||'NÃO CALCULADO')};
+const decisionText=(value:any)=>value?[value.strategic_direction,value.primary_priority,value.acquisition_movement].filter(Boolean).join(' · '):'—';
+
+export function ensureDiagnosticEngineResults(reportInput:any,answers:any[],diagnosticId:string){let report=reportInput&&typeof reportInput==='object'?{...reportInput}:{},indicators=report.indicadores_derivados&&typeof report.indicadores_derivados==='object'?{...report.indicadores_derivados}:{},changed=false;const materializedLayers:string[]=[],debug:EnginePersistenceRow[]=[];
+ const materialize=(key:string,layer:string,calculate:()=>any,versionKey:string,version:string,display:(value:any)=>string=indicatorText)=>{if(indicators[key]){debug.push({layer,runtime:display(indicators[key]),persisted:display(indicators[key]),status:'OK'});return indicators[key]}const result=calculate();indicators[key]=result;report[versionKey]=version;changed=true;materializedLayers.push(layer);debug.push({layer,runtime:display(result),persisted:display(result),status:'MATERIALIZADO'});return result};
+ let evidences=list(report.evidencias_estruturadas);if(evidences.length)debug.push({layer:'Evidence Engine',runtime:evidences.length+' evidências',persisted:evidences.length+' evidências',status:'OK'});else{if(!list(answers).length)throw new EngineMaterializationError('Evidence Engine 1.0',['respostas persistidas']);evidences=evidenceFromStoredAnswers(answers,diagnosticId);if(!evidences.length)throw new EngineMaterializationError('Evidence Engine 1.0',['respostas compatíveis com o catálogo canônico']);report.evidencias_estruturadas=evidences;report.evidence_engine_version=EVIDENCE_ENGINE_VERSION;changed=true;materializedLayers.push('Evidence Engine 1.0');debug.push({layer:'Evidence Engine',runtime:evidences.length+' evidências',persisted:evidences.length+' evidências',status:'MATERIALIZADO'})}
+ const readiness=materialize('prontidao_aquisicao','Prontidão para Aquisição 1.0',()=>acquisitionReadiness(evidences),'readiness_engine_version',READINESS_ENGINE_VERSION);
+ const need=materialize('necessidade_atrair','Necessidade de Atrair 1.0',()=>attractionNeed(evidences),'attraction_need_engine_version',ATTRACTION_NEED_ENGINE_VERSION);
+ const conversion=materialize('capacidade_conversao','Capacidade de Conversão 1.0',()=>conversionCapacity(evidences),'conversion_capacity_engine_version',CONVERSION_CAPACITY_ENGINE_VERSION);
+ const management=materialize('capacidade_gestao_crescimento','Capacidade de Gestão do Crescimento 1.0',()=>growthManagementCapacity(evidences),'growth_management_capacity_engine_version',GROWTH_MANAGEMENT_CAPACITY_ENGINE_VERSION);
+ const decision=materialize('direcao_estrategica','Motor Estratégico 3.0',()=>strategicDecision({need,readiness,conversion,management}),'strategic_engine_version',STRATEGIC_ENGINE_VERSION,decisionText);
+ const interventions=materialize('strategic_interventions','Motor de Intervenções 1.0',()=>strategicInterventions(decision,evidences),'strategic_intervention_engine_version',STRATEGIC_INTERVENTION_ENGINE_VERSION,value=>(value?.all_interventions?.length||0)+' intervenções');
+ const actionPlan=materialize('strategic_action_plan','Motor do Plano de Ação 1.0',()=>strategicActionPlan(decision,interventions),'strategic_action_plan_engine_version',STRATEGIC_ACTION_PLAN_ENGINE_VERSION,value=>(value?.all_actions?.length||0)+' ações');
+ report={...report,indicadores_derivados:indicators};return{report,actionPlan,changed,materializedLayers,debug};
+}
