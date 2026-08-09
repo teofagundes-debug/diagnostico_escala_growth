@@ -1,6 +1,8 @@
 import {access} from '@/lib/access';
 import {STRATEGIC_EXECUTION_PLAN_VERSION,validatePublication} from '@/lib/strategicExecutionPlan';
 import {strategicActionPlan,STRATEGIC_ACTION_PLAN_ENGINE_VERSION} from '@/lib/strategicActionPlanEngine';
+import {strategicDecision,STRATEGIC_ENGINE_VERSION} from '@/lib/strategicEngine';
+import {strategicInterventions,STRATEGIC_INTERVENTION_ENGINE_VERSION} from '@/lib/strategicInterventionEngine';
 
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({apikey:KEY!,Authorization:'Bearer '+KEY,'Content-Type':'application/json'});
@@ -16,16 +18,17 @@ export async function POST(req:Request){try{if(!ready())return Response.json({er
  if(body.operation==='ensure-action-plan'){
   const diagnostics=await rows('diagnosticos?id=eq.'+encodeURIComponent(body.diagnostico_id)+'&select=id,empresa_id,relatorio_snapshot&limit=1'),diagnostic=diagnostics[0];
   if(!diagnostic)return Response.json({error:'Diagnóstico não localizado.'},{status:404});
-  const report=diagnostic.relatorio_snapshot&&typeof diagnostic.relatorio_snapshot==='object'?diagnostic.relatorio_snapshot:{},indicators=report.indicadores_derivados&&typeof report.indicadores_derivados==='object'?report.indicadores_derivados:{},existing=indicators.strategic_action_plan;
-  if(existing&&String(existing.engine_version||report.strategic_action_plan_engine_version)==='1.0')return Response.json({action_plan:existing,relatorio_snapshot:report,materialized:false,source:'PERSISTED'});
-  const decision=indicators.direcao_estrategica,interventions=indicators.strategic_interventions,missing=[];
-  if(!decision)missing.push('Motor Estratégico 3.0 (direcao_estrategica)');
-  if(!interventions)missing.push('Motor de Intervenções 1.0 (strategic_interventions)');
-  if(missing.length)return Response.json({error:'Não foi possível preparar o Plano Executável porque faltam as seguintes camadas persistidas: '+missing.join('; ')+'. Nenhum dado foi recalculado.',missing_layers:missing},{status:409});
-  const generated=strategicActionPlan(decision,interventions),updatedReport={...report,indicadores_derivados:{...indicators,strategic_action_plan:generated},strategic_action_plan_engine_version:STRATEGIC_ACTION_PLAN_ENGINE_VERSION};
-  const saved=await rows('diagnosticos?id=eq.'+encodeURIComponent(diagnostic.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({relatorio_snapshot:updatedReport,updated_at:new Date().toISOString()})});
-  if(!saved[0])return Response.json({error:'O Plano de Ação foi calculado, mas não foi possível confirmar sua persistência.'},{status:500});
-  return Response.json({action_plan:generated,relatorio_snapshot:updatedReport,materialized:true,source:'ACTION_PLAN_ENGINE_1.0'});
+  let report=diagnostic.relatorio_snapshot&&typeof diagnostic.relatorio_snapshot==='object'?diagnostic.relatorio_snapshot:{};
+  let indicators=report.indicadores_derivados&&typeof report.indicadores_derivados==='object'?report.indicadores_derivados:{};
+  const existing=indicators.strategic_action_plan;
+  if(existing&&String(existing.engine_version||report.strategic_action_plan_engine_version)==='1.0')return Response.json({action_plan:existing,relatorio_snapshot:report,materialized:false,materialized_layers:[],source:'PERSISTED'});
+  const materializedLayers:string[]=[],persistLayer=async()=>{report={...report,indicadores_derivados:indicators};const saved=await rows('diagnosticos?id=eq.'+encodeURIComponent(diagnostic.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({relatorio_snapshot:report,updated_at:new Date().toISOString()})});if(!saved[0])throw new Error('Não foi possível confirmar a persistência da camada reconstruída.')};
+  let decision=indicators.direcao_estrategica;
+  if(!decision){const inputs=[['Necessidade de Atrair','necessidade_atrair'],['Prontidão para Aquisição','prontidao_aquisicao'],['Capacidade de Conversão','capacidade_conversao'],['Capacidade de Gestão do Crescimento','capacidade_gestao_crescimento']],missing=inputs.filter(([,key])=>!indicators[key]).map(([label])=>label);if(missing.length)return Response.json({error:'Não foi possível reconstruir o Motor Estratégico 3.0 porque o diagnóstico não possui '+missing.join(', ')+' persistida(s).',missing_layer:'Motor Estratégico 3.0',missing_inputs:missing},{status:409});decision=strategicDecision({need:indicators.necessidade_atrair,readiness:indicators.prontidao_aquisicao,conversion:indicators.capacidade_conversao,management:indicators.capacidade_gestao_crescimento});indicators={...indicators,direcao_estrategica:decision};report={...report,strategic_engine_version:STRATEGIC_ENGINE_VERSION};materializedLayers.push('Motor Estratégico 3.0');await persistLayer()}
+  let interventions=indicators.strategic_interventions;
+  if(!interventions){const evidences=Array.isArray(report.evidencias_estruturadas)?report.evidencias_estruturadas:[];if(!evidences.length)return Response.json({error:'Não foi possível reconstruir o Motor de Intervenções 1.0 porque o diagnóstico não possui Evidências Estruturadas persistidas.',missing_layer:'Motor de Intervenções 1.0',missing_inputs:['Evidências Estruturadas'],relatorio_snapshot:report},{status:409});interventions=strategicInterventions(decision,evidences);indicators={...indicators,strategic_interventions:interventions};report={...report,strategic_intervention_engine_version:STRATEGIC_INTERVENTION_ENGINE_VERSION};materializedLayers.push('Motor de Intervenções 1.0');await persistLayer()}
+  const generated=strategicActionPlan(decision,interventions);indicators={...indicators,strategic_action_plan:generated};report={...report,strategic_action_plan_engine_version:STRATEGIC_ACTION_PLAN_ENGINE_VERSION};materializedLayers.push('Motor do Plano de Ação 1.0');await persistLayer();
+  return Response.json({action_plan:generated,relatorio_snapshot:report,materialized:true,materialized_layers:materializedLayers,source:'CASCADE_COMPATIBILITY_1.0'});
  }
  if(body.operation==='initialize'){const existing=await rows('strategic_execution_plans?diagnostico_id=eq.'+encodeURIComponent(body.diagnostico_id)+'&select=*&order=version_number.desc&limit=1');if(existing[0])return Response.json({plan:await bundle(existing[0])});const payload={empresa_id:body.empresa_id,diagnostico_id:body.diagnostico_id,version_number:1,status:'DRAFT',strategic_direction:body.strategic_direction,primary_priority:body.primary_priority,acquisition_movement:body.acquisition_movement,action_plan_source_version:body.action_plan_source_version||'1.0',feature_version:STRATEGIC_EXECUTION_PLAN_VERSION,consultant:actor};const created=(await rows('strategic_execution_plans',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)}))[0];await history(created.id,'PLAN_CREATED','Plano Executável criado como rascunho.',actor);return Response.json({plan:await bundle(created)})}
  const current=(await rows('strategic_execution_plans?id=eq.'+encodeURIComponent(body.plan_id)+'&select=*&limit=1'))[0];if(!current)return Response.json({error:'Plano não localizado.'},{status:404});
