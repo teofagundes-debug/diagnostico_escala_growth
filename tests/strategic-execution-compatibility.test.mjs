@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+const api=fs.readFileSync(new URL('../app/api/strategic-execution-plan/route.ts',import.meta.url),'utf8'),ui=fs.readFileSync(new URL('../components/StrategicExecutionPlan.tsx',import.meta.url),'utf8');
+test('retrocompatibilidade usa somente o Motor do Plano de Ação 1.0',()=>{assert.match(api,/strategicActionPlan\(decision,interventions\)/);assert.doesNotMatch(api,/acquisitionReadiness\(|attractionNeed\(|conversionCapacity\(|growthManagementCapacity\(|strategicDecision\(|strategicInterventions\(/)});
+test('resultado persistido é reutilizado sem recálculo',()=>{assert.match(api,/existing&&String\(existing\.engine_version/);assert.match(api,/materialized:false,source:'PERSISTED'/)});
+test('materialização é sob demanda e persiste formato canônico',()=>{assert.match(api,/operation==='ensure-action-plan'/);assert.match(api,/strategic_action_plan:generated/);assert.match(api,/strategic_action_plan_engine_version:STRATEGIC_ACTION_PLAN_ENGINE_VERSION/)});
+test('camadas ausentes interrompem sem inventar dados',()=>{assert.match(api,/missing_layers:missing/);assert.match(api,/Nenhum dado foi recalculado/)});
+test('Sprint 9 inicializa plano vazio depois da materialização',()=>{assert.match(ui,/operation:'ensure-action-plan'/);assert.match(ui,/operation:'initialize'/);assert.doesNotMatch(ui,/agreedFromEngine\(recommended\).*initialize/s)});
+test('nenhum backfill global ou publicação automática foi criado',()=>{assert.doesNotMatch(api,/diagnosticos\?select=\*/);assert.doesNotMatch(ui,/compatibility[\s\S]{0,200}operation:'publish'/)});
