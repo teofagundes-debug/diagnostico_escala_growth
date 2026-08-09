@@ -6,3 +6,4 @@ test('materialização é sob demanda e persiste formato canônico',()=>{assert.
 test('camadas ausentes interrompem sem inventar dados',()=>{assert.match(api,/missing_layers:missing/);assert.match(api,/Nenhum dado foi recalculado/)});
 test('Sprint 9 inicializa plano vazio depois da materialização',()=>{assert.match(ui,/operation:'ensure-action-plan'/);assert.match(ui,/operation:'initialize'/);assert.doesNotMatch(ui,/agreedFromEngine\(recommended\).*initialize/s)});
 test('nenhum backfill global ou publicação automática foi criado',()=>{assert.doesNotMatch(api,/diagnosticos\?select=\*/);assert.doesNotMatch(ui,/compatibility[\s\S]{0,200}operation:'publish'/)});
+test('URL do Supabase não sombreia o construtor global URL',()=>{assert.match(api,/const SUPABASE_URL=process\.env\.SUPABASE_URL/);assert.doesNotMatch(api,/const URL=process\.env\.SUPABASE_URL/)});

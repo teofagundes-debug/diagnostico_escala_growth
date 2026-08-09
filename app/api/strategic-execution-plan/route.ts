@@ -2,11 +2,11 @@ import {access} from '@/lib/access';
 import {STRATEGIC_EXECUTION_PLAN_VERSION,validatePublication} from '@/lib/strategicExecutionPlan';
 import {strategicActionPlan,STRATEGIC_ACTION_PLAN_ENGINE_VERSION} from '@/lib/strategicActionPlanEngine';
 
-const URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({apikey:KEY!,Authorization:'Bearer '+KEY,'Content-Type':'application/json'});
-const ready=()=>Boolean(URL&&KEY);
+const ready=()=>Boolean(SUPABASE_URL&&KEY);
 async function master(req:Request){return (await access(req))?.role==='master'}
-async function rows(path:string,options:RequestInit={}){const response=await fetch(URL+'/rest/v1/'+path,{...options,headers:{...headers(),...(options.headers||{})},cache:'no-store'});if(!response.ok)throw new Error(await response.text());return response.status===204?[]:response.json()}
+async function rows(path:string,options:RequestInit={}){const response=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers:{...headers(),...(options.headers||{})},cache:'no-store'});if(!response.ok)throw new Error(await response.text());return response.status===204?[]:response.json()}
 async function history(planId:string,event_type:string,description:string,actor:string,metadata:any={}){await rows('strategic_execution_plan_history',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({plan_id:planId,event_type,description,actor,metadata})})}
 async function bundle(plan:any){if(!plan)return null;const [actions,events]=await Promise.all([rows('strategic_execution_plan_actions?plan_id=eq.'+encodeURIComponent(plan.id)+'&select=*&order=created_at'),rows('strategic_execution_plan_history?plan_id=eq.'+encodeURIComponent(plan.id)+'&select=*&order=created_at.desc')]);return{...plan,actions,history:events}}
 
