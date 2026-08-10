@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./strategic-commercial.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.escalavendas.com.br"),
@@ -15,4 +16,5 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
+
 
