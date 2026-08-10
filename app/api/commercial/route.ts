@@ -30,7 +30,8 @@ export async function POST(req:Request){try{
   const toLines=(value:any)=>Array.isArray(value)?value.map(String).map(x=>x.trim()).filter(Boolean):String(value||'').split(/\r?\n/).map(x=>x.replace(/^[-•*✓✔☑\s]+/,'').trim()).filter(Boolean);
   const related=Array.isArray(body.recursos_relacionados)?body.recursos_relacionados.filter((id:any)=>typeof id==='string'&&id!==body.id):[];
   const dependencyRules=toLines(body.dependencias_condicoes||body.dependencias).map((descricao:string)=>({tipo:'condicao',descricao}));
-  const dependencySolutions=Array.isArray(body.dependencias_solucoes)?body.dependencias_solucoes.filter(Boolean).map((recurso_id:string)=>({tipo:'solucao',recurso_id})):[];
+  const configured=Array.isArray(body.dependencias_configuradas)?body.dependencias_configuradas:[];
+  const dependencySolutions=configured.filter((item:any)=>typeof item?.recurso_id==='string'&&item.recurso_id!==body.id).map((item:any,index:number)=>({tipo:'solucao',recurso_id:item.recurso_id,obrigatoriedade:item.obrigatoriedade==='OPCIONAL'?'OPCIONAL':'OBRIGATORIA',ordem:Math.max(0,Number(item.ordem)||index+1),ativo:item.ativo!==false}));
   const completion=toLines(body.criterios_conclusao||body.criterio_conclusao).map((titulo:string)=>({titulo,obrigatorio:true}));
   const duration=hasImplementation?Number(body.tempo_medio_implantacao):null;
   const usesRecommendedInvestment=body.utiliza_investimento_recomendado===true;
