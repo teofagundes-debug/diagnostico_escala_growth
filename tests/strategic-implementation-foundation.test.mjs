@@ -28,7 +28,7 @@ test('backend impede duplicidade por plano e versão',()=>{
 test('somente os três estados operacionais homologados são utilizados',()=>{
  assert.match(migration,/check\(status in \('PLANNED','IN_PROGRESS','COMPLETED'\)\)/);
  assert.doesNotMatch(migration,/CANCELLED/);
- assert.match(api,/completed\?'COMPLETED':started\?'IN_PROGRESS':'PLANNED'/);
+ assert.match(api,/management\.summary\.status/);
 });
 
 test('interface organiza itens pelos três horizontes e mantém debug administrativo',()=>{
