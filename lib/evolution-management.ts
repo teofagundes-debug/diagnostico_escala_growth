@@ -11,3 +11,5 @@ export function evolutionReading(baseline:Record<string,any>,current:Record<stri
 }
 
 export function measurementTimeline(measurements:any[]){return [...measurements].sort((a,b)=>String(a.measured_at).localeCompare(String(b.measured_at))).map((measurement,index,all)=>{const values=Object.fromEntries((measurement.items||[]).map((item:any)=>[item.indicator_key,item.current_value]));const baseline=Object.fromEntries((measurement.items||[]).map((item:any)=>[item.indicator_key,item.baseline_value]));const previous=index?Object.fromEntries((all[index-1].items||[]).map((item:any)=>[item.indicator_key,item.current_value])):null;return{...measurement,reading:evolutionReading(baseline,values),previous_reading:previous?evolutionReading(previous,values):[]}})}
+
+export function normalizeEvolutionIndicators(values:Record<string,any>){return Object.entries(values||{}).map(([indicator_code,raw])=>{const empty=raw===null||raw===undefined||String(raw).trim()==='';return{indicator_code,value:empty?null:Number(raw)}})}
