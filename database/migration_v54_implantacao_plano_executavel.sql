@@ -91,7 +91,17 @@ begin
  values(p.empresa_id,p.diagnostico_id,p.id,p.version_number,p.strategic_direction,p.published_snapshot,p_actor) returning id into implementation_id;
  for action in select value from jsonb_array_elements(actions)
  loop
-  action_id:=case when coalesce(action->>'id','')~*'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then (action->>'id')::uuid else null end;
+  -- O snapshot é a fonte imutável do conteúdo, mas seu id pode apontar para a
+  -- linha anterior à publicação (a publicação recria as ações). A referência
+  -- técnica é resolvida contra as ações atuais do mesmo Plano, sem alterar o snapshot.
+  select current_action.id into action_id
+  from public.strategic_execution_plan_actions current_action
+  where current_action.plan_id=p.id and (
+   (nullif(action->>'source_action_code','') is not null and current_action.source_action_code=action->>'source_action_code')
+   or
+   (nullif(action->>'source_action_code','') is null and current_action.source_type='CONSULTANT' and current_action.agreed_title=coalesce(action->>'agreed_title','') and current_action.agreed_horizon=coalesce(nullif(action->>'agreed_horizon',''),'AGORA'))
+  )
+  order by current_action.created_at desc limit 1;
   due_date:=case when coalesce(action->>'due_date','')~'^\d{4}-\d{2}-\d{2}$' then (action->>'due_date')::date else null end;
   insert into public.strategic_plan_implementation_items(implementation_id,origin_action_id,source_type,source_action_code,agreed_title,agreed_objective,dimension,agreed_indicator,agreed_target,agreed_responsible,agreed_due_date,agreed_horizon,consultant_notes,origin_snapshot,operational_responsible,operational_due_date)
   values(implementation_id,action_id,coalesce(action->>'source_type','CONSULTANT'),nullif(action->>'source_action_code',''),coalesce(action->>'agreed_title','Ação acordada'),nullif(action->>'agreed_objective',''),nullif(action->'recommended'->>'dimension',''),nullif(action->>'agreed_indicator',''),nullif(action->>'agreed_target',''),nullif(action->>'responsible',''),due_date,coalesce(nullif(action->>'agreed_horizon',''),'AGORA'),nullif(action->>'consultant_notes',''),action,nullif(action->>'responsible',''),due_date);
