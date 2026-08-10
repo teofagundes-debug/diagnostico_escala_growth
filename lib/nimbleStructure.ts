@@ -4,8 +4,8 @@ import type {CommercialSolution} from './commercialPricingResolver';
 export const NIMBLE_STRUCTURE_CODES = ['AUT-001','TRN-001','PLA-001'] as const;
 export const NIMBLE_STRUCTURE_SOURCE = 'ESTRUTURA_CANONICA_PLATAFORMA_NIMBLE';
 
-export function usesNimbleStructure(solution:CommercialSolution){
- return solution.utiliza_plataforma_nimble===true;
+export function usesNimbleStructure(solution:CommercialSolution|null|undefined){
+ return solution?.utiliza_plataforma_nimble===true;
 }
 
 export function resolveNimbleStructure(catalog:CommercialSolution[]){
