@@ -21,3 +21,8 @@ test('responsável e prazo acordados vêm exclusivamente do snapshot publicado',
 test('alterações operacionais da implantação não substituem valores acordados',()=>{const planSection=ui.slice(ui.indexOf("tab==='plan'"),ui.indexOf("tab==='implementation'"));assert.doesNotMatch(planSection,/operational_responsible|operational_due_date/);assert.match(planSection,/agreed_responsible/);assert.match(planSection,/agreed_due_date/)});
 test('ação sem prazo respeita horizonte especial',()=>{assert.match(ui,/Sem prazo definido/);assert.match(ui,/Sem prazo aplicável/);assert.match(ui,/QUANDO_ESTIVER_PRONTO/)});
 test('prazo acordado sem horário preserva o dia no fuso brasileiro',()=>assert.match(ui,/T12:00:00/));
+test('projeção executiva oculta somente medição totalmente vazia',()=>{assert.match(domain,/some\(\(item:any\)=>item\.current_value!==null\)/);assert.doesNotMatch(api,/strategic_evolution_measurements[^\n]*method:/)});
+test('labels técnicos são traduzidos somente no Portal',()=>{for(const label of ['Índice Escala Growth','Atrair','Organizar','Acompanhar','Converter','Crescer'])assert.match(domain,new RegExp(label));assert.doesNotMatch(ui,/>PILAR:/)});
+test('indicadores usam ordem executiva fixa e não a ordem do banco',()=>assert.match(domain,/indicatorOrder\.map/));
+test('diagnóstico inicial precede medições efetivas',()=>{assert.match(domain,/initial:baselineSource/);assert.ok(ui.indexOf('evolution.initial')<ui.indexOf('evolution.timeline.map'))});
+test('valor ausente aparece como Sem medição e valores não recebem percentual artificial',()=>{assert.match(ui,/Sem medição/);assert.doesNotMatch(ui,/Number\(raw\).*%/)});
