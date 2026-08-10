@@ -12,6 +12,11 @@ export async function GET(req:Request){
   if(actor.role==='master'&&url.searchParams.get('empresa'))companyId=url.searchParams.get('empresa');
   if(!companyId)return Response.json({error:'Empresa não informada.'},{status:400});
   const company=encodeURIComponent(companyId);
+  if(actor.role==='cliente'){
+   const [projects,diagnostics]=await Promise.all([db(`projetos_evolucao?empresa_id=eq.${company}&select=status&order=created_at.desc&limit=1`),db(`diagnosticos?empresa_id=eq.${company}&select=status&order=created_at.desc&limit=1`)]);
+   const methodStarted=projects[0]?.status==='Formalizado'&&['Kickoff realizado','Implantação concluída','Cliente Ativo'].includes(diagnostics[0]?.status);
+   if(!methodStarted)return Response.json({error:'A Visão Estratégica será liberada conforme o avanço da sua jornada.'},{status:403});
+  }
   const plans=await db(`strategic_execution_plans?empresa_id=eq.${company}&select=*&order=version_number.desc`);
   const current=plans.find((plan:any)=>plan.status==='PUBLISHED'&&plan.published_snapshot);
   const implementations=current?await db(`strategic_plan_implementations?empresa_id=eq.${company}&plan_id=eq.${encodeURIComponent(current.id)}&plan_version=eq.${encodeURIComponent(current.version_number)}&select=*&limit=1`):[];
