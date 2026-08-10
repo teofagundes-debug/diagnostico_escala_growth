@@ -1,0 +1,21 @@
+import {access} from '@/lib/access';
+import {implementationManagement} from '@/lib/implementation-management';
+import {measurementTimeline} from '@/lib/evolution-management';
+
+const BASE=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
+const headers=()=>({apikey:KEY!,Authorization:'Bearer '+KEY,'Content-Type':'application/json'});
+async function db(path:string,options:RequestInit={}){const response=await fetch(BASE+'/rest/v1/'+path,{...options,headers:{...headers(),...(options.headers||{})},cache:'no-store'}),text=await response.text();if(!response.ok){let error:any={};try{error=JSON.parse(text)}catch{}throw new Error(error.message||text||'O banco não confirmou a operação.')}return text.trim()?JSON.parse(text):[]}
+async function master(req:Request){const profile=await access(req);return profile?.role==='master'?profile:null}
+
+async function context(){
+ const[implementations,implementationItems,companies,diagnostics,pillars,measurements,measurementItems]=await Promise.all([
+  db('strategic_plan_implementations?select=*&order=created_at.desc'),db('strategic_plan_implementation_items?select=*'),db('empresas?select=id,nome'),db('diagnosticos?select=id,pontuacao_geral,data_diagnostico,tipo_avaliacao'),db('resultados_pilares?select=diagnostico_id,pilar,percentual'),db('strategic_evolution_measurements?select=*&order=measured_at,created_at'),db('strategic_evolution_measurement_items?select=*&order=created_at')
+ ]);
+ const companyMap=new Map(companies.map((item:any)=>[item.id,item])),diagnosticMap=new Map(diagnostics.map((item:any)=>[item.id,item]));
+ const enriched=implementations.map((implementation:any)=>{const management=implementationManagement(implementationItems.filter((item:any)=>item.implementation_id===implementation.id)),diagnostic=diagnosticMap.get(implementation.diagnostico_id),baseline={IEG:{label:'Índice Escala Growth',value:diagnostic?.pontuacao_geral??null},...Object.fromEntries(pillars.filter((item:any)=>item.diagnostico_id===implementation.diagnostico_id).map((item:any)=>['PILAR:'+item.pilar,{label:item.pilar,value:item.percentual}]))},history=measurementTimeline(measurements.filter((item:any)=>item.implementation_id===implementation.id).map((measurement:any)=>({...measurement,items:measurementItems.filter((item:any)=>item.measurement_id===measurement.id)})));return{...implementation,company:companyMap.get(implementation.empresa_id)||null,diagnostic,baseline,management:management.summary,measurements:history}});
+ return{implementations:enriched};
+}
+
+export async function GET(req:Request){try{if(!BASE||!KEY)return Response.json({error:'Persistência não configurada.'},{status:503});if(!await master(req))return Response.json({error:'Não autorizado.'},{status:401});return Response.json(await context())}catch(error:any){console.error('[strategic-evolution] Falha ao carregar',error);return Response.json({error:'Não foi possível carregar a Evolução do IEG.'},{status:500})}}
+
+export async function POST(req:Request){try{if(!BASE||!KEY)return Response.json({error:'Persistência não configurada.'},{status:503});const profile=await master(req);if(!profile)return Response.json({error:'Não autorizado.'},{status:401});const body=await req.json();if(!body.implementation_id||!body.measured_at)return Response.json({error:'Informe a Implantação e a data da medição.'},{status:400});const values=body.values&&typeof body.values==='object'?body.values:{};const invalid=Object.values(values).some(value=>value!==null&&value!==''&&(!Number.isFinite(Number(value))||Number(value)<0||Number(value)>100));if(invalid)return Response.json({error:'Os indicadores devem possuir valores entre 0 e 100 ou permanecer vazios.'},{status:400});const result=await db('rpc/create_strategic_evolution_measurement',{method:'POST',body:JSON.stringify({p_implementation_id:body.implementation_id,p_measured_at:body.measured_at,p_values:values,p_general_note:body.general_note||null,p_actor:profile.email||'Usuário Master'})}),id=Array.isArray(result)?result[0]:result;return Response.json({ok:true,measurement_id:id,message:'Nova medição registrada com sucesso.'})}catch(error:any){console.error('[strategic-evolution] Falha ao registrar',error);return Response.json({error:error.message||'Não foi possível registrar a medição.'},{status:500})}}
