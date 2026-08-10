@@ -15,12 +15,14 @@ export async function GET(req:Request){try{
  if(!await isMaster(req))return Response.json({error:'Acesso exclusivo do Usuário Master.'},{status:403});
  const empresaId=new globalThis.URL(req.url).searchParams.get('empresa_id'),data=await base(),mapped=new Set(data.links.filter((item:any)=>item.ativo).map((item:any)=>item.intervention_code)),coverage={total:canonical.length,mapped:canonical.filter(item=>mapped.has(item.intervention_code)).length,unmapped:canonical.filter(item=>!mapped.has(item.intervention_code))};
  if(!empresaId)return Response.json({...data,interventions:canonical,coverage});
- const diagnostics=await db(`diagnosticos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=id,relatorio_snapshot,status,created_at&order=created_at.desc&limit=1`),diagnostic=diagnostics[0];
+ const diagnostics=await db(`diagnosticos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=id,empresa_id,relatorio_snapshot,status,created_at&order=created_at.desc&limit=1`),diagnostic=diagnostics[0];
  if(!diagnostic)return Response.json({error:'Nenhum diagnóstico foi localizado para esta empresa.'},{status:404});
+ const plans=await db(`strategic_execution_plans?empresa_id=eq.${encodeURIComponent(empresaId)}&diagnostico_id=eq.${encodeURIComponent(diagnostic.id)}&select=id,empresa_id,diagnostico_id,version_number,status,strategic_direction,primary_priority&order=version_number.desc&limit=1`).catch(()=>[]),plan=plans[0]||null;
  const derived=diagnostic.relatorio_snapshot?.indicadores_derivados||{},interventions=derived.strategic_interventions?.all_interventions||[],decision=derived.direcao_estrategica||null;
- if(!interventions.length)return Response.json({flow:'LEGADO',diagnostic_id:diagnostic.id,message:'Este diagnóstico ainda não possui intervenções materializadas pelo Motor Estratégico 3.0.',coverage,...data});
+ const context={empresa_id:empresaId,diagnostic_id:diagnostic.id,plan_id:plan?.id||null,plan_version:plan?.version_number||null,plan_status:plan?.status||null};
+ if(!interventions.length)return Response.json({flow:'LEGADO',...context,message:'Este diagnóstico ainda não possui intervenções materializadas pelo Motor Estratégico 3.0.',coverage,...data});
  const composition=resolveStrategicSolutions({interventions,links:data.links,catalog:data.catalog,valor_ui:Number(data.parameters?.valor_ui||0)});
- return Response.json({flow:'ESTRATEGICO_3_0',diagnostic_id:diagnostic.id,decision,active_interventions:interventions,composition,coverage,parameters:data.parameters,catalog:data.catalog});
+ return Response.json({flow:'ESTRATEGICO_3_0',...context,decision,active_interventions:interventions,composition,coverage,parameters:data.parameters,catalog:data.catalog});
 }catch(error:any){return Response.json({error:error?.message||'Não foi possível preparar a composição comercial.'},{status:500})}}
 
 export async function POST(req:Request){try{
