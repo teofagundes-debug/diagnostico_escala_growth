@@ -21,3 +21,25 @@ test('Teste H: item reaberto reconsolida IN_PROGRESS',()=>assert.equal(implement
 test('ordenacao gerencial prioriza atraso, andamento, planejada e concluida',()=>{const sorted=sortOperationalItems(implementationManagement([action('COMPLETED','AGORA','2026-08-01'),action('PLANNED','AGORA','2026-08-20'),action('IN_PROGRESS','AGORA','2026-08-20'),action('PLANNED','AGORA','2026-08-10')],now).items);assert.deepEqual(Array.from(sorted,item=>[item.is_overdue,item.status]),[[true,'PLANNED'],[false,'IN_PROGRESS'],[false,'PLANNED'],[false,'COMPLETED']])});
 
 test('Teste I: API gerencial nao altera Plano nem snapshot',()=>{const api=fs.readFileSync(new URL('../app/api/strategic-implementations/route.ts',import.meta.url),'utf8');assert.doesNotMatch(api,/strategic_execution_plans[^'\n]*method:'PATCH'/);assert.doesNotMatch(api,/published_snapshot[^'\n]*method:'PATCH'/);assert.match(api,/ITEM_REOPENED/);assert.match(api,/implementationManagement/)});
+
+test('risco critico exige simultaneamente tres atrasadas e pelo menos trinta por cento',()=>{
+ const scenario=(total,overdue)=>implementationManagement(Array.from({length:total},(_,index)=>action('PLANNED','AGORA',index<overdue?'2026-08-10':'2026-08-20')),now).summary.execution_risk;
+ assert.equal(scenario(3,1),'ATTENTION');
+ assert.equal(scenario(3,2),'ATTENTION');
+ assert.equal(scenario(3,3),'CRITICAL');
+ assert.equal(scenario(10,1),'ATTENTION');
+ assert.equal(scenario(10,2),'ATTENTION');
+ assert.equal(scenario(10,3),'CRITICAL');
+ assert.equal(scenario(20,3),'ATTENTION');
+ assert.equal(scenario(20,6),'CRITICAL');
+});
+
+test('Beta V2 com uma de tres atrasada permanece em atencao sem alterar atraso ou progresso',()=>{
+ const result=implementationManagement([action('COMPLETED','AGORA','2026-08-10'),action('IN_PROGRESS','DEPOIS','2026-08-13'),action('PLANNED','QUANDO_ESTIVER_PRONTO',null)],now);
+ assert.equal(result.summary.progress_percentage,33);
+ assert.equal(result.summary.status,'IN_PROGRESS');
+ assert.equal(result.summary.overdue_items,1);
+ assert.equal(result.summary.execution_risk,'ATTENTION');
+ assert.equal(result.summary.risk_text,'A implantação possui pontos de atenção relacionados a prazos ou responsáveis que devem ser acompanhados.');
+ assert.equal(result.items[1].days_overdue,2);
+});
