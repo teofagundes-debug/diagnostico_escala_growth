@@ -1,10 +1,11 @@
+
 import {isMaster} from '../../../lib/access';
 import {STRATEGIC_INTERVENTION_CATALOG} from '../../../lib/strategicInterventionEngine';
 import {resolveStrategicSolutions} from '../../../lib/strategicSolutionResolver';
 
-const URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
-async function db(path:string,init?:RequestInit){const response=await fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init?.headers||{})},cache:'no-store'});if(!response.ok)throw new Error(await response.text());const text=await response.text();return text?JSON.parse(text):[]}
+async function db(path:string,init?:RequestInit){const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init?.headers||{})},cache:'no-store'});if(!response.ok)throw new Error(await response.text());const text=await response.text();return text?JSON.parse(text):[]}
 const canonical=STRATEGIC_INTERVENTION_CATALOG.map(item=>({intervention_code:item.intervention_code,title:item.title,dimension:item.dimensions[0],dimensions:item.dimensions,capability:item.capability}));
 const validTypes=new Set(['PRINCIPAL','COMPLEMENTAR','PRE_REQUISITO','EVOLUCAO_FUTURA']);
 
@@ -12,7 +13,7 @@ async function base(){const [links,catalog,parameters]=await Promise.all([db('in
 
 export async function GET(req:Request){try{
  if(!await isMaster(req))return Response.json({error:'Acesso exclusivo do Usuário Master.'},{status:403});
- const empresaId=new URL(req.url).searchParams.get('empresa_id'),data=await base(),mapped=new Set(data.links.filter((item:any)=>item.ativo).map((item:any)=>item.intervention_code)),coverage={total:canonical.length,mapped:canonical.filter(item=>mapped.has(item.intervention_code)).length,unmapped:canonical.filter(item=>!mapped.has(item.intervention_code))};
+ const empresaId=new globalThis.URL(req.url).searchParams.get('empresa_id'),data=await base(),mapped=new Set(data.links.filter((item:any)=>item.ativo).map((item:any)=>item.intervention_code)),coverage={total:canonical.length,mapped:canonical.filter(item=>mapped.has(item.intervention_code)).length,unmapped:canonical.filter(item=>!mapped.has(item.intervention_code))};
  if(!empresaId)return Response.json({...data,interventions:canonical,coverage});
  const diagnostics=await db(`diagnosticos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=id,relatorio_snapshot,status,created_at&order=created_at.desc&limit=1`),diagnostic=diagnostics[0];
  if(!diagnostic)return Response.json({error:'Nenhum diagnóstico foi localizado para esta empresa.'},{status:404});
