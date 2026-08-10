@@ -17,3 +17,7 @@ test('cenário A: preview administrativo ignora somente o bloqueio visual da eta
 test('cenário B: cliente real sem etapa liberada recebe 403 no backend',()=>{assert.match(api,/actor\.role==='cliente'/);assert.match(api,/methodStarted/);assert.match(api,/status:403/)});
 test('cenário C: cliente liberado utiliza o mesmo componente e os mesmos dados',()=>{assert.match(portal,/return <ClientStrategicView\/>/);assert.equal((ui.match(/function ClientStrategicView/g)||[]).length,1)});
 test('query string de empresa só é aceita para usuário Master autenticado',()=>assert.match(api,/actor\.role==='master'&&url\.searchParams\.get\('empresa'\)/));
+test('responsável e prazo acordados vêm exclusivamente do snapshot publicado',()=>{assert.match(domain,/agreed_responsible:action\.responsible/);assert.match(domain,/agreed_due_date:action\.due_date/);assert.match(ui,/Responsável acordado/);assert.match(ui,/Prazo acordado/)});
+test('alterações operacionais da implantação não substituem valores acordados',()=>{const planSection=ui.slice(ui.indexOf("tab==='plan'"),ui.indexOf("tab==='implementation'"));assert.doesNotMatch(planSection,/operational_responsible|operational_due_date/);assert.match(planSection,/agreed_responsible/);assert.match(planSection,/agreed_due_date/)});
+test('ação sem prazo respeita horizonte especial',()=>{assert.match(ui,/Sem prazo definido/);assert.match(ui,/Sem prazo aplicável/);assert.match(ui,/QUANDO_ESTIVER_PRONTO/)});
+test('prazo acordado sem horário preserva o dia no fuso brasileiro',()=>assert.match(ui,/T12:00:00/));
