@@ -111,7 +111,7 @@ export async function POST(req:Request){
   if(body.action==='prepare-strategic-draft'){
    const diagnosticId=String(body.diagnostic_id||''),planId=String(body.plan_id||''),planVersion=Number(body.plan_version);
    if(!diagnosticId||!planId||!Number.isFinite(planVersion))return Response.json({error:'Diagnóstico, Plano Estratégico e versão são obrigatórios para preparar o rascunho.'},{status:400});
-   const currentContext=await context(empresaId),strategicContext={diagnostic_id:diagnosticId,plan_id:planId,plan_version:planVersion};
+   const currentContext=await context(empresaId),strategicContext={flow:'ESTRATEGICO_3_0',diagnostic_id:diagnosticId,plan_id:planId,plan_version:planVersion,strategic_direction:body.strategic_direction||null,primary_priority:body.primary_priority||null,commercial_snapshot:{valor_implantacao:amount(body.valor_implantacao_adicional),valor_mensal:amount(body.mensalidade_adicional),captured_at:new Date().toISOString()}};
    const existing=currentContext.projects.find((project:any)=>project.status==='Rascunho'&&project.checklist?.strategic_context?.diagnostic_id===diagnosticId&&project.checklist?.strategic_context?.plan_id===planId&&Number(project.checklist?.strategic_context?.plan_version)===planVersion);
    const resources=array(body.recursos),checklist=executionChecklist(resources,{...(existing?.checklist||{}),strategic_context:strategicContext});
    const payload=projectPayload({...body,empresa_id:empresaId,checklist},currentContext.current);
