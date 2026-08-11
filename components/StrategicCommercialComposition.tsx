@@ -3,7 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 const money=(v:any)=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const labels:any={PRINCIPAL:'Soluções principais',PRE_REQUISITO:'Pré-requisitos',RECURSO_IMPLANTACAO:'Recursos de implantação',COMPLEMENTAR:'Soluções complementares',EVOLUCAO_FUTURA:'Evoluções futuras'};
 const group=(item:any)=>item.dependency_group==='RECURSO_IMPLANTACAO'?'RECURSO_IMPLANTACAO':item.tipo_vinculo;
-export function StrategicCommercialComposition({companyId,onApply}:{companyId:string;onApply:(resources:any[],context:any)=>void}){
+export function StrategicCommercialComposition({companyId,onApply}:{companyId:string;onApply:(resources:any[],context:any)=>void|Promise<void>}){
  const[data,setData]=useState<any>(null),[error,setError]=useState(''),[selected,setSelected]=useState<Record<string,boolean>>({}),[manual,setManual]=useState(''),[notes,setNotes]=useState<Record<string,string>>({});
  useEffect(()=>{fetch(`/api/strategic-commercial?empresa_id=${companyId}`,{cache:'no-store'}).then(async r=>{const p=await r.json().catch(()=>({}));if(!r.ok)throw new Error(p.error||'Não foi possível preparar a composição.');setData(p);if(p.flow==='ESTRATEGICO_3_0')setSelected(Object.fromEntries(p.composition.solutions.map((x:any)=>[x.solucao_id,x.selected])))}).catch(e=>setError(e.message))},[companyId]);
  const solutions=useMemo(()=>data?.composition?.solutions||[],[data]),chosen=solutions.filter((x:any)=>selected[x.solucao_id]),totals=chosen.reduce((s:any,x:any)=>({implantacao:s.implantacao+x.pricing.valor_implantacao,mensal:s.mensal+x.pricing.valor_mensal}),{implantacao:0,mensal:0});

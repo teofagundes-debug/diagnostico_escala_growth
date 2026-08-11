@@ -108,6 +108,25 @@ export async function POST(req:Request){
    await recordExecutionHistory(saved,array(source.projeto_evolucao_recursos),body.usuario||'Usuário Master');await replaceResources(saved.id,array(source.projeto_evolucao_recursos));await syncPendencies(saved,array(source.projeto_evolucao_recursos));return Response.json({ok:true,project:saved},{status:201});
   }
   const empresaId=String(body.empresa_id||'');if(!empresaId)return Response.json({error:'Empresa não informada.'},{status:400});
+  if(body.action==='prepare-strategic-draft'){
+   const diagnosticId=String(body.diagnostic_id||''),planId=String(body.plan_id||''),planVersion=Number(body.plan_version);
+   if(!diagnosticId||!planId||!Number.isFinite(planVersion))return Response.json({error:'Diagnóstico, Plano Estratégico e versão são obrigatórios para preparar o rascunho.'},{status:400});
+   const currentContext=await context(empresaId),strategicContext={diagnostic_id:diagnosticId,plan_id:planId,plan_version:planVersion};
+   const existing=currentContext.projects.find((project:any)=>project.status==='Rascunho'&&project.checklist?.strategic_context?.diagnostic_id===diagnosticId&&project.checklist?.strategic_context?.plan_id===planId&&Number(project.checklist?.strategic_context?.plan_version)===planVersion);
+   const resources=array(body.recursos),checklist=executionChecklist(resources,{...(existing?.checklist||{}),strategic_context:strategicContext});
+   const payload=projectPayload({...body,empresa_id:empresaId,checklist},currentContext.current);
+   let saved:any,created=false;
+   if(existing){
+    await db(`projetos_evolucao?id=eq.${encodeURIComponent(existing.id)}&empresa_id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,status:'Rascunho',updated_at:new Date().toISOString(),responsavel_atualizacao:body.usuario||'Usuário Master'})});
+    saved={...existing,...payload,status:'Rascunho'};
+   }else{
+    saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...payload,status:'Rascunho'})}))[0];created=true;
+   }
+   await replaceResources(saved.id,resources);await syncPendencies(saved,resources);
+   const project=(await db(`projetos_evolucao?id=eq.${encodeURIComponent(saved.id)}&empresa_id=eq.${encodeURIComponent(empresaId)}&select=*,projeto_evolucao_recursos(*)&limit=1`))[0];
+   if(!project)return Response.json({error:'O rascunho foi preparado, mas não pôde ser recarregado com segurança.'},{status:500});
+   return Response.json({ok:true,created,project,projeto_evolucao_id:project.id,empresa_id:empresaId,diagnostic_id:diagnosticId,plan_id:planId,plan_version:planVersion,status:project.status,updated_at:project.updated_at,message:'Composição aplicada ao rascunho com sucesso.'},{status:created?201:200});
+  }
   const currentContext=await context(empresaId),duplicate=currentContext.projects.find((project:any)=>project.status==='Rascunho'&&project.tipo===body.tipo);
   if(duplicate&&!body.allow_duplicate)return Response.json({error:'Já existe um Projeto de Evolução deste tipo em andamento.',code:'DUPLICATE_DRAFT',project:duplicate},{status:409});
   const resources=array(body.recursos),saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...projectPayload({...body,checklist:executionChecklist(resources,body.checklist)},currentContext.current),status:'Rascunho'})}))[0];
