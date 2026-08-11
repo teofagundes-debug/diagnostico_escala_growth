@@ -47,7 +47,7 @@ const projectPayload=(body:any,current:any)=>{const additional=amount(body.mensa
  formalizacao:body.formalizacao||'Termo de adesão ao Método Escala Growth',checklist:body.checklist||{},criado_por:body.criado_por||'Usuário Master'
 }};
 const parametersSnapshot=(item:any)=>item.parametros_snapshot&&Object.keys(item.parametros_snapshot).length?item.parametros_snapshot:(item.parametros_metodo||solutionParameters(item));
-const canonicalResourceId=(item:any)=>String(item?.recurso_id||item?.id||'').trim();
+const canonicalResourceId=(item:any,allowLegacyFallback=true)=>String(item?.recurso_id||(allowLegacyFallback?item?.id:'')||'').trim();
 const resourceLabel=(item:any)=>String(item?.nome_snapshot||item?.nome||'Solução não identificada');
 class InvalidCatalogResourceError extends Error{
  code='INVALID_CATALOG_RESOURCE';
@@ -55,28 +55,32 @@ class InvalidCatalogResourceError extends Error{
  constructor(details:any){super('Existe um recurso sem vínculo válido com a Biblioteca. Atualize a página e revise o Projeto de Evolução antes de salvar novamente.');this.name='InvalidCatalogResourceError';this.details=details}
 }
 async function validateCatalogResources(project:any,resources:any[],origin:string){
- const referenced=[...new Map(resources.map((item:any)=>[canonicalResourceId(item),item]).filter(([id])=>Boolean(id))).entries()];
+ const allowLegacyFallback=!strategicDraft(project),references=resources.map((item:any)=>[canonicalResourceId(item,allowLegacyFallback),item] as [string,any]),missing=references.find(([id])=>!id);
+ if(missing)throw new InvalidCatalogResourceError({recurso_id:null,project_resource_id:missing[1]?.id||null,origem:origin,projeto_id:project.id,solucao:resourceLabel(missing[1]),flow:allowLegacyFallback?'LEGACY':'ESTRATEGICO_3_0'});
+ const referenced=[...new Map(references).entries()];
  if(!referenced.length)return;
- const ids=referenced.map(([id])=>id),catalog=array(await db(`catalogo_recursos?id=in.(${ids.map(id=>encodeURIComponent(id)).join(',')})&select=id,nome`)),valid=new Set(catalog.map((item:any)=>String(item.id)));
+ const ids=referenced.map(([id])=>id),catalog=array(await db(`catalogo_recursos?id=in.(${ids.map(id=>encodeURIComponent(id)).join(',')})&select=id,codigo,nome`)),valid=new Set(catalog.map((item:any)=>String(item.id)));
  const invalid=referenced.find(([id])=>!valid.has(id));
  if(invalid){
   const [recursoId,item]=invalid;
   throw new InvalidCatalogResourceError({recurso_id:recursoId,origem:origin,projeto_id:project.id,solucao:resourceLabel(item)});
  }
+ const catalogById=new Map(catalog.map((item:any)=>[String(item.id),item]));
+ console.info('[commercial-evolution][SAVE_VALIDATE_RESOURCES] recursos canônicos validados',{project_id:project.id,flow:allowLegacyFallback?'LEGACY':'ESTRATEGICO_3_0',resources:references.map(([recursoId,item])=>({project_resource_id:item?.id||null,recurso_id:recursoId,catalog_id:catalogById.get(recursoId)?.id||null,codigo:catalogById.get(recursoId)?.codigo||null,nome:catalogById.get(recursoId)?.nome||resourceLabel(item)}))});
 }
-async function replaceResources(projectId:string,resources:any[]){
+async function replaceResources(projectId:string,resources:any[],allowLegacyFallback=true){
  await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(projectId)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
  if(!resources.length)return;
- await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>{const snapshot=parametersSnapshot(item),financial=snapshot.impacta_financeiro!==false;return{projeto_evolucao_id:projectId,recurso_id:canonicalResourceId(item),nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:financial?amount(item.valor_implantacao??snapshot.valor_implantacao_padrao):0,valor_mensal:financial?amount(item.valor_mensal??snapshot.valor_mensalidade_padrao):0,classificacao:item.classificacao||'Recomendado',origem:item.origem||'Consultor',peso:item.peso||null,fase:item.fase||'Recomendações Estratégicas',recomendado_metodo:Boolean(item.recomendado_metodo||['Recomendado','Opcional'].includes(item.classificacao)),implantar_nesta_fase:typeof item.implantar_nesta_fase==='boolean'?item.implantar_nesta_fase:null,contratado:item.implantar_nesta_fase===true&&item.executor==='Escala Vendas',executor:item.implantar_nesta_fase===true&&executorOptions.includes(item.executor)?item.executor:null,executor_dados:item.executor_dados||{},investimento_recomendado:item.investimento_recomendado==null?amount(item.investimento_minimo_recomendado??snapshot.investimento_minimo_recomendado):amount(item.investimento_recomendado),investimento_aprovado:item.investimento_aprovado===''||item.investimento_aprovado==null?null:amount(item.investimento_aprovado),motivo_investimento:item.motivo_investimento||null,parametros_snapshot:snapshot,decisao_em:typeof item.implantar_nesta_fase==='boolean'?new Date().toISOString():null,decisao_por:typeof item.implantar_nesta_fase==='boolean'?(item.decisao_por||'Usuário Master'):null}}))});
+ await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>{const snapshot=parametersSnapshot(item),financial=snapshot.impacta_financeiro!==false;return{projeto_evolucao_id:projectId,recurso_id:canonicalResourceId(item,allowLegacyFallback),nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:financial?amount(item.valor_implantacao??snapshot.valor_implantacao_padrao):0,valor_mensal:financial?amount(item.valor_mensal??snapshot.valor_mensalidade_padrao):0,classificacao:item.classificacao||'Recomendado',origem:item.origem||'Consultor',peso:item.peso||null,fase:item.fase||'Recomendações Estratégicas',recomendado_metodo:Boolean(item.recomendado_metodo||['Recomendado','Opcional'].includes(item.classificacao)),implantar_nesta_fase:typeof item.implantar_nesta_fase==='boolean'?item.implantar_nesta_fase:null,contratado:item.implantar_nesta_fase===true&&item.executor==='Escala Vendas',executor:item.implantar_nesta_fase===true&&executorOptions.includes(item.executor)?item.executor:null,executor_dados:item.executor_dados||{},investimento_recomendado:item.investimento_recomendado==null?amount(item.investimento_minimo_recomendado??snapshot.investimento_minimo_recomendado):amount(item.investimento_recomendado),investimento_aprovado:item.investimento_aprovado===''||item.investimento_aprovado==null?null:amount(item.investimento_aprovado),motivo_investimento:item.motivo_investimento||null,parametros_snapshot:snapshot,decisao_em:typeof item.implantar_nesta_fase==='boolean'?new Date().toISOString():null,decisao_por:typeof item.implantar_nesta_fase==='boolean'?(item.decisao_por||'Usuário Master'):null}}))});
 }
 async function syncPendencies(project:any,resources:any[]){
  const operationalStarted=['Kickoff realizado','Implantação concluída','Cliente Ativo'].includes(project.status),definitions=pendingDefinitions(resources.filter((item:any)=>item.implantar_nesta_fase===true&&item.executor==='Escala Vendas')).filter(item=>item.codigo!=='MARKETING_PARAMETROS'||operationalStarted),activeCodes=definitions.map(item=>item.codigo),now=new Date().toISOString(),existing=array(await db(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=id,codigo,status`));
  for(const item of definitions){const current=existing.find((row:any)=>row.codigo===item.codigo);await db('pendencias_inteligentes?on_conflict=projeto_evolucao_id,codigo',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({empresa_id:project.empresa_id,projeto_evolucao_id:project.id,codigo:item.codigo,titulo:item.titulo,categoria:item.categoria,rota_configuracao:item.rota||null,solucoes_origem:item.solutions,status:current?.status==='Concluída'?'Concluída':'Pendente',updated_at:now})})}
  for(const item of existing.filter((row:any)=>!activeCodes.includes(row.codigo)))await db(`pendencias_inteligentes?id=eq.${encodeURIComponent(item.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Dispensada',updated_at:now})});
 }
-async function recordExecutionHistory(project:any,resources:any[],usuario='Usuário Master'){
- await validateCatalogResources(project,resources,'projeto_evolucao_recursos.recurso_id');
- const previous=array(await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=recurso_id,nome_snapshot,executor,executor_dados`)),rows=resources.flatMap((item:any)=>{const recursoId=canonicalResourceId(item),current=previous.find((row:any)=>row.recurso_id===recursoId),nextExecutor=executorOptions.includes(item.executor)?item.executor:null,nextData=item.executor_dados||{};if(current&&current.executor===nextExecutor&&JSON.stringify(current.executor_dados||{})===JSON.stringify(nextData))return[];if(!nextExecutor&&!current?.executor)return[];return[{empresa_id:project.empresa_id,projeto_evolucao_id:project.id,recurso_id:recursoId||null,nome_snapshot:item.nome||item.nome_snapshot||'Solução recomendada',executor_anterior:current?.executor||null,executor_novo:nextExecutor,dados_anteriores:current?.executor_dados||{},dados_novos:nextData,alterado_por:usuario,motivo:item.motivo_alteracao_executor||'Definição da Estratégia de Execução'}]});
+async function recordExecutionHistory(project:any,resources:any[],usuario='Usuário Master',resourcesAlreadyValidated=false){
+ if(!resourcesAlreadyValidated)await validateCatalogResources(project,resources,'projeto_evolucao_recursos.recurso_id');
+ const allowLegacyFallback=!strategicDraft(project),previous=array(await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=recurso_id,nome_snapshot,executor,executor_dados`)),rows=resources.flatMap((item:any)=>{const recursoId=canonicalResourceId(item,allowLegacyFallback),current=previous.find((row:any)=>row.recurso_id===recursoId),nextExecutor=executorOptions.includes(item.executor)?item.executor:null,nextData=item.executor_dados||{};if(current&&current.executor===nextExecutor&&JSON.stringify(current.executor_dados||{})===JSON.stringify(nextData))return[];if(!nextExecutor&&!current?.executor)return[];return[{empresa_id:project.empresa_id,projeto_evolucao_id:project.id,recurso_id:recursoId||null,nome_snapshot:item.nome||item.nome_snapshot||'Solução recomendada',executor_anterior:current?.executor||null,executor_novo:nextExecutor,dados_anteriores:current?.executor_dados||{},dados_novos:nextData,alterado_por:usuario,motivo:item.motivo_alteracao_executor||'Definição da Estratégia de Execução'}]});
  if(rows.length)await db('estrategia_execucao_historico',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(rows)});
 }
 
@@ -162,12 +166,20 @@ export async function PATCH(req:Request){
   if(body.action==='execution-strategy'){
    if(existing.status!=='Rascunho')return Response.json({error:'A Estratégia de Execução somente pode ser alterada em projetos em Rascunho.'},{status:409});
    const resources=array(body.recursos),checklist=executionChecklist(resources,existing.checklist);
-   await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master');
-   await replaceResources(id,resources);
-   await syncPendencies(existing,resources);
-   const contracted=resources.filter((item:any)=>item.movimento==='Adicionar'&&item.implantar_nesta_fase===true&&item.executor==='Escala Vendas'),monthly=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_mensal),0),implantation=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_implantacao),0),newMonthly=Math.max(0,amount(existing.mensalidade_atual)+monthly-amount(existing.desconto_recorrente));
-   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly,commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
-   return Response.json({ok:true,checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly});
+   let saveStage='SAVE_IMPLEMENTATION_CONFIG';
+   try{
+    saveStage='SAVE_VALIDATE_RESOURCES';await validateCatalogResources(existing,resources,'projeto_evolucao_recursos.recurso_id');
+    saveStage='SAVE_EXECUTION_HISTORY';await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master',true);
+    saveStage='SAVE_EXECUTION_STRATEGY';await replaceResources(id,resources,!strategicDraft(existing));
+    saveStage='SAVE_INTELLIGENT_PENDENCIES';await syncPendencies(existing,resources);
+    const contracted=resources.filter((item:any)=>item.movimento==='Adicionar'&&item.implantar_nesta_fase===true&&item.executor==='Escala Vendas'),monthly=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_mensal),0),implantation=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_implantacao),0),newMonthly=Math.max(0,amount(existing.mensalidade_atual)+monthly-amount(existing.desconto_recorrente));
+    saveStage='SAVE_CHECKLIST';await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
+    return Response.json({ok:true,checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly});
+   }catch(error:any){
+    const technical=error instanceof InvalidCatalogResourceError?error.details:{message:error?.message||String(error)};
+    console.error(`[commercial-evolution][${saveStage}] falha ao salvar Configurações da Implantação`,{project_id:id,empresa_id:existing.empresa_id,flow:strategicDraft(existing)?'ESTRATEGICO_3_0':'LEGACY',technical});
+    return Response.json({error:error instanceof InvalidCatalogResourceError?error.message:'Não foi possível salvar as Configurações da Implantação. Tente novamente; se o problema persistir, contate o administrador.',code:error?.code||'IMPLEMENTATION_CONFIG_SAVE_FAILED',stage:saveStage},{status:error instanceof InvalidCatalogResourceError?422:500});
+   }
   }
   if(body.action==='update'){
    if(existing.status!=='Rascunho')return Response.json({error:'Somente Projetos em Rascunho podem ser editados.'},{status:409});

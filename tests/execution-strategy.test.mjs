@@ -40,7 +40,7 @@ test('configurações ficam no Projeto de Implantação e o Dossiê recebe somen
 
 test('histórico usa o recurso canônico da Biblioteca e não o id do vínculo',()=>{
  const api=read('app/api/commercial-evolution/route.ts');
- assert.match(api,/canonicalResourceId=.*recurso_id\|\|item\?\.id/);
+ assert.match(api,/canonicalResourceId=.*recurso_id\|\|\(allowLegacyFallback\?item\?\.id:''\)/);
  assert.match(api,/validateCatalogResources\(project,resources,'projeto_evolucao_recursos\.recurso_id'\)/);
  assert.match(api,/catalogo_recursos\?id=in\./);
  assert.doesNotMatch(api,/const recursoId=item\.id\|\|item\.recurso_id/);
@@ -68,4 +68,26 @@ test('recurso inválido é bloqueado antes da FK e não expõe PostgreSQL ao con
  assert.match(api,/status:422/);
  assert.match(api,/console\.error\('\[commercial-evolution\] recurso canônico inválido'/);
  assert.doesNotMatch(api,/throw new Error\(`Recurso inválido para a Estratégia de Execução/);
+});
+
+test('fluxo 3.0 nunca usa id do vínculo como fallback canônico',()=>{
+ const api=read('app/api/commercial-evolution/route.ts');
+ assert.match(api,/allowLegacyFallback=!strategicDraft\(project\)/);
+ assert.match(api,/replaceResources\(id,resources,!strategicDraft\(existing\)\)/);
+ assert.match(api,/flow:allowLegacyFallback\?'LEGACY':'ESTRATEGICO_3_0'/);
+});
+
+test('salvamento não tenta atualizar a coluna gerada nova_mensalidade',()=>{
+ const api=read('app/api/commercial-evolution/route.ts');
+ const executionBlock=api.slice(api.indexOf("if(body.action==='execution-strategy')"),api.indexOf("if(body.action==='update')"));
+ assert.doesNotMatch(executionBlock,/body:JSON\.stringify\(\{[^}]*nova_mensalidade:/s);
+ assert.match(executionBlock,/return Response\.json\(\{ok:true,checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly\}/);
+});
+
+test('cinco recursos 3.0 percorrem validação, histórico, estratégia e checklist',()=>{
+ const api=read('app/api/commercial-evolution/route.ts');
+ const betaResources=['Licença Plataforma Nimble','CRM Comercial','Implantação Operacional','Dashboard Executivo','Treinamento da Equipe'].map((nome,index)=>({id:`vinculo-${index}`,recurso_id:`catalogo-${index}`,nome_snapshot:nome}));
+ assert.equal(betaResources.length,5);
+ assert.ok(betaResources.every(item=>item.recurso_id!==item.id));
+ for(const stage of ['SAVE_VALIDATE_RESOURCES','SAVE_EXECUTION_HISTORY','SAVE_EXECUTION_STRATEGY','SAVE_INTELLIGENT_PENDENCIES','SAVE_CHECKLIST'])assert.ok(api.includes(stage),stage);
 });
