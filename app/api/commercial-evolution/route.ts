@@ -119,7 +119,7 @@ export async function POST(req:Request){
    const payload=projectPayload({...body,empresa_id:empresaId,checklist},currentContext.current);
    let saved:any,created=false;
    if(existing){
-    await db(`projetos_evolucao?id=eq.${encodeURIComponent(existing.id)}&empresa_id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,status:'Rascunho',updated_at:new Date().toISOString(),responsavel_atualizacao:body.usuario||'Usuário Master'})});
+     await db(`projetos_evolucao?id=eq.${encodeURIComponent(existing.id)}&empresa_id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,status:'Rascunho',commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:new Date().toISOString(),responsavel_atualizacao:body.usuario||'Usuário Master'})});
     saved={...existing,...payload,status:'Rascunho'};
    }else{
     saved=(await db('projetos_evolucao',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...payload,status:'Rascunho'})}))[0];created=true;
@@ -148,13 +148,13 @@ export async function PATCH(req:Request){
    await replaceResources(id,resources);
    await syncPendencies(existing,resources);
    const contracted=resources.filter((item:any)=>item.movimento==='Adicionar'&&item.implantar_nesta_fase===true&&item.executor==='Escala Vendas'),monthly=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_mensal),0),implantation=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_implantacao),0),newMonthly=Math.max(0,amount(existing.mensalidade_atual)+monthly-amount(existing.desconto_recorrente));
-   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
+   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly,commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
    return Response.json({ok:true,checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly});
   }
   if(body.action==='update'){
    if(existing.status!=='Rascunho')return Response.json({error:'Somente Projetos em Rascunho podem ser editados.'},{status:409});
    const resources=array(body.recursos),current=(await context(existing.empresa_id)).current,payload=projectPayload({...body,empresa_id:existing.empresa_id,checklist:executionChecklist(resources,existing.checklist)},current);
-   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,updated_at:now,responsavel_atualizacao:body.responsavel_atualizacao||'Usuário Master'})});
+   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.responsavel_atualizacao||'Usuário Master'})});
    await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master');await replaceResources(id,resources);await syncPendencies(existing,resources);return Response.json({ok:true});
   }
   if(body.action==='publish'){
