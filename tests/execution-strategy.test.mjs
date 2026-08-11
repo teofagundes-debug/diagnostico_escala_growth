@@ -53,3 +53,19 @@ test('painel envia o recurso_id persistido junto das configurações',()=>{
  assert.match(panel,/choices\[item\.recurso_id\]/);
  assert.match(panel,/action:'execution-strategy'/);
 });
+
+test('falha de persistência não conclui visualmente as configurações',()=>{
+ const panel=read('components/ExecutionStrategyPanel.tsx');
+ assert.match(panel,/persistedChecklist=dirty\?\{\}:\(project\.checklist\|\|\{\}\)/);
+ assert.match(panel,/configured=configurationSaved/);
+ assert.match(panel,/if\(!response\.ok\)/);
+ assert.match(panel,/setDirty\(false\)/);
+});
+
+test('recurso inválido é bloqueado antes da FK e não expõe PostgreSQL ao consultor',()=>{
+ const api=read('app/api/commercial-evolution/route.ts');
+ assert.match(api,/class InvalidCatalogResourceError/);
+ assert.match(api,/status:422/);
+ assert.match(api,/console\.error\('\[commercial-evolution\] recurso canônico inválido'/);
+ assert.doesNotMatch(api,/throw new Error\(`Recurso inválido para a Estratégia de Execução/);
+});

@@ -49,6 +49,11 @@ const projectPayload=(body:any,current:any)=>{const additional=amount(body.mensa
 const parametersSnapshot=(item:any)=>item.parametros_snapshot&&Object.keys(item.parametros_snapshot).length?item.parametros_snapshot:(item.parametros_metodo||solutionParameters(item));
 const canonicalResourceId=(item:any)=>String(item?.recurso_id||item?.id||'').trim();
 const resourceLabel=(item:any)=>String(item?.nome_snapshot||item?.nome||'Solução não identificada');
+class InvalidCatalogResourceError extends Error{
+ code='INVALID_CATALOG_RESOURCE';
+ details:any;
+ constructor(details:any){super('Existe um recurso sem vínculo válido com a Biblioteca. Atualize a página e revise o Projeto de Evolução antes de salvar novamente.');this.name='InvalidCatalogResourceError';this.details=details}
+}
 async function validateCatalogResources(project:any,resources:any[],origin:string){
  const referenced=[...new Map(resources.map((item:any)=>[canonicalResourceId(item),item]).filter(([id])=>Boolean(id))).entries()];
  if(!referenced.length)return;
@@ -56,7 +61,7 @@ async function validateCatalogResources(project:any,resources:any[],origin:strin
  const invalid=referenced.find(([id])=>!valid.has(id));
  if(invalid){
   const [recursoId,item]=invalid;
-  throw new Error(`Recurso inválido para a Estratégia de Execução: recurso_id=${recursoId}; origem=${origin}; projeto=${project.id}; solução=${resourceLabel(item)}. O recurso precisa existir em catalogo_recursos.`);
+  throw new InvalidCatalogResourceError({recurso_id:recursoId,origem:origin,projeto_id:project.id,solucao:resourceLabel(item)});
  }
 }
 async function replaceResources(projectId:string,resources:any[]){
@@ -191,7 +196,11 @@ export async function PATCH(req:Request){
    await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Formalizado',formalizado_em:now,updated_at:now})});return Response.json({ok:true});
   }
   return Response.json({error:'Ação não reconhecida.'},{status:400});
- }catch(error:any){return Response.json({error:error?.message||'Não foi possível atualizar o Projeto de Evolução.'},{status:500})}
+ }catch(error:any){
+  if(error instanceof InvalidCatalogResourceError){console.error('[commercial-evolution] recurso canônico inválido',error.details);return Response.json({error:error.message,code:error.code},{status:422})}
+  console.error('[commercial-evolution] falha ao atualizar Projeto de Evolução',error);
+  return Response.json({error:'Não foi possível salvar as Configurações da Implantação. Tente novamente; se o problema persistir, contate o administrador.'},{status:500})
+ }
 }
 
 export async function DELETE(req:Request){
