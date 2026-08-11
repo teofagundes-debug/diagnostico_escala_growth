@@ -108,4 +108,3 @@ test('checklist exibe configuração, executor e resumo financeiro pelos critér
  assert.match(panel,/executorDefined\?'✓ Executor definido'/);
  assert.match(panel,/financialUpdated\?'✓ Resumo Financeiro atualizado'/);
 });
-

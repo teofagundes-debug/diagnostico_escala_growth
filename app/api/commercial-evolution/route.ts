@@ -245,4 +245,3 @@ export async function DELETE(req:Request){
   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});return Response.json({ok:true});
  }catch(error:any){return Response.json({error:error?.message||'Não foi possível excluir o Projeto de Evolução.'},{status:500})}
 }
-
