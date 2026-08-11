@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./strategic-commercial.css";
+import "./commercial-consolidation.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.escalavendas.com.br"),
