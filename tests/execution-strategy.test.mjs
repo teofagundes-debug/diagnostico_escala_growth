@@ -37,3 +37,19 @@ test('configurações ficam no Projeto de Implantação e o Dossiê recebe somen
  assert.doesNotMatch(dossier,/ExecutionStrategyPanel/);
  assert.match(dossier,/ExecutionStrategySummary/);
 });
+
+test('histórico usa o recurso canônico da Biblioteca e não o id do vínculo',()=>{
+ const api=read('app/api/commercial-evolution/route.ts');
+ assert.match(api,/canonicalResourceId=.*recurso_id\|\|item\?\.id/);
+ assert.match(api,/validateCatalogResources\(project,resources,'projeto_evolucao_recursos\.recurso_id'\)/);
+ assert.match(api,/catalogo_recursos\?id=in\./);
+ assert.doesNotMatch(api,/const recursoId=item\.id\|\|item\.recurso_id/);
+ assert.doesNotMatch(api,/recurso_id:item\.id\|\|item\.recurso_id/);
+});
+
+test('painel envia o recurso_id persistido junto das configurações',()=>{
+ const panel=read('components/ExecutionStrategyPanel.tsx');
+ assert.match(panel,/project\.projeto_evolucao_recursos\.map/);
+ assert.match(panel,/choices\[item\.recurso_id\]/);
+ assert.match(panel,/action:'execution-strategy'/);
+});
