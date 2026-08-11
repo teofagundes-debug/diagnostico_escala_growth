@@ -1,6 +1,7 @@
 import {isMaster} from '../../../lib/access';
 import {composeGrowthProject,solutionParameters} from '../../../lib/motor-growth';
 import {pendingDefinitions} from '../../../lib/intelligent-pendencies';
+import {commercialFingerprint} from '../../../lib/commercialConsolidation';
 
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
@@ -72,6 +73,15 @@ async function replaceResources(projectId:string,resources:any[],allowLegacyFall
  await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(projectId)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
  if(!resources.length)return;
  await db('projeto_evolucao_recursos',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(resources.map((item:any)=>{const snapshot=parametersSnapshot(item),financial=snapshot.impacta_financeiro!==false;return{projeto_evolucao_id:projectId,recurso_id:canonicalResourceId(item,allowLegacyFallback),nome_snapshot:item.nome||item.nome_snapshot,tipo_snapshot:item.tipo||item.tipo_snapshot||'Implantação',movimento:item.movimento||'Adicionar',valor_implantacao:financial?amount(item.valor_implantacao??snapshot.valor_implantacao_padrao):0,valor_mensal:financial?amount(item.valor_mensal??snapshot.valor_mensalidade_padrao):0,classificacao:item.classificacao||'Recomendado',origem:item.origem||'Consultor',peso:item.peso||null,fase:item.fase||'Recomendações Estratégicas',recomendado_metodo:Boolean(item.recomendado_metodo||['Recomendado','Opcional'].includes(item.classificacao)),implantar_nesta_fase:typeof item.implantar_nesta_fase==='boolean'?item.implantar_nesta_fase:null,contratado:item.implantar_nesta_fase===true&&item.executor==='Escala Vendas',executor:item.implantar_nesta_fase===true&&executorOptions.includes(item.executor)?item.executor:null,executor_dados:item.executor_dados||{},investimento_recomendado:item.investimento_recomendado==null?amount(item.investimento_minimo_recomendado??snapshot.investimento_minimo_recomendado):amount(item.investimento_recomendado),investimento_aprovado:item.investimento_aprovado===''||item.investimento_aprovado==null?null:amount(item.investimento_aprovado),motivo_investimento:item.motivo_investimento||null,parametros_snapshot:snapshot,decisao_em:typeof item.implantar_nesta_fase==='boolean'?new Date().toISOString():null,decisao_por:typeof item.implantar_nesta_fase==='boolean'?(item.decisao_por||'Usuário Master'):null}}))});
+}
+async function persistStrategicExecutionResources(project:any,resources:any[]){
+ const current=array(await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=id,recurso_id`)),snapshotResources=array(project.commercial_3_0_snapshot?.resources),now=new Date().toISOString();
+ for(const item of resources){
+  const resourceId=canonicalResourceId(item,false),row=current.find((entry:any)=>String(entry.recurso_id)===resourceId),frozen=snapshotResources.find((entry:any)=>String(entry.recurso_id)===resourceId);
+  if(!row||!frozen)throw new InvalidCatalogResourceError({recurso_id:resourceId,origem:'commercial_3_0_snapshot.resources',projeto_id:project.id,solucao:resourceLabel(item)});
+  const phase=typeof item.implantar_nesta_fase==='boolean'?item.implantar_nesta_fase:null,executor=phase===true&&executorOptions.includes(item.executor)?item.executor:null;
+  await db(`projeto_evolucao_recursos?id=eq.${encodeURIComponent(row.id)}&projeto_evolucao_id=eq.${encodeURIComponent(project.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({implantar_nesta_fase:phase,contratado:phase===true&&executor==='Escala Vendas',executor,executor_dados:item.executor_dados||{},investimento_recomendado:item.investimento_recomendado==null?null:amount(item.investimento_recomendado),investimento_aprovado:item.investimento_aprovado===''||item.investimento_aprovado==null?null:amount(item.investimento_aprovado),motivo_investimento:item.motivo_investimento||null,decisao_em:phase!==null?now:null,decisao_por:phase!==null?(item.decisao_por||'Usuário Master'):null,valor_implantacao:amount(frozen.implantacao),valor_mensal:amount(frozen.mensalidade)})});
+ }
 }
 async function syncPendencies(project:any,resources:any[]){
  const operationalStarted=['Kickoff realizado','Implantação concluída','Cliente Ativo'].includes(project.status),definitions=pendingDefinitions(resources.filter((item:any)=>item.implantar_nesta_fase===true&&item.executor==='Escala Vendas')).filter(item=>item.codigo!=='MARKETING_PARAMETROS'||operationalStarted),activeCodes=definitions.map(item=>item.codigo),now=new Date().toISOString(),existing=array(await db(`pendencias_inteligentes?projeto_evolucao_id=eq.${encodeURIComponent(project.id)}&select=id,codigo,status`));
@@ -165,16 +175,25 @@ export async function PATCH(req:Request){
   const existing=(await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}&select=*&limit=1`))[0];if(!existing)return Response.json({error:'Projeto não encontrado.'},{status:404});
   if(body.action==='execution-strategy'){
    if(existing.status!=='Rascunho')return Response.json({error:'A Estratégia de Execução somente pode ser alterada em projetos em Rascunho.'},{status:409});
-   const resources=array(body.recursos),checklist=executionChecklist(resources,existing.checklist);
+   const resources=array(body.recursos),strategic=strategicDraft(existing),canonicalFinancial=strategic?existing.commercial_3_0_snapshot?.financial:null,checklistBase=executionChecklist(resources,existing.checklist),canonicalFinancialValid=Boolean(canonicalFinancial&&amount(canonicalFinancial.valor_implantacao)>=0&&amount(canonicalFinancial.valor_mensalidade)>=0),checklist={...checklistBase,resumo_financeiro_atualizado:strategic?canonicalFinancialValid:checklistBase.resumo_financeiro_atualizado};
+   if(strategic&&!canonicalFinancialValid)return Response.json({error:'A Consolidação Comercial 3.0 não possui um resumo financeiro válido. Revise a consolidação antes de salvar as Configurações da Implantação.',code:'COMMERCIAL_3_0_FINANCIAL_MISSING'},{status:409});
    let saveStage='SAVE_IMPLEMENTATION_CONFIG';
    try{
     saveStage='SAVE_VALIDATE_RESOURCES';await validateCatalogResources(existing,resources,'projeto_evolucao_recursos.recurso_id');
     saveStage='SAVE_EXECUTION_HISTORY';await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master',true);
-    saveStage='SAVE_EXECUTION_STRATEGY';await replaceResources(id,resources,!strategicDraft(existing));
+    saveStage='SAVE_EXECUTION_STRATEGY';if(strategic)await persistStrategicExecutionResources(existing,resources);else await replaceResources(id,resources,true);
     saveStage='SAVE_INTELLIGENT_PENDENCIES';await syncPendencies(existing,resources);
     const contracted=resources.filter((item:any)=>item.movimento==='Adicionar'&&item.implantar_nesta_fase===true&&item.executor==='Escala Vendas'),monthly=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_mensal),0),implantation=contracted.reduce((sum:number,item:any)=>sum+amount(item.valor_implantacao),0),newMonthly=Math.max(0,amount(existing.mensalidade_atual)+monthly-amount(existing.desconto_recorrente));
-    saveStage='SAVE_CHECKLIST';await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
-    return Response.json({ok:true,checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly});
+    if(strategic){
+     const frozenImplantation=amount(canonicalFinancial.valor_implantacao),frozenMonthly=amount(canonicalFinancial.valor_mensalidade),additionalMonthly=Math.max(0,frozenMonthly-amount(existing.mensalidade_atual)+amount(existing.desconto_recorrente));
+     saveStage='SAVE_CHECKLIST';await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:additionalMonthly,valor_implantacao_adicional:frozenImplantation,commercial_3_0_status:'PRONTO',updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
+     saveStage='SAVE_CANONICAL_FINANCIAL';await db('financeiro_growth?on_conflict=empresa_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({empresa_id:existing.empresa_id,valor_implantacao:frozenImplantation,valor_mensalidade:frozenMonthly,prazo_contratual:canonicalFinancial.prazo_contratual,validade_proposta:canonicalFinancial.validade_proposta,desconto_pix:canonicalFinancial.desconto_pix,updated_at:now})});
+     const refreshed=(await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}&select=*,projeto_evolucao_recursos(*)&limit=1`))[0],fingerprint=await commercialFingerprint(refreshed);
+     await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({commercial_3_0_status:'PRONTO',commercial_3_0_fingerprint:fingerprint})});
+     return Response.json({ok:true,flow:'ESTRATEGICO_3_0',checklist,mensalidade_adicional:additionalMonthly,valor_implantacao_adicional:frozenImplantation,nova_mensalidade:frozenMonthly,resources_count:array(existing.commercial_3_0_snapshot?.resources).length,financial_source:'CONSOLIDACAO_COMERCIAL_3_0'});
+    }
+    saveStage='SAVE_CHECKLIST';await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
+    return Response.json({ok:true,flow:'LEGACY',checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly,financial_source:'EXECUTION_CONFIGURATION'});
    }catch(error:any){
     const technical=error instanceof InvalidCatalogResourceError?error.details:{message:error?.message||String(error)};
     console.error(`[commercial-evolution][${saveStage}] falha ao salvar Configurações da Implantação`,{project_id:id,empresa_id:existing.empresa_id,flow:strategicDraft(existing)?'ESTRATEGICO_3_0':'LEGACY',technical});
@@ -226,3 +245,4 @@ export async function DELETE(req:Request){
   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});return Response.json({ok:true});
  }catch(error:any){return Response.json({error:error?.message||'Não foi possível excluir o Projeto de Evolução.'},{status:500})}
 }
+

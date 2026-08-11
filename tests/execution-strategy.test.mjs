@@ -73,7 +73,7 @@ test('recurso inválido é bloqueado antes da FK e não expõe PostgreSQL ao con
 test('fluxo 3.0 nunca usa id do vínculo como fallback canônico',()=>{
  const api=read('app/api/commercial-evolution/route.ts');
  assert.match(api,/allowLegacyFallback=!strategicDraft\(project\)/);
- assert.match(api,/replaceResources\(id,resources,!strategicDraft\(existing\)\)/);
+ assert.match(api,/if\(strategic\)await persistStrategicExecutionResources\(existing,resources\);else await replaceResources\(id,resources,true\)/);
  assert.match(api,/flow:allowLegacyFallback\?'LEGACY':'ESTRATEGICO_3_0'/);
 });
 
@@ -81,7 +81,7 @@ test('salvamento não tenta atualizar a coluna gerada nova_mensalidade',()=>{
  const api=read('app/api/commercial-evolution/route.ts');
  const executionBlock=api.slice(api.indexOf("if(body.action==='execution-strategy')"),api.indexOf("if(body.action==='update')"));
  assert.doesNotMatch(executionBlock,/body:JSON\.stringify\(\{[^}]*nova_mensalidade:/s);
- assert.match(executionBlock,/return Response\.json\(\{ok:true,checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly\}/);
+ assert.match(executionBlock,/return Response\.json\(\{ok:true,flow:'LEGACY',checklist,mensalidade_adicional:monthly,valor_implantacao_adicional:implantation,nova_mensalidade:newMonthly/);
 });
 
 test('cinco recursos 3.0 percorrem validação, histórico, estratégia e checklist',()=>{
@@ -91,3 +91,21 @@ test('cinco recursos 3.0 percorrem validação, histórico, estratégia e checkl
  assert.ok(betaResources.every(item=>item.recurso_id!==item.id));
  for(const stage of ['SAVE_VALIDATE_RESOURCES','SAVE_EXECUTION_HISTORY','SAVE_EXECUTION_STRATEGY','SAVE_INTELLIGENT_PENDENCIES','SAVE_CHECKLIST'])assert.ok(api.includes(stage),stage);
 });
+
+test('configuração 3.0 preserva os preços congelados e não chama o PATCH financeiro do portal',()=>{
+ const api=read('app/api/commercial-evolution/route.ts'),panel=read('components/ExecutionStrategyPanel.tsx');
+ assert.match(api,/canonicalFinancial=.+commercial_3_0_snapshot\?\.financial/);
+ assert.match(api,/frozenImplantation=amount\(canonicalFinancial\.valor_implantacao\)/);
+ assert.match(api,/frozenMonthly=amount\(canonicalFinancial\.valor_mensalidade\)/);
+ assert.match(api,/financial_source:'CONSOLIDACAO_COMERCIAL_3_0'/);
+ assert.doesNotMatch(panel,/await fetch\('\/api\/portal'/);
+});
+
+test('checklist exibe configuração, executor e resumo financeiro pelos critérios persistidos',()=>{
+ const panel=read('components/ExecutionStrategyPanel.tsx');
+ assert.match(panel,/executorDefined=persistedChecklist\.executor_definido===true/);
+ assert.match(panel,/financialUpdated=persistedChecklist\.resumo_financeiro_atualizado===true/);
+ assert.match(panel,/executorDefined\?'✓ Executor definido'/);
+ assert.match(panel,/financialUpdated\?'✓ Resumo Financeiro atualizado'/);
+});
+
