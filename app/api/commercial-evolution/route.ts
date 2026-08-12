@@ -206,6 +206,11 @@ export async function PATCH(req:Request){
    await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.responsavel_atualizacao||'Usuário Master'})});
    await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master');await replaceResources(id,resources);await syncPendencies(existing,resources);return Response.json({ok:true});
   }
+  if(body.action==='reopen-update'){
+   if(existing.status!=='Publicado')return Response.json({error:'Somente um Projeto publicado pode iniciar uma atualização.'},{status:409});
+   await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Rascunho',commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.usuario||'Usuário Master'})});
+   return Response.json({ok:true,message:'Projeto aberto para atualização. A versão publicada permanece disponível ao cliente.'});
+  }
   if(body.action==='publish'){
    return Response.json({error:'A publicação oficial deve ser realizada em Publicação e Acesso, para manter Projeto, Contrato, versão e convite sincronizados.'},{status:409});
   }

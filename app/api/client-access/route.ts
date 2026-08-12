@@ -101,6 +101,33 @@ export async function POST(req:Request){
    await audit(empresaId,ctx.diagnosticoId,'Contrato revisado','Contrato conferido pelo Usuário Master e liberado para publicação.');
    return Response.json({ok:true,message:'Contrato revisado e pronto para publicação.'});
   }
+  if(action==='update_publication'){
+   const projectId=String(body.project_id||'');
+   const [financial,plan,implementation,project,contract,diagnostic,lastPublication]=await Promise.all([
+    rest(`financeiro_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&limit=1`).then(x=>x?.[0]),
+    rest(`planos_estrategicos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
+    rest(`planos_implantacao?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
+    rest(`projetos_evolucao?id=eq.${encodeURIComponent(projectId)}&empresa_id=eq.${encodeURIComponent(empresaId)}&select=*,projeto_evolucao_recursos(*),pendencias_inteligentes(*)&limit=1`).then(x=>x?.[0]),
+    rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
+    rest(`diagnosticos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=created_at.desc&limit=1`).then(x=>x?.[0]),
+    rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&projeto_evolucao_id=eq.${encodeURIComponent(projectId)}&status=eq.PUBLICADA&select=*&order=versao.desc&limit=1`).then(x=>x?.[0]).catch(()=>null)
+   ]);
+   if(!project||!lastPublication)return Response.json({error:'Não existe uma publicação anterior deste Projeto para atualizar.'},{status:409});
+   if(!isStrategicCommercialProject(project)||project.commercial_3_0_status!=='PRONTO'||!project.commercial_3_0_snapshot)return Response.json({error:'Conclua novamente a Consolidação Comercial 3.0 antes de atualizar o cliente.'},{status:409});
+   const currentFingerprint=await commercialFingerprint(project);
+   if(project.commercial_3_0_fingerprint!==currentFingerprint)return Response.json({error:'A consolidação está desatualizada. Consolide novamente antes de atualizar o cliente.'},{status:409});
+   const consolidated=project.commercial_3_0_snapshot,currentResources=project.projeto_evolucao_recursos||[],snapshotResources=consolidated.resources||[],publishedResources=lastPublication.snapshot?.commercial_3_0?.resources||[];
+   if(currentResources.length!==snapshotResources.length)return Response.json({error:'Os recursos do Projeto divergem do snapshot consolidado. Revise a Composição Comercial 3.0.'},{status:409});
+   if(!snapshotResources.length&&publishedResources.length)return Response.json({error:`Atualização bloqueada: a versão publicada possui ${publishedResources.length} recursos e o novo snapshot está vazio. Revise os vínculos canônicos antes de continuar.`,code:'EMPTY_RESOURCE_REGRESSION'},{status:409});
+   const now=new Date().toISOString(),version=Number(lastPublication.versao||0)+1,consolidatedResources=snapshotResources.map((item:any)=>({id:item.recurso_id,nome:item.nome,tipo:item.tipo,status:'Contratado',valor_implantacao:item.implantacao,valor_mensal:item.mensalidade,parametros_snapshot:item.parametros_snapshot})),snapshotFinancial={...financial,valor_implantacao:consolidated.financial.valor_implantacao,valor_mensalidade:consolidated.financial.valor_mensalidade,prazo_contratual:consolidated.financial.prazo_contratual,validade_proposta:consolidated.financial.validade_proposta,desconto_pix:consolidated.financial.desconto_pix},snapshotImplementation={...(implementation||{}),recursos:consolidatedResources,valor_implantacao:consolidated.financial.valor_implantacao,investimento:{...(implementation?.investimento||{}),implantacao:consolidated.financial.valor_implantacao,mensalidade:consolidated.financial.valor_mensalidade}},formalizationDocument=contract?{...contract,commercial_3_0:consolidated.document||null}:lastPublication.snapshot?.formalization_document||null,snapshot={financial:snapshotFinancial,plan,implementation:snapshotImplementation,project,commercial_3_0:consolidated,contract:formalizationDocument,formalization_document:formalizationDocument,orientacoes_iniciais:lastPublication.snapshot?.orientacoes_iniciais,published_at:now,version,updated_from_version:lastPublication.versao};
+   await rest('proposta_publicacoes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({empresa_id:empresaId,diagnostico_id:diagnostic?.id||ctx.diagnosticoId||null,plano_estrategico_id:plan?.id||null,plano_implantacao_id:implementation?.id||null,projeto_evolucao_id:project.id,versao:version,status:'PUBLICADA',snapshot,publicada_por:String(body.usuario||'Usuário Master'),publicada_em:now})});
+   await Promise.all([
+    rest(`projetos_evolucao?id=eq.${encodeURIComponent(project.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Publicado',publicado_em:now,updated_at:now,responsavel_atualizacao:String(body.usuario||'Usuário Master')})}),
+    rest(`financeiro_growth?empresa_id=eq.${encodeURIComponent(empresaId)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({valor_implantacao:consolidated.financial.valor_implantacao,valor_mensalidade:consolidated.financial.valor_mensalidade,prazo_contratual:consolidated.financial.prazo_contratual,validade_proposta:consolidated.financial.validade_proposta,desconto_pix:consolidated.financial.desconto_pix,publicada_em:now,publicada_por:String(body.usuario||'Usuário Master'),versao_publicada:version,snapshot_publicado:snapshot,updated_at:now})})
+   ]);
+   await audit(empresaId,ctx.diagnosticoId,'Projeto de Evolução atualizado no Portal',`Versão ${version} atualizada explicitamente por ${String(body.usuario||'Usuário Master')}, substituindo a versão ${lastPublication.versao} no Portal do Cliente.`);
+   return Response.json({ok:true,message:'Projeto atualizado para o cliente com sucesso.',publication:{versao:version,publicada_em:now},resources_count:snapshotResources.length});
+  }
   const email=String(body.email||existing?.email||data.responsible?.email||'').trim().toLowerCase(),name=String(body.nome||existing?.nome||data.responsible?.nome||'Cliente'),phone=String(body.telefone||existing?.telefone||data.responsible?.telefone||'');
   if(!email||!email.includes('@'))return Response.json({error:'Revise o e-mail do responsável.'},{status:400});
   if(action==='publish'){

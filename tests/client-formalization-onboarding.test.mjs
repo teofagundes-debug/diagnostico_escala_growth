@@ -17,10 +17,11 @@ test('Home apresenta formalização e próxima ação do cenário Votecoski',()=
  for(const text of ['Status da formalização','Visualizar Plano Estratégico','Visualizar Projeto de Evolução','Realizar Aceite'])assert.ok(portal.includes(text),text);
 });
 
-test('Projeto de Evolução não expõe observações internas',()=>{
- for(const field of ['valor_implantacao_adicional','mensalidade_atual','mensalidade_adicional','nova_mensalidade','forma_cobranca','formalizacao'])assert.ok(portal.includes(field),field);
+test('Projeto de Evolução não expõe observações internas nem forma de cobrança',()=>{
+ for(const field of ['valor_implantacao_adicional','mensalidade_atual','mensalidade_adicional','nova_mensalidade','implantacao_modalidade','formalizacao'])assert.ok(portal.includes(field),field);
  const projectComponent=portal.slice(portal.indexOf('function ProjectEvolution'),portal.indexOf('function CompanyEvolution'));
  assert.doesNotMatch(projectComponent,/observacoes_internas|checklist|criado_por/);
+ assert.doesNotMatch(projectComponent,/forma_cobranca|Forma de cobrança/);
 });
 
 test('API usa a versão publicada e calcula as três fases',()=>{
