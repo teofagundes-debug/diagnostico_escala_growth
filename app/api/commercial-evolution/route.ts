@@ -203,6 +203,8 @@ export async function PATCH(req:Request){
   if(body.action==='update'){
    if(existing.status!=='Rascunho')return Response.json({error:'Somente Projetos em Rascunho podem ser editados.'},{status:409});
    const resources=array(body.recursos),current=(await context(existing.empresa_id)).current,payload=projectPayload({...body,empresa_id:existing.empresa_id,checklist:executionChecklist(resources,existing.checklist)},current);
+   const persistedResources=array(await db(`projeto_evolucao_recursos?projeto_evolucao_id=eq.${encodeURIComponent(id)}&select=id,recurso_id`));
+   if(strategicDraft(existing)&&persistedResources.length>0&&resources.length===0)return Response.json({error:`Salvamento bloqueado: este Projeto possui ${persistedResources.length} recursos canônicos e a tela tentou enviar uma composição vazia. Reabra o editor antes de salvar.`,code:'EMPTY_RESOURCE_REGRESSION'},{status:409});
    await db(`projetos_evolucao?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...payload,commercial_3_0_status:existing.commercial_3_0_snapshot?'DESATUALIZADO':existing.commercial_3_0_status,updated_at:now,responsavel_atualizacao:body.responsavel_atualizacao||'Usuário Master'})});
    await recordExecutionHistory(existing,resources,body.usuario||'Usuário Master');await replaceResources(id,resources);await syncPendencies(existing,resources);return Response.json({ok:true});
   }

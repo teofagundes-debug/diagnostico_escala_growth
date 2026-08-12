@@ -13,7 +13,7 @@ export function CommercialConsolidationPanel({companyId,onChange}:{companyId:str
  const comparison=data.comparison||{},consistent=Object.values(comparison).every((item:any)=>item.ok),ready=['PRONTO','ATUALIZACAO_PENDENTE'].includes(data.status)&&consistent;
  const act=async(action:'consolidate'|'update')=>{setBusy(true);setMessage('');const response=await fetch(action==='consolidate'?'/api/commercial-consolidation':'/api/client-access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action==='consolidate'?{empresa_id:companyId,project_id:data.project_id,usuario:'Usuário Master'}:{action:'update_publication',empresa_id:companyId,project_id:data.project_id,usuario:'Usuário Master'})}),payload=await response.json().catch(()=>({}));setBusy(false);setMessage(response.ok?payload.message:payload.error||'Não foi possível concluir a ação.');await load();if(response.ok)onChange?.()};
  const canConsolidate=data.project_status==='Rascunho';
- const status=data.update_pending?'ATUALIZAÇÃO PENDENTE':ready?(data.has_publication?'PUBLICADO / ATUALIZADO':'PRONTO PARA PUBLICAÇÃO'):data.status==='DESATUALIZADO'?'DESATUALIZADA':'DIVERGÊNCIAS ENCONTRADAS';
+ const status=data.status==='RECURSOS_INCONSISTENTES'?'RECURSOS INCONSISTENTES':data.update_pending?'ATUALIZAÇÃO PENDENTE':ready?(data.has_publication?'PUBLICADO / ATUALIZADO':'PRONTO PARA PUBLICAÇÃO'):data.status==='DESATUALIZADO'?'DESATUALIZADA':'DIVERGÊNCIAS ENCONTRADAS';
  return <section className="admin-section commercial-consolidation-panel">
   <span className="eyebrow">Fonte canônica da contratação</span><h2>CONSOLIDAÇÃO COMERCIAL 3.0</h2>
   <div className={`consolidation-status ${ready?'ready':'pending'}`}><small>Status</small><b>{status}</b></div>
@@ -23,6 +23,7 @@ export function CommercialConsolidationPanel({companyId,onChange}:{companyId:str
    <article><small>Recursos</small><b>Projeto: {comparison.resources?.project||0}</b><span>Snapshot: {comparison.resources?.snapshot||0}</span><strong>{comparison.resources?.ok?'OK':'DIVERGENTE'}</strong></article>
   </div>
   <p>A consolidação copia e congela os dados já aprovados no Projeto. Nenhum preço é recalculado.</p>
+  {data.resource_integrity===false&&<p className="error">Atualização bloqueada: a versão publicada possui {data.published_resource_count} recursos, mas o novo Projeto não possui vínculos canônicos. Reaplique a Composição Comercial 3.0 antes de consolidar.</p>}
   <div className="detail-actions">
    {canConsolidate&&<button className="btn btn-primary" disabled={busy} onClick={()=>act('consolidate')}>{busy?'Processando...':'CONSOLIDAR COMERCIAL 3.0'}</button>}
    {data.update_pending&&<button className="btn btn-primary" disabled={busy||!ready} onClick={()=>act('update')}>Atualizar para o Cliente</button>}

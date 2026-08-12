@@ -110,9 +110,9 @@ export async function POST(req:Request){
     rest(`projetos_evolucao?id=eq.${encodeURIComponent(projectId)}&empresa_id=eq.${encodeURIComponent(empresaId)}&select=*,projeto_evolucao_recursos(*),pendencias_inteligentes(*)&limit=1`).then(x=>x?.[0]),
     rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x=>x?.[0]),
     rest(`diagnosticos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=created_at.desc&limit=1`).then(x=>x?.[0]),
-    rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&projeto_evolucao_id=eq.${encodeURIComponent(projectId)}&status=eq.PUBLICADA&select=*&order=versao.desc&limit=1`).then(x=>x?.[0]).catch(()=>null)
+    rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&status=eq.PUBLICADA&select=*&order=versao.desc&limit=1`).then(x=>x?.[0]).catch(()=>null)
    ]);
-   if(!project||!lastPublication)return Response.json({error:'Não existe uma publicação anterior deste Projeto para atualizar.'},{status:409});
+   if(!project||!lastPublication)return Response.json({error:'Não existe uma publicação anterior desta empresa para atualizar.'},{status:409});
    if(!isStrategicCommercialProject(project)||project.commercial_3_0_status!=='PRONTO'||!project.commercial_3_0_snapshot)return Response.json({error:'Conclua novamente a Consolidação Comercial 3.0 antes de atualizar o cliente.'},{status:409});
    const currentFingerprint=await commercialFingerprint(project);
    if(project.commercial_3_0_fingerprint!==currentFingerprint)return Response.json({error:'A consolidação está desatualizada. Consolide novamente antes de atualizar o cliente.'},{status:409});
