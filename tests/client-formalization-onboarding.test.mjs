@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 
 const portal=await readFile(new URL('../components/PortalApp.tsx',import.meta.url),'utf8');
 const api=await readFile(new URL('../app/api/portal/route.ts',import.meta.url),'utf8');
+const onboarding=await readFile(new URL('../components/PortalOnboarding.tsx',import.meta.url),'utf8');
 
 test('menu e rota expõem o onboarding comercial publicado',()=>{
  for(const item of ['Plano Estratégico','Projeto de Evolução','Contrato ou Termo','Aceite','Evolução da Empresa','Documentos'])assert.ok(portal.includes(item),item);
@@ -22,6 +23,12 @@ test('Projeto de Evolução não expõe observações internas nem forma de cobr
  const projectComponent=portal.slice(portal.indexOf('function ProjectEvolution'),portal.indexOf('function CompanyEvolution'));
  assert.doesNotMatch(projectComponent,/observacoes_internas|checklist|criado_por/);
  assert.doesNotMatch(projectComponent,/forma_cobranca|Forma de cobrança/);
+});
+
+test('Formalização usa a modalidade da versão vigente e não exibe forma de cobrança',()=>{
+ const formalization=onboarding.slice(onboarding.indexOf('export function FormalizationUX'));
+ assert.match(formalization,/\['Modalidade da implantação',project\.implantacao_modalidade\]/);
+ assert.doesNotMatch(formalization,/Forma de cobrança|project\.forma_cobranca/);
 });
 
 test('API usa a versão publicada e calcula as três fases',()=>{
