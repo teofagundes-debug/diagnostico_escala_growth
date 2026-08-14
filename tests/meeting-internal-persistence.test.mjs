@@ -14,7 +14,7 @@ test('campos internos possuem colunas permanentes e backfill seguro',()=>{
 
 test('API salva, confirma e recarrega os dois campos pela reunião',()=>{
  assert.match(api,/update\.consultant_initial_hypothesis=body\.hipotese_inicial/);
- assert.match(api,/update\.prepared_specific_questions=body\.perguntas_especificas/);
+ assert.match(api,/update\.prepared_specific_questions=meetingData\.perguntas_especificas/);
  assert.match(api,/O banco não confirmou a persistência dos campos internos/);
  assert.match(api,/meeting\.consultant_initial_hypothesis/);
  assert.match(api,/meeting\.prepared_specific_questions/);

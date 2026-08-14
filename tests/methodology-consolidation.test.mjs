@@ -6,8 +6,9 @@ const meeting=await readFile(new URL('../components/MeetingPreparation.tsx',impo
 const plan=await readFile(new URL('../components/StrategicPlanValidation.tsx',import.meta.url),'utf8');
 const dossiers=await readFile(new URL('../app/api/dossiers/route.ts',import.meta.url),'utf8');
 
-test('preparação possui somente os quatro grupos de apoio interno',()=>{
- for(const title of ['Hipóteses levantadas pelo Diagnóstico','Perguntas sugeridas','Pontos que precisam ser validados','Oportunidades que deverão ser confirmadas'])assert.ok(meeting.includes(title),title);
+test('preparação mantém apoio interno sem duplicar oportunidades do diagnóstico',()=>{
+ for(const title of ['Hipótese inicial do consultor','Perguntas sugeridas','Pontos que precisam ser validados'])assert.ok(meeting.includes(title),title);
+ assert.ok(!meeting.includes('Oportunidades que deverão ser confirmadas'));
  assert.match(meeting,/Preparação da Reunião <small>Uso interno<\/small>/);
 });
 

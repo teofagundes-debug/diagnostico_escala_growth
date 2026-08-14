@@ -1,6 +1,14 @@
 const normalize=(value:any)=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const list=(value:any)=>Array.isArray(value)?value:[];
 
+export type InvestigationQuestion={id:string;text:string;source_question:string;source:'DIAGNOSTIC_INVESTIGATION'};
+export type PreparedQuestion={id:string;text:string;source:'DIAGNOSTIC_INVESTIGATION'|'CONSULTANT'};
+const scored=(answer:any)=>answer?.resposta_numerica===null||answer?.resposta_numerica===undefined?undefined:Number(answer.resposta_numerica);
+const stableKey=(value:string)=>normalize(value).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,120);
+const stableHash=(value:string)=>{let hash=2166136261;for(const char of normalize(value))hash=Math.imul(hash^char.charCodeAt(0),16777619);return(hash>>>0).toString(36)};
+const stableIdentity=(prefix:string,value:string)=>`${prefix}:${stableKey(value).slice(0,72)}:${stableHash(value)}`;
+export const normalizedQuestion=(value:any)=>normalize(value).replace(/[^a-z0-9]+/g,' ').trim();
+
 type ReadingRule={match:string[];topic:string;low:string;attention:string;structured:string;risk:string;question:string;hypothesis:string};
 
 const rules:ReadingRule[]=[
@@ -43,6 +51,30 @@ export function diagnosticReading(question:string,value:number|undefined){
  const normalized=normalize(question),rule=rules.find(item=>item.match.some(term=>normalized.includes(term)));
  if(!rule){const subject=String(question||'Esta dimensão').replace(/[?!.]+$/,'');return{topic:'Dimensão avaliada',interpretation:value<=1?`${subject}: situação muito frágil.`:value===2?`${subject}: situação parcialmente estruturada.`:`${subject}: situação estruturada.`,risk:`A fragilidade identificada em “${subject.toLowerCase()}” merece acompanhamento.`,investigation:`Como funciona atualmente: ${subject.toLowerCase()}?`,hypothesis:`A resposta sobre “${subject.toLowerCase()}” sugere um ponto que merece validação na reunião.`}}
  return{topic:rule.topic,interpretation:value<=1?rule.low:value===2?rule.attention:rule.structured,risk:rule.risk,investigation:rule.question,hypothesis:rule.hypothesis};
+}
+
+export function investigationQuestions(answers:any[]):InvestigationQuestion[]{
+ const ranked=list(answers).map((item:any,index:number)=>({item,index,value:scored(item)})).filter(entry=>entry.value!==undefined).sort((left,right)=>Number(left.value)-Number(right.value)||left.index-right.index).slice(0,6);
+ const seen=new Set<string>(),result:InvestigationQuestion[]=[];
+ for(const entry of ranked){
+  if(Number(entry.value)>2)continue;
+  const text=diagnosticReading(String(entry.item?.pergunta||''),entry.value).investigation,key=normalizedQuestion(text);
+  if(!key||key===normalizedQuestion('Não informado.')||seen.has(key))continue;
+  seen.add(key);result.push({id:stableIdentity('investigation',String(entry.item?.pergunta||text)),text,source_question:String(entry.item?.pergunta||''),source:'DIAGNOSTIC_INVESTIGATION'});
+  if(result.length===4)break;
+ }
+ return result;
+}
+
+export function preparedQuestionsFromText(value:any,existing:any[]=[]):PreparedQuestion[]{
+ const lines=String(value||'').split(/\r?\n/).map(item=>item.replace(/^[-•*\d.)\s]+/,'').trim()).filter(Boolean),previous=list(existing).filter(item=>item&&String(item.text||'').trim()),used=new Set<string>(),seen=new Set<string>();
+ return lines.flatMap((text,index)=>{
+  const normalized=normalizedQuestion(text);if(!normalized||seen.has(normalized))return[];seen.add(normalized);
+  let match=previous.find(item=>!used.has(String(item.id))&&normalizedQuestion(item.text)===normalized);
+  if(!match){const positional=previous[index];if(positional&&!used.has(String(positional.id)))match=positional}
+  const id=String(match?.id||stableIdentity('consultant',text)),source=match?.source==='DIAGNOSTIC_INVESTIGATION'?'DIAGNOSTIC_INVESTIGATION':'CONSULTANT';used.add(id);
+  return[{id,text,source} as PreparedQuestion];
+ });
 }
 
 export function officialDiagnosticPriority(data:any){

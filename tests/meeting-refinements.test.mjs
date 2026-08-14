@@ -8,7 +8,7 @@ test('relacionamento e situação da plataforma usam o documento persistente da 
  assert.match(component,/tipo_relacionamento/);
  assert.match(component,/situacao_plataforma/);
  assert.match(component,/Cliente da Base/);
- assert.match(component,/SITUAÇÃO ATUAL DA PLATAFORMA/);
+ assert.match(component,/Situação Atual da Plataforma/);
  assert.match(api,/tipo_relacionamento','situacao_plataforma','situacao_plataforma_outro/);
  assert.match(api,/dados_reuniao:meetingData/);
 });
@@ -17,15 +17,15 @@ test('realidade combina confirmações e respostas sem manter a etapa Ajustes',(
  const component=read('components/MeetingPreparation.tsx');
  assert.match(component,/O cliente informou que \$\{answer\}/);
  assert.match(component,/confirmedRecommendations\.map/);
- assert.match(component,/confirmedGroups/);
+ assert.match(component,/additionalOpportunities/);
  assert.doesNotMatch(component,/<label>Ajustes<textarea/);
 });
 
 test('validação oferece as prioridades sugeridas e usa o título consultivo',()=>{
  const component=read('components/MeetingPreparation.tsx');
- assert.match(component,/suggestedPriorityRanking\.map\(\(item:any\)=>item\.label\)/);
+ assert.match(component,/suggestedPriorityRanking\.length/);
  assert.match(component,/priorityOptions\.map/);
- assert.match(component,/Prioridade Definida em Conjunto com o Cliente/);
+ assert.match(component,/Prioridade Principal/);
 });
 
 test('campos internos não alimentam Plano Estratégico nem Portal do Cliente',()=>{

@@ -14,11 +14,11 @@ test('hipótese e prioridade recebem linguagem consultiva sem alterar o registro
  assert.match(component,/Como prioridade estratégica definida em conjunto com o cliente/);
 });
 
-test('recursos implantados são descritos e oportunidades perdem títulos técnicos',()=>{
+test('recursos implantados e oportunidades adicionais são descritos',()=>{
  assert.match(component,/status==='Implantado'\|\|status==='Parcialmente Implantado'/);
  assert.match(component,/O cliente confirmou que já utiliza os seguintes recursos da plataforma/);
- assert.match(component,/replace\(\/\^Semana/);
- assert.match(component,/replace\(\/\^Title:/);
+ assert.match(component,/additionalOpportunities/);
+ assert.match(component,/legacyConfirmedOpportunities/);
 });
 
 test('respostas são apresentadas em texto corrido preservando o conteúdo original',()=>{

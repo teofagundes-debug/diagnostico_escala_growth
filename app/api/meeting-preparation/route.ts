@@ -3,10 +3,11 @@ import {ensurePlan} from '../../../lib/workflow';
 import {NIMBLE_STRUCTURE_CODES,usesNimbleStructure} from '../../../lib/nimbleStructure';
 import {actionsPreservedForRevision,consolidateContextualPrescriptions,materializeContextualPrescriptions,resolvePostMeetingPrescriptions,type ContextualPrescription} from '../../../lib/resourcePrescriptionResolver';
 import {resolveCurrentStrategicRevision} from '../../../lib/strategicRevisionResolver';
+import {investigationQuestions,preparedQuestionsFromText} from '../../../lib/diagnosticBriefing';
 
 const URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({apikey:KEY!,Authorization:`Bearer ${KEY}`,'Content-Type':'application/json'});
-const allowed=['empresa_id','diagnostico_id','reuniao_id','tipo_relacionamento','situacao_plataforma','situacao_plataforma_outro','diagnostico_validado','hipotese_inicial','recomendacoes','prontidao','pontos_validacao','perguntas_especificas','validacoes_reuniao','parecer_reuniao','problema_principal','ajustes_diagnostico','prioridades_confirmadas','recomendacoes_aprovadas','recomendacoes_removidas','novas_recomendacoes','informacoes_complementares','missao_definida','indicadores_sugeridos','observacoes_consultor','parecer_consultor','responsavel_reuniao','status','iniciada_em','concluida_em','ultima_alteracao_em','autosave_version'];
+const allowed=['empresa_id','diagnostico_id','reuniao_id','tipo_relacionamento','situacao_plataforma','situacao_plataforma_outro','diagnostico_validado','hipotese_inicial','recomendacoes','prontidao','pontos_validacao','perguntas_especificas','perguntas_preparadas_estruturadas','perguntas_preparadas_inicializadas','validacoes_reuniao','parecer_reuniao','problema_principal','ajustes_diagnostico','prioridades_confirmadas','recomendacoes_aprovadas','recomendacoes_removidas','novas_recomendacoes','informacoes_complementares','missao_definida','indicadores_sugeridos','observacoes_consultor','parecer_consultor','responsavel_reuniao','status','iniciada_em','concluida_em','ultima_alteracao_em','autosave_version'];
 const clean=(body:any)=>Object.fromEntries(allowed.filter(k=>body[k]!==undefined).map(k=>[k,body[k]]));
 async function guard(req:Request){return Boolean(URL&&KEY)&&await isMaster(req)}
 async function api(path:string,init:RequestInit={}){return fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init.headers||{})},cache:'no-store'})}
@@ -34,7 +35,7 @@ export async function GET(req:Request){
  if(!await guard(req))return Response.json({error:'Não autorizado'},{status:401});
  const requestUrl=new globalThis.URL(req.url);if(requestUrl.searchParams.get('list')==='1'){const response=await api('preparacoes_reuniao?select=*&order=updated_at.desc');return new Response(await response.text(),{status:response.status,headers:{'Content-Type':'application/json; charset=utf-8'}})}
  const id=requestUrl.searchParams.get('id'),meetingId=requestUrl.searchParams.get('meeting_id');
- const diagnostics=await api(`diagnosticos?id=eq.${id}&select=empresa_id&limit=1`).then(r=>r.ok?r.json():[]);
+ const diagnostics=await api(`diagnosticos?id=eq.${id}&select=empresa_id,respostas(pergunta,resposta_numerica)&limit=1`).then(r=>r.ok?r.json():[]);
  const meeting=meetingId?await api(`reunioes_estrategicas?id=eq.${encodeURIComponent(meetingId)}&select=*&limit=1`).then(r=>r.ok?r.json():[]).then(x=>x[0]||null):await findMeeting(String(id||''),diagnostics[0]?.empresa_id);
  if(!meeting)return Response.json({error:'Reunião Estratégica não encontrada.'},{status:404});
  const [legacy,diagnosticLegacy,history]=await Promise.all([
@@ -43,13 +44,21 @@ export async function GET(req:Request){
   api(`reuniao_estrategica_historico?reuniao_id=eq.${encodeURIComponent(meeting.id)}&select=snapshot&order=created_at.desc&limit=20`).then(r=>r.ok?r.json():[])
  ]);
  const safeLegacy=legacy[0]||(diagnosticLegacy.length===1?diagnosticLegacy[0]:null);
- const meetingData={...(safeLegacy||{}),...(meeting.dados_reuniao||{})};
+ let meetingData={...(safeLegacy||{}),...(meeting.dados_reuniao||{})};
  const filled=(...values:any[])=>values.find(value=>typeof value==='string'&&value.trim().length>0)||'';
  const historyValue=(key:string)=>history.map((item:any)=>item.snapshot?.[key]).find((value:any)=>typeof value==='string'&&value.trim().length>0);
  const hypothesis=filled(meeting.consultant_initial_hypothesis,meetingData.hipotese_inicial,safeLegacy?.hipotese_inicial,historyValue('hipotese_inicial'));
- const questions=filled(meeting.prepared_specific_questions,meetingData.perguntas_especificas,safeLegacy?.perguntas_especificas,historyValue('perguntas_especificas'));
+ let questions=meetingData.perguntas_preparadas_inicializadas
+  ? String(meeting.prepared_specific_questions??meetingData.perguntas_especificas??'')
+  : filled(meeting.prepared_specific_questions,meetingData.perguntas_especificas,safeLegacy?.perguntas_especificas,historyValue('perguntas_especificas'));
  const notes=filled(meeting.consultant_notes,meetingData.observacoes_consultor,safeLegacy?.observacoes_consultor,historyValue('observacoes_consultor'));
  const repair:any={};
+ if(meeting.status!=='Realizada'&&!meetingData.perguntas_preparadas_inicializadas){
+  const suggested=investigationQuestions(diagnostics[0]?.respostas||[]),structured=questions?preparedQuestionsFromText(questions,meetingData.perguntas_preparadas_estruturadas):suggested;
+  questions=structured.map(item=>item.text).join('\n');
+  meetingData={...meetingData,perguntas_especificas:questions,perguntas_preparadas_estruturadas:structured,perguntas_preparadas_inicializadas:true};
+  repair.prepared_specific_questions=questions;
+ }
  if(!String(meeting.consultant_initial_hypothesis||'').trim()&&hypothesis)repair.consultant_initial_hypothesis=hypothesis;
  if(!String(meeting.prepared_specific_questions||'').trim()&&questions)repair.prepared_specific_questions=questions;
  if(!String(meeting.consultant_notes||'').trim()&&notes)repair.consultant_notes=notes;
@@ -63,11 +72,12 @@ export async function POST(req:Request){
  if(!body.diagnostico_id||!body.empresa_id)return Response.json({error:'Empresa e diagnóstico são obrigatórios.'},{status:400});
  const meeting=body.reuniao_id?await api(`reunioes_estrategicas?id=eq.${encodeURIComponent(body.reuniao_id)}&select=*&limit=1`).then(r=>r.ok?r.json():[]).then(x=>x[0]||null):await findMeeting(body.diagnostico_id,body.empresa_id);
  if(!meeting?.id)return Response.json({error:'Nenhuma Reunião Estratégica agendada foi encontrada para esta empresa.'},{status:409});
- const meetingData={...(meeting.dados_reuniao||{}),...body,reuniao_id:meeting.id,responsavel_reuniao:body.responsavel_reuniao||current?.email||'Usuário Master',ultima_alteracao_em:now};
+ let meetingData={...(meeting.dados_reuniao||{}),...body,reuniao_id:meeting.id,responsavel_reuniao:body.responsavel_reuniao||current?.email||'Usuário Master',ultima_alteracao_em:now};
+ if(Object.prototype.hasOwnProperty.call(raw,'perguntas_especificas')){const structured=preparedQuestionsFromText(body.perguntas_especificas,meetingData.perguntas_preparadas_estruturadas||meeting.dados_reuniao?.perguntas_preparadas_estruturadas);meetingData={...meetingData,perguntas_especificas:structured.map(item=>item.text).join('\n'),perguntas_preparadas_estruturadas:structured,perguntas_preparadas_inicializadas:true}}
  const requestedVersion=raw.autosave_version!==undefined?Number(raw.autosave_version):Number(meeting.autosave_version||0)+1;
  const update:any={dados_reuniao:meetingData,autosave_version:requestedVersion,consultor:meetingData.responsavel_reuniao,observacoes:meetingData.observacoes_consultor||null,updated_at:now};
  if(Object.prototype.hasOwnProperty.call(raw,'hipotese_inicial'))update.consultant_initial_hypothesis=body.hipotese_inicial;
- if(Object.prototype.hasOwnProperty.call(raw,'perguntas_especificas'))update.prepared_specific_questions=body.perguntas_especificas;
+ if(Object.prototype.hasOwnProperty.call(raw,'perguntas_especificas'))update.prepared_specific_questions=meetingData.perguntas_especificas;
  if(Object.prototype.hasOwnProperty.call(raw,'observacoes_consultor'))update.consultant_notes=body.observacoes_consultor;
  const saved=await api(`reunioes_estrategicas?id=eq.${meeting.id}&autosave_version=lt.${requestedVersion}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(update)});
  if(!saved.ok)return Response.json({error:'Não foi possível salvar a reunião. Execute a migração V28 no Supabase.'},{status:saved.status});
@@ -98,7 +108,7 @@ export async function PATCH(req:Request){
  const resources=existingResources.map((item:any)=>approved.some((x:string)=>item.nome?.toLowerCase()===x.toLowerCase())?{...item,nome:item.nome,status:'Recomendado',solucao_aprovada:true,origem:'Diagnóstico → Validação em reunião'}:{...item,nome:item.nome,status:'Não recomendado',solucao_aprovada:false});
  for(const name of [...approved,...added])if(!resources.some((x:any)=>x.nome?.toLowerCase()===name.toLowerCase()))resources.push({nome:name,status:'Recomendado',solucao_aprovada:true,origem:'Diagnóstico → Validação em reunião'});
  const indicators=lines(body.indicadores_sugeridos).map(nome=>({nome,meta:'A definir',responsavel:'A definir',periodicidade:'Mensal'}));
- const reality=meetingValidation.realidade||{},opportunities=meetingValidation.oportunidades||{},priorityValidation=meetingValidation.prioridade||{},confirmedOpportunities=Array.isArray(opportunities.confirmadas)?opportunities.confirmadas.map((key:string)=>key.split(':').slice(2).join(':')).filter(Boolean):lines(opportunities.confirmada),validatedPriority=priorityValidation.selecionada==='Outra'?priorityValidation.outra:priorityValidation.selecionada||meetingValidation.prioridade_validada,validatedSecondaryPriority=priorityValidation.secundaria==='Outra'?priorityValidation.outra_secundaria:priorityValidation.secundaria&&priorityValidation.secundaria!=='Nenhuma'?priorityValidation.secundaria:'',questionAnswers=Object.values(meetingValidation.respostas_perguntas||{}).filter((value:any)=>String(value||'').trim());
+ const reality=meetingValidation.realidade||{},opportunities=meetingValidation.oportunidades||{},priorityValidation=meetingValidation.prioridade||{},legacyOpportunities=Array.isArray(opportunities.confirmadas)?opportunities.confirmadas.map((key:string)=>key.split(':').slice(2).join(':')).filter(Boolean):lines(opportunities.confirmada),confirmedOpportunities=Array.from(new Set([...legacyOpportunities,...lines(opportunities.adicionais??opportunities.nova)])),validatedPriority=priorityValidation.selecionada==='Outra'?priorityValidation.outra:priorityValidation.selecionada||meetingValidation.prioridade_validada,validatedSecondaryPriority=priorityValidation.secundaria==='Outra'?priorityValidation.outra_secundaria:priorityValidation.secundaria&&priorityValidation.secundaria!=='Nenhuma'?priorityValidation.secundaria:'',questionAnswers=Array.from(new Set([...Object.values(meetingValidation.respostas_perguntas_por_id||{}),...Object.values(meetingValidation.respostas_perguntas||{})].map(String).filter(value=>value.trim())));
  const validatedSituation=[conclusion.resumo_executivo,reality.confirmada&&`Realidade identificada no diagnóstico: ${reality.confirmada}.`,reality.novas_informacoes&&`Novas informações:\n${reality.novas_informacoes}`,reality.observacoes,meetingValidation.hipotese_resposta&&`Validação da hipótese do consultor:\n${meetingValidation.hipotese_resposta}`,questionAnswers.length&&`Respostas às perguntas preparadas:\n${questionAnswers.join('\n')}`,conclusion.desafio&&`Principal desafio:\n${conclusion.desafio}`,conclusion.restricoes&&`Restrições identificadas:\n${conclusion.restricoes}`].filter(Boolean).join('\n\n');
  const validatedPriorities=[validatedPriority&&`Prioridade principal validada com o cliente:\n${validatedPriority}`,validatedSecondaryPriority&&validatedSecondaryPriority!==validatedPriority&&`Prioridade secundária validada com o cliente:\n${validatedSecondaryPriority}`,conclusion.oportunidade_principal&&`Principal oportunidade:\n${conclusion.oportunidade_principal}`,confirmedOpportunities.length&&`Oportunidades confirmadas:\n${confirmedOpportunities.join('\n')}`].filter(Boolean).join('\n\n');
  const [library,strategicLinks]=await Promise.all([api('catalogo_recursos?ativo=eq.true&select=*').then(r=>r.ok?r.json():[]),api('intervencao_solucoes?ativo=eq.true&select=intervention_code,solucao_id,ativo').then(r=>r.ok?r.json():[])]),contextualPrescriptions=materializeContextualPrescriptions({prescriptions,catalog:library,links:strategicLinks}),normalize=(value:string)=>String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');

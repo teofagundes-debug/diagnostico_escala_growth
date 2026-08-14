@@ -27,7 +27,7 @@ test('anotações da preparação usam o campo persistente da reunião sem inter
  const meeting=read('components/MeetingPreparation.tsx'),api=read('app/api/meeting-preparation/route.ts'),voice=read('components/DiagnosticClientVoice.tsx'),portal=read('app/api/portal/route.ts');
  assert.match(meeting,/perguntas_especificas/);
  assert.match(meeting,/value=\{record\.perguntas_especificas\|\|''\}/);
- assert.match(api,/prepared_specific_questions=body\.perguntas_especificas/);
+ assert.match(api,/update\.prepared_specific_questions=meetingData\.perguntas_especificas/);
  assert.doesNotMatch(voice,/ANOTA&#199;&#213;ES DO CONSULTOR|diagnostic-notes/);
  assert.doesNotMatch(portal,/prepared_specific_questions|perguntas_especificas/);
 });

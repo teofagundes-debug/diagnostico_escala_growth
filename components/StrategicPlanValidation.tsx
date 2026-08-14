@@ -13,8 +13,8 @@ function meetingConsolidation(data:any,plan:any){
  const meetingData=meeting.dados_reuniao||{},validations=meetingData.validacoes_reuniao||meeting.validacoes_reuniao||{};
  const resources=currentPlatformResources(meeting).map(item=>`${item.name}: ${item.status}`);
  const opportunities=list(validations.oportunidades?.confirmadas).map((item:any)=>String(item).split(':').slice(2).join(':')||String(item)).filter(Boolean);
- if(validations.oportunidades?.nova)opportunities.push(validations.oportunidades.nova);
- const answers=Object.values(validations.respostas_perguntas||{}).map(String).filter(value=>value.trim());
+ const additional=String(validations.oportunidades?.adicionais??validations.oportunidades?.nova??'').trim();if(additional)opportunities.push(...additional.split(/\r?\n/).map((item:string)=>item.trim()).filter(Boolean));
+ const answers=Array.from(new Set([...Object.values(validations.respostas_perguntas_por_id||{}),...Object.values(validations.respostas_perguntas||{})].map(String).filter(value=>value.trim())));
  const hypotheses=[validations.hipotese_resposta,meetingData.hipotese_inicial,meeting.consultant_initial_hypothesis].filter(Boolean).join('\n\n');
  const validatedPriority=validations.prioridade?.selecionada==='Outra'?validations.prioridade?.outra:validations.prioridade?.selecionada;
  const hasNewerRevision=Number(meeting.revisao_numero||1)>1||Boolean(plan.revisao_estrategica_id);

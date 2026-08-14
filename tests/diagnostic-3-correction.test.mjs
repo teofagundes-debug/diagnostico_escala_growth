@@ -29,7 +29,8 @@ test('4. riscos são consequências das evidências e não o parecer automático
 });
 
 test('5. perguntas de investigação derivam das respostas frágeis',()=>{
- assert.match(briefing,/entry\.reading\.investigation/);
+ assert.match(briefing,/investigationQuestions\(answers\)/);
+ assert.match(rules,/export function investigationQuestions/);
  assert.match(rules,/question:/);
 });
 
