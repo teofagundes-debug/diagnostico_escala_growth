@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 function load(file,stubs={}){const source=fs.readFileSync(file,'utf8'),js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,module={exports:{}};vm.runInNewContext(`(function(require,module,exports){${js}\n})(require,module,module.exports)`,{require:id=>stubs[id]||{},module,exports:module.exports,Set,Map,Error});return module.exports}
-const prescription=load('lib/resourcePrescriptionResolver.ts'),pricing=load('lib/commercialPricingResolver.ts'),nimble=load('lib/nimbleStructure.ts'),dependencies=load('lib/commercialDependencyResolver.ts',{'./nimbleStructure':nimble});
+const prescription=load('lib/resourcePrescriptionResolver.ts'),pricing=load('lib/commercialPricingResolver.ts'),existing=load('lib/existingResourceResolver.ts',{'./commercialPricingResolver':pricing}),nimble=load('lib/nimbleStructure.ts'),dependencies=load('lib/commercialDependencyResolver.ts',{'./nimbleStructure':nimble,'./existingResourceResolver':existing});
 const meetingRoute=fs.readFileSync('app/api/meeting-preparation/route.ts','utf8');
 const catalog=[{id:'ia',codigo:'IA-001',nome:'Ativação e Treinamento de Agente de IA',tipo:'Implantação',ui:8,ativo:true,utiliza_plataforma_nimble:true},{id:'aut',codigo:'AUT-001',nome:'Implantação Operacional',tipo:'Implantação',ui:3,ativo:true},{id:'trn',codigo:'TRN-001',nome:'Treinamento da Equipe',tipo:'Implantação',ui:3,ativo:true},{id:'pla',codigo:'PLA-001',nome:'Licença Plataforma Nimble',tipo:'Mensalidade',valor_mensal:930,ativo:true}];
 

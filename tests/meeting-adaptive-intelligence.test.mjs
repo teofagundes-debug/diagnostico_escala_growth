@@ -17,6 +17,12 @@ test('Cliente da Base habilita a situação atual da plataforma',()=>{
  assert.match(component,/setRecord\(\{\.\.\.record,situacao_plataforma/);
 });
 
+test('Plataforma Nimble utiliza a referência canônica PLA-001',()=>{
+ assert.match(component,/Plataforma Nimble/);
+ assert.match(component,/'Plataforma Nimble':'PLA-001'/);
+ assert.match(component,/canonicalRecommendationResource/);
+});
+
 test('CRM implantado troca implantação por padronização',()=>{
  assert.match(component,/if\(normalized\.includes\('crm'\)\).*Padronizar utilização do CRM/);
 });
