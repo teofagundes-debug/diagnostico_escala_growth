@@ -12,7 +12,8 @@ test('diagnóstico expõe Planos Executáveis para decidir o fluxo oficial',()=>
  assert.match(diagnostics,/strategic_execution_plans\?diagnostico_id=eq/);
  assert.match(diagnostics,/strategic_execution_plans:executionPlans/);
  assert.match(central,/if\(list\(data\.strategic_execution_plans\)\.length\)return/);
- assert.match(central,/Abrir Central de Implantações/);
+ assert.match(central,/Acessar Plano Estratégico Executável/);
+ assert.match(central,/central\/plano-executavel\?diagnostico_id=/);
 });
 
 test('Central oficial lista somente implantações por plan_id e plan_version',()=>{
