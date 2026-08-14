@@ -30,7 +30,8 @@ test('conclusão da revisão cria nova versão DRAFT sem publicar',()=>{
  assert.match(meeting,/revisao_estrategica_id:input\.meeting\.id/);
  assert.doesNotMatch(meeting,/prepareExecutableDraftFromRevision[\s\S]{0,1600}status:'PUBLISHED'/);
  assert.match(meeting,/contextual_prescriptions:input\.contextualPrescriptions/);
- assert.match(meeting,/sourceActions\.filter\(\(item:any\)=>contextualActionIsEligible/);
+ assert.match(meeting,/actionsPreservedForRevision\(sourceActions,input\.contextualPrescriptions\)/);
+ assert.match(meeting,/consolidateContextualPrescriptions/);
 });
 
 test('implantação e financeiro existentes não são atualizados pela revisão',()=>{
