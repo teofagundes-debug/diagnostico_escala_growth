@@ -2,6 +2,7 @@
 import {isMaster} from '../../../lib/access';
 import {STRATEGIC_INTERVENTION_CATALOG} from '../../../lib/strategicInterventionEngine';
 import {resolveStrategicSolutions} from '../../../lib/strategicSolutionResolver';
+import {contextualActionIsEligible,type ContextualPrescription} from '../../../lib/resourcePrescriptionResolver';
 
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
@@ -17,12 +18,12 @@ export async function GET(req:Request){try{
  if(!empresaId)return Response.json({...data,interventions:canonical,coverage});
  const diagnostics=await db(`diagnosticos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=id,empresa_id,relatorio_snapshot,status,created_at&order=created_at.desc&limit=1`),diagnostic=diagnostics[0];
  if(!diagnostic)return Response.json({error:'Nenhum diagnóstico foi localizado para esta empresa.'},{status:404});
- const plans=await db(`strategic_execution_plans?empresa_id=eq.${encodeURIComponent(empresaId)}&diagnostico_id=eq.${encodeURIComponent(diagnostic.id)}&select=id,empresa_id,diagnostico_id,version_number,status,strategic_direction,primary_priority&order=version_number.desc&limit=1`).catch(()=>[]),plan=plans[0]||null;
- const derived=diagnostic.relatorio_snapshot?.indicadores_derivados||{},interventions=derived.strategic_interventions?.all_interventions||[],decision=derived.direcao_estrategica||null;
+ const plans=await db(`strategic_execution_plans?empresa_id=eq.${encodeURIComponent(empresaId)}&diagnostico_id=eq.${encodeURIComponent(diagnostic.id)}&select=id,empresa_id,diagnostico_id,version_number,status,strategic_direction,primary_priority,contextual_prescriptions,contextual_prescription_version&order=version_number.desc&limit=1`).catch(()=>[]),plan=plans[0]||null;
+ const derived=diagnostic.relatorio_snapshot?.indicadores_derivados||{},originalInterventions=derived.strategic_interventions?.all_interventions||[],contextualPrescriptions:ContextualPrescription[]=Array.isArray(plan?.contextual_prescriptions)?plan.contextual_prescriptions:[],interventions=contextualPrescriptions.length?originalInterventions.filter((item:any)=>contextualActionIsEligible(item,contextualPrescriptions)):originalInterventions,excludedSolutionIds=contextualPrescriptions.filter(item=>item.commercial_eligible===false).map(item=>item.canonical_resource_id).filter(Boolean) as string[],decision=derived.direcao_estrategica||null;
  const context={empresa_id:empresaId,diagnostic_id:diagnostic.id,plan_id:plan?.id||null,plan_version:plan?.version_number||null,plan_status:plan?.status||null};
  if(!interventions.length)return Response.json({flow:'LEGADO',...context,message:'Este diagnóstico ainda não possui intervenções materializadas pelo Motor Estratégico 3.0.',coverage,...data});
- const composition=resolveStrategicSolutions({interventions,links:data.links,catalog:data.catalog,valor_ui:Number(data.parameters?.valor_ui||0)});
- return Response.json({flow:'ESTRATEGICO_3_0',...context,decision,active_interventions:interventions,composition,coverage,parameters:data.parameters,catalog:data.catalog});
+ const composition=resolveStrategicSolutions({interventions,links:data.links,catalog:data.catalog,valor_ui:Number(data.parameters?.valor_ui||0),excluded_solution_ids:excludedSolutionIds});
+ return Response.json({flow:'ESTRATEGICO_3_0',...context,decision,active_interventions:interventions,contextual_prescriptions:contextualPrescriptions,context_source:contextualPrescriptions.length?'PLANO_EXECUTAVEL_REVISAO':'DIAGNOSTICO_ORIGINAL',composition,coverage,parameters:data.parameters,catalog:data.catalog});
 }catch(error:any){return Response.json({error:error?.message||'Não foi possível preparar a composição comercial.'},{status:500})}}
 
 export async function POST(req:Request){try{
