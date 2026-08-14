@@ -16,16 +16,17 @@ export async function GET(req:Request){
  const url=new URL(req.url),id=url.searchParams.get('id');
  if(id){
   const select='*,empresas(*),responsaveis(*),resultados_pilares(*),respostas(*),respostas_abertas(*),diagnostico_status_historico(*)';
-  const [diagnosticResponse,plansResponse,meetingsResponse]=await Promise.all([
+  const [diagnosticResponse,plansResponse,meetingsResponse,executionPlansResponse]=await Promise.all([
    fetch(`${SUPABASE_URL}/rest/v1/diagnosticos?id=eq.${encodeURIComponent(id)}&select=${select}`,{headers:headers(),cache:'no-store'}),
    fetch(`${SUPABASE_URL}/rest/v1/planos_estrategicos?diagnostico_id=eq.${encodeURIComponent(id)}&select=*&order=updated_at.desc,created_at.desc`,{headers:headers(),cache:'no-store'}),
-   fetch(`${SUPABASE_URL}/rest/v1/reunioes_estrategicas?diagnostico_id=eq.${encodeURIComponent(id)}&select=*&order=updated_at.desc,data.desc`,{headers:headers(),cache:'no-store'})
+   fetch(`${SUPABASE_URL}/rest/v1/reunioes_estrategicas?diagnostico_id=eq.${encodeURIComponent(id)}&select=*&order=updated_at.desc,data.desc`,{headers:headers(),cache:'no-store'}),
+   fetch(`${SUPABASE_URL}/rest/v1/strategic_execution_plans?diagnostico_id=eq.${encodeURIComponent(id)}&select=id,diagnostico_id,version_number,status,revisao_estrategica_id,published_at,created_at&order=version_number.desc`,{headers:headers(),cache:'no-store'})
   ]);
   if(!diagnosticResponse.ok)return new Response(await diagnosticResponse.text(),{status:diagnosticResponse.status,headers:{'Content-Type':'application/json; charset=utf-8'}});
   if(!plansResponse.ok)return new Response(await plansResponse.text(),{status:plansResponse.status,headers:{'Content-Type':'application/json; charset=utf-8'}});
   if(!meetingsResponse.ok)return new Response(await meetingsResponse.text(),{status:meetingsResponse.status,headers:{'Content-Type':'application/json; charset=utf-8'}});
-  const diagnostics=await diagnosticResponse.json(),plans=await plansResponse.json(),meetings=await meetingsResponse.json();
-  return Response.json(diagnostics.map((diagnostic:any)=>({...diagnostic,planos_estrategicos:plans,reunioes_estrategicas:meetings})),{headers:{'Cache-Control':'no-store, max-age=0'}});
+  const diagnostics=await diagnosticResponse.json(),plans=await plansResponse.json(),meetings=await meetingsResponse.json(),executionPlans=executionPlansResponse.ok?await executionPlansResponse.json():[];
+  return Response.json(diagnostics.map((diagnostic:any)=>({...diagnostic,planos_estrategicos:plans,reunioes_estrategicas:meetings,strategic_execution_plans:executionPlans})),{headers:{'Cache-Control':'no-store, max-age=0'}});
  }
  const select='id,empresa_id,responsavel_id,data_diagnostico,pontuacao_geral,nivel_maturidade,maior_pilar,menor_pilar,potencial_crescimento,status,registro_status,sequencia,tipo_avaliacao,created_at,empresas(id,nome,segmento,consultor_responsavel,status_implantacao,meta_ieg),responsaveis(nome)';
  const response=await fetch(`${SUPABASE_URL}/rest/v1/diagnosticos?select=${select}&order=created_at.desc`,{headers:headers(),cache:'no-store'});
