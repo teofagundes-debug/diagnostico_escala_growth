@@ -42,7 +42,7 @@ test('manual independente e Motor elegível são preservados; contexto antigo é
  const current=[contextual('resource-ai','Otimizar utilização do recurso',['INT_A'])];
  const previous=[{source_type:'CONSULTANT',action_origin:'MANUAL',agreed_title:'Ação manual'},contextualAction(resolver.consolidateContextualPrescriptions(current)[0]),{source_type:'ENGINE',source_action_code:'ACT_OK',recommended_snapshot:{intervention_code:'INT_OK'}},{source_type:'ENGINE',source_action_code:'ACT_BLOCKED',recommended_snapshot:{intervention_codes:['INT_A']}}];
  const preserved=resolver.actionsPreservedForRevision(previous,current);
- assert.deepEqual(Array.from(preserved,item=>item.agreed_title||item.source_action_code),['Ação manual','ACT_OK']);
+ assert.deepEqual(Array.from(preserved,item=>item.agreed_title||item.source_action_code),['Ação manual','ACT_OK','ACT_BLOCKED']);
 });
 
 test('migration protege duplicação contextual sem reescrever históricos',()=>{
@@ -56,9 +56,9 @@ test('migration protege duplicação contextual sem reescrever históricos',()=>
 
 test('rota rematerializa contexto vigente e não altera planos publicados antigos',()=>{
  const meeting=fs.readFileSync('app/api/meeting-preparation/route.ts','utf8'),plan=fs.readFileSync('app/api/strategic-execution-plan/route.ts','utf8');
- assert.match(meeting,/actionsPreservedForRevision/);
- assert.match(meeting,/consolidateContextualPrescriptions/);
- assert.match(meeting,/action_origin:'CONTEXTUAL'/);
+ assert.match(meeting,/currentStrategicArtifacts/);
+ assert.match(meeting,/reconcileRevisionActions/);
+ assert.match(meeting,/strategic_action_plan_snapshot/);
  assert.match(plan,/contextualKeys/);
  assert.match(plan,/Versões publicadas são imutáveis/);
 });

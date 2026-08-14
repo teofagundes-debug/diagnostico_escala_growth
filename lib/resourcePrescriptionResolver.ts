@@ -14,6 +14,7 @@ export type ContextualPrescription=PostMeetingPrescription&{
  canonical_solution_id:string|null;
  canonical_solution_code:string|null;
  intervention_codes:string[];
+ superseded_intervention_codes?:string[];
  state_code:'IMPLANTADO'|'PARCIALMENTE_IMPLANTADO'|'NAO_IMPLANTADO'|'NAO_INFORMADO';
  context_version:'1.0';
 };
@@ -92,13 +93,13 @@ export function materializeContextualPrescriptions(input:{prescriptions:PostMeet
  return input.prescriptions.map(item=>{
   const explicitId=String(item.solution_id||item.resource_id||'').trim(),explicitCode=String(item.resource_code||canonicalCodeByResource[normalize(item.resource)]||'').toUpperCase(),solution=input.catalog.find(row=>explicitId&&String(row.id)===explicitId)||input.catalog.find(row=>explicitCode&&String(row.codigo||'').toUpperCase()===explicitCode)||null;
   const solutionId=solution?.id?String(solution.id):null;
-  return{...item,canonical_resource_id:solutionId,canonical_solution_id:item.commercial_eligible?solutionId:null,canonical_solution_code:solution?.codigo?String(solution.codigo):null,intervention_codes:solutionId?[...new Set(links.filter(link=>link.ativo!==false&&String(link.solucao_id)===solutionId).map(link=>String(link.intervention_code)).filter(Boolean))]:[],state_code:stateCode(item.resource_status),context_version:'1.0'};
+  return{...item,canonical_resource_id:solutionId,canonical_solution_id:item.commercial_eligible?solutionId:null,canonical_solution_code:solution?.codigo?String(solution.codigo):null,intervention_codes:solutionId?[...new Set(links.filter(link=>link.ativo!==false&&String(link.solucao_id)===solutionId).map(link=>String(link.intervention_code)).filter(Boolean))]:[],superseded_intervention_codes:[],state_code:stateCode(item.resource_status),context_version:'1.0'};
  });
 }
 
 export function contextualActionIsEligible(action:any,prescriptions:ContextualPrescription[]|null|undefined){
- const blocked=(Array.isArray(prescriptions)?prescriptions:[]).filter(item=>item.commercial_eligible===false),snapshot=action?.recommended_snapshot||action||{},interventions=[action?.intervention_code,snapshot?.intervention_code,...(Array.isArray(snapshot?.intervention_codes)?snapshot.intervention_codes:[])].map(String).filter(Boolean);
- return !blocked.some(item=>item.intervention_codes.some(code=>interventions.includes(String(code))));
+ const contextual=Array.isArray(prescriptions)?prescriptions:[],snapshot=action?.recommended_snapshot||action||{},interventions=[action?.intervention_code,snapshot?.intervention_code,...(Array.isArray(snapshot?.intervention_codes)?snapshot.intervention_codes:[])].map(String).filter(Boolean);
+ return !contextual.some(item=>(item.superseded_intervention_codes||[]).some(code=>interventions.includes(String(code))));
 }
 
 export function isContextualExecutionAction(action:any){return action?.action_origin==='CONTEXTUAL'||Boolean(action?.contextual_action_key)||action?.recommended_snapshot?.source==='REVISAO_ESTRATEGICA'||Boolean(action?.recommended_snapshot?.contextual_action_key)}
