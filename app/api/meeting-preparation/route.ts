@@ -2,6 +2,7 @@ import {access,isMaster} from '../../../lib/access';
 import {ensurePlan} from '../../../lib/workflow';
 import {NIMBLE_STRUCTURE_CODES,usesNimbleStructure} from '../../../lib/nimbleStructure';
 import {contextualActionIsEligible,materializeContextualPrescriptions,resolvePostMeetingPrescriptions,type ContextualPrescription} from '../../../lib/resourcePrescriptionResolver';
+import {resolveCurrentStrategicRevision} from '../../../lib/strategicRevisionResolver';
 
 const URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({apikey:KEY!,Authorization:`Bearer ${KEY}`,'Content-Type':'application/json'});
@@ -12,7 +13,7 @@ async function api(path:string,init:RequestInit={}){return fetch(`${URL}/rest/v1
 async function findMeeting(diagnosticId:string,companyId?:string){
  const direct=await api(`reunioes_estrategicas?diagnostico_id=eq.${encodeURIComponent(diagnosticId)}&select=*`).then(r=>r.ok?r.json():[]);
  const candidates=direct.length||!companyId?direct:await api(`reunioes_estrategicas?empresa_id=eq.${encodeURIComponent(companyId)}&select=*`).then(r=>r.ok?r.json():[]);
- return candidates.filter((x:any)=>x.status!=='Cancelada').sort((a:any,b:any)=>new Date(b.data||b.created_at).getTime()-new Date(a.data||a.created_at).getTime())[0]||null;
+ return resolveCurrentStrategicRevision(candidates);
 }
 async function prepareExecutableDraftFromRevision(input:{meeting:any;diagnosticId:string;companyId:string;actor:string;priority?:string;contextualPrescriptions:ContextualPrescription[]}){
  const existing=(await api(`strategic_execution_plans?revisao_estrategica_id=eq.${encodeURIComponent(input.meeting.id)}&select=*&limit=1`).then(r=>r.ok?r.json():[]))[0];

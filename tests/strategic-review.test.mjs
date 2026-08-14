@@ -21,6 +21,7 @@ test('reunião concluída é somente lida e a revisão copia os dados como rascu
  assert.match(revisions,/clearConclusion\(source\.dados_reuniao\)/);
  assert.match(revisions,/status:'Agendada'/);
  assert.doesNotMatch(revisions,/reunioes_estrategicas\?id=eq[^\n]+method:'PATCH'/);
+ assert.match(revisions,/delete conclusion\.resumo_executivo/);
 });
 
 test('conclusão da revisão cria nova versão DRAFT sem publicar',()=>{

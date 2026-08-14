@@ -2,22 +2,24 @@
 
 import {useMemo,useState} from 'react';
 import {joinConsultantContent,splitConsultantContent} from '../lib/strategic-plan-content';
+import {currentPlatformResources,currentRevisionNextSteps,resolveCurrentStrategicRevision} from '../lib/strategicRevisionResolver';
 
 const list=(value:any):any[]=>Array.isArray(value)?value:[];
 const text=(value:any,fallback='Não informado durante a Reunião Estratégica.')=>String(value||'').trim()||fallback;
 const readableLines=(value:any)=>Array.isArray(value)?value.map(item=>typeof item==='string'?item:item?.label||item?.nome||item?.descricao).filter(Boolean).join('\n'):text(value);
 
 function meetingConsolidation(data:any,plan:any){
- const meeting=[...list(data.reunioes_estrategicas)].sort((a:any,b:any)=>new Date(b.realizada_em||b.updated_at||b.data||0).getTime()-new Date(a.realizada_em||a.updated_at||a.data||0).getTime())[0]||{};
+ const meeting=resolveCurrentStrategicRevision(list(data.reunioes_estrategicas),plan.revisao_estrategica_id)||{};
  const meetingData=meeting.dados_reuniao||{},validations=meetingData.validacoes_reuniao||meeting.validacoes_reuniao||{};
- const platform=meetingData.situacao_plataforma||meeting.situacao_plataforma||{};
- const resources=Object.entries(platform).filter(([,status])=>['Implantado','Parcialmente Implantado'].includes(String(status))).map(([name,status])=>`${name}: ${status}`);
+ const resources=currentPlatformResources(meeting).map(item=>`${item.name}: ${item.status}`);
  const opportunities=list(validations.oportunidades?.confirmadas).map((item:any)=>String(item).split(':').slice(2).join(':')||String(item)).filter(Boolean);
  if(validations.oportunidades?.nova)opportunities.push(validations.oportunidades.nova);
  const answers=Object.values(validations.respostas_perguntas||{}).map(String).filter(value=>value.trim());
  const hypotheses=[validations.hipotese_resposta,meetingData.hipotese_inicial,meeting.consultant_initial_hypothesis].filter(Boolean).join('\n\n');
  const validatedPriority=validations.prioridade?.selecionada==='Outra'?validations.prioridade?.outra:validations.prioridade?.selecionada;
- return {resumo:text(plan.resumo||validations.conclusao?.resumo_executivo||data.parecer),situacao:text(plan.situacao_atual||validations.realidade?.novas_informacoes||validations.realidade?.observacoes),hipoteses:text(hypotheses),objetivo:text(plan.objetivos||validatedPriority||data.menor_pilar),prioridades:text(plan.prioridades||validatedPriority||readableLines(data.relatorio_snapshot?.prioridades)),recursos:text(resources.join('\n')),oportunidades:text(opportunities.join('\n')),informacoes:text(answers.join('\n\n')||validations.realidade?.novas_informacoes||meetingData.informacoes_complementares),cronograma:text(plan.cronograma),proximosPassos:text(plan.proximos_passos)};
+ const hasNewerRevision=Number(meeting.revisao_numero||1)>1||Boolean(plan.revisao_estrategica_id);
+ const currentSteps=hasNewerRevision?currentRevisionNextSteps(meeting,''):'';
+ return {resumo:text(validations.conclusao?.resumo_executivo||plan.resumo||data.parecer),situacao:text(plan.situacao_atual||validations.realidade?.novas_informacoes||validations.realidade?.observacoes),hipoteses:text(hypotheses),objetivo:text(plan.objetivos||validatedPriority||data.menor_pilar),prioridades:text(plan.prioridades||validatedPriority||readableLines(data.relatorio_snapshot?.prioridades)),recursos:text(resources.join('\n')),oportunidades:text(opportunities.join('\n')),informacoes:text(answers.join('\n\n')||validations.realidade?.novas_informacoes||meetingData.informacoes_complementares),cronograma:text(plan.cronograma),proximosPassos:text(currentSteps||(hasNewerRevision?'Nenhum novo próximo passo de aquisição foi definido nesta revisão.':plan.proximos_passos))};
 }
 
 export function StrategicPlanValidation({data,plan}:{data:any;plan:any;update?:(id:string,body:any)=>void}){
