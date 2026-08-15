@@ -1,5 +1,6 @@
 import {access} from '@/lib/access';
 import {implementationManagement} from '@/lib/implementation-management';
+import {implementationItemEditableFields,normalizeImplementationItemChanges} from '@/lib/strategicImplementationItem';
 
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({apikey:KEY!,Authorization:'Bearer '+KEY,'Content-Type':'application/json'});
@@ -26,15 +27,16 @@ export async function PATCH(req:Request){
   const profile=await master(req);if(!profile)return Response.json({error:'Não autorizado.'},{status:401});
   const body=await req.json();if(body.operation!=='update-item'||!body.item_id)return Response.json({error:'Item de Implantação não informado.'},{status:400});
   const original=(await db('strategic_plan_implementation_items?id=eq.'+encodeURIComponent(body.item_id)+'&select=*&limit=1'))[0];if(!original)return Response.json({error:'Item de Implantação não localizado.'},{status:404});
-  const allowed=['operational_responsible','operational_due_date','status','started_at','completed_at','execution_notes','execution_evidence'],changes:any={updated_at:new Date().toISOString()};for(const field of allowed)if(body[field]!==undefined)changes[field]=body[field]||null;
+   const allowed=implementationItemEditableFields,changes:any={...normalizeImplementationItemChanges(body),updated_at:new Date().toISOString()};
   const now=new Date().toISOString();if(['IN_PROGRESS','COMPLETED'].includes(changes.status)&&!changes.started_at&&!original.started_at)changes.started_at=now;if(changes.status==='COMPLETED'&&!changes.completed_at&&!original.completed_at)changes.completed_at=now;if(changes.status!=='COMPLETED'&&body.status!==undefined)changes.completed_at=null;
   const effectiveStarted=changes.started_at??original.started_at,effectiveCompleted=changes.completed_at??original.completed_at;if(effectiveStarted&&effectiveCompleted&&new Date(effectiveCompleted)<new Date(effectiveStarted))return Response.json({error:'A data de conclusão não pode ser anterior à data de início.'},{status:400});
-  const saved=(await db('strategic_plan_implementation_items?id=eq.'+encodeURIComponent(original.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(changes)}))[0];
+   const saved=(await db('strategic_plan_implementation_items?id=eq.'+encodeURIComponent(original.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(changes)}))[0];
+   if(!saved?.id)return Response.json({error:'O banco não confirmou o salvamento do item da Implantação.'},{status:500});
   const items=await db('strategic_plan_implementation_items?implementation_id=eq.'+encodeURIComponent(original.implementation_id)+'&select=*'),management=implementationManagement(items),completed=management.summary.status==='COMPLETED',started=management.summary.status!=='PLANNED',currentImplementation=(await db('strategic_plan_implementations?id=eq.'+encodeURIComponent(original.implementation_id)+'&select=started_at,completed_at,status&limit=1'))[0],implementationChanges:any={status:management.summary.status,updated_at:now,completed_at:completed?(currentImplementation?.completed_at||now):null};if(started&&!currentImplementation?.started_at)implementationChanges.started_at=now;
   await db('strategic_plan_implementations?id=eq.'+encodeURIComponent(original.implementation_id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(implementationChanges)});
   const labels:Record<string,string>={operational_responsible:'Responsável operacional',operational_due_date:'Prazo operacional',status:'Status',started_at:'Data de início',completed_at:'Data de conclusão',execution_notes:'Observação de execução',execution_evidence:'Evidência textual'},events:any[]=[];for(const field of allowed)if(original[field]!==saved[field]){const reopened=field==='status'&&original.status==='COMPLETED'&&saved.status!=='COMPLETED';events.push({event_type:reopened?'ITEM_REOPENED':field==='status'?(saved.status==='IN_PROGRESS'?'ITEM_STARTED':saved.status==='COMPLETED'?'ITEM_COMPLETED':'STATUS_CHANGED'):'FIELD_CHANGED',description:reopened?'Ação reaberta.':labels[field]+' alterado.',metadata:{field,before:original[field],after:saved[field]}})}
   if(currentImplementation?.status!==management.summary.status)events.push({event_type:'IMPLEMENTATION_STATUS_CHANGED',description:'Status consolidado da Implantação alterado.',metadata:{field:'implementation_status',before:currentImplementation?.status,after:management.summary.status}});
   if(events.length){const historyRows=events.map(event=>({implementation_id:original.implementation_id,item_id:original.id,...event,actor:profile.email||'Usuário Master'}));await db('strategic_plan_implementation_history',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(historyRows)})}
   return Response.json({ok:true,message:'Item da Implantação salvo com sucesso.',implementation:await bundle(original.implementation_id)});
- }catch(error){console.error('[strategic-implementations] Falha ao atualizar item',error);return Response.json({error:'Não foi possível salvar o item da Implantação.'},{status:500})}
-}
+  }catch(error:any){console.error('[strategic-implementations] Falha ao atualizar item',{message:error?.message,code:error?.code,details:error?.details,hint:error?.hint});const validation=/inválid|anterior/i.test(String(error?.message||''));return Response.json({error:validation?error.message:'Não foi possível salvar o item da Implantação.'},{status:validation?400:500})}
+ }
