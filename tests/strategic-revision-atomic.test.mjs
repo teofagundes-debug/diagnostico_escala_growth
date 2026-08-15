@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+
+function load(file){const source=fs.readFileSync(file,'utf8'),js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,module={exports:{}};vm.runInNewContext(`(function(require,module,exports){${js}\n})(require,module,module.exports)`,{require:()=>({}),module,exports:module.exports,Set,Object,String,Array});return module.exports}
+const payload=load('lib/postgresPayload.ts');
+
+test('normaliza strings vazias de campos tipados sem apagar textos comuns',()=>{const row=payload.normalizePostgresPayload({due_date:'',completed_at:'',canonical_resource_id:'',target_value:'',responsible:'',agreed_title:'Ação'});assert.equal(row.due_date,null);assert.equal(row.completed_at,null);assert.equal(row.canonical_resource_id,null);assert.equal(row.target_value,null);assert.equal(row.responsible,'');assert.equal(row.agreed_title,'Ação')});
+test('normaliza recursivamente arrays de ações',()=>{const rows=payload.normalizeStrategicPlanActions([{due_date:'',recommended_snapshot:{canonical_solution_id:''}}]);assert.equal(rows[0].due_date,null);assert.equal(rows[0].recommended_snapshot.canonical_solution_id,null)});
+test('RPC é aditiva, transacional e não altera V11 ou snapshots publicados',()=>{const sql=fs.readFileSync('database/migration_v64_draft_revisao_atomico.sql','utf8');assert.match(sql,/create or replace function public\.create_strategic_revision_draft/);assert.match(sql,/insert into public\.strategic_execution_plans/);assert.match(sql,/insert into public\.strategic_execution_plan_actions/);assert.match(sql,/insert into public\.strategic_execution_plan_history/);assert.match(sql,/update public\.reunioes_estrategicas/);assert.match(sql,/raise exception/);assert.doesNotMatch(sql,/update\s+public\.strategic_execution_plans/i);assert.doesNotMatch(sql,/published_snapshot/);assert.doesNotMatch(sql,/f157b1c0-0f15-4433-a10f-70ae17c7ea57/i)});
+test('rota usa somente a RPC atômica para o novo DRAFT de revisão',()=>{const route=fs.readFileSync('app/api/meeting-preparation/route.ts','utf8'),section=route.slice(route.indexOf('async function prepareExecutableDraftFromRevision'),route.indexOf('export async function GET'));assert.match(section,/rpc\/create_strategic_revision_draft/);assert.doesNotMatch(section,/api\('strategic_execution_plans',\{method:'POST'/);assert.doesNotMatch(section,/api\('strategic_execution_plan_actions',\{method:'POST'/);assert.match(section,/normalizeStrategicPlanActions/)});
+test('seleção explícita Incluir no Plano continua disponível',()=>{const component=fs.readFileSync('components/StrategicExecutionPlan.tsx','utf8');assert.match(component,/Incluir no Plano/);assert.match(component,/onClick=\{\(\)=>include\(item\)\}/)});
