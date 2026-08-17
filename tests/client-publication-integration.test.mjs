@@ -11,7 +11,7 @@ test('publicação reconhece e valida o Projeto de Evolução e o Contrato/Termo
  assert.match(api,/contratos_growth\?empresa_id/);
  assert.ok(api.includes('Preparar um Projeto de Evolução em Rascunho'));
  assert.ok(api.includes('Prepare o Contrato/Termo para continuar.'));
- assert.match(api,/usesAdhesionTerm\(project\)\?contractFieldsComplete\(company\):contract/);
+ assert.match(api,/formalizationReady\(project,contract,data\.company,data\.responsible,usesAdhesionTerm\)/);
 });
 
 test('uma versão publicada contém todos os documentos oficiais',()=>{

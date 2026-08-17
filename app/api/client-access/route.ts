@@ -1,6 +1,7 @@
 import {isMaster} from '../../../lib/access';
 import {advanceJourney,diagnosticContext,updatePlanJourney} from '../../../lib/workflow';
 import {commercialFingerprint,isStrategicCommercialProject} from '../../../lib/commercialConsolidation';
+import {contractDataComplete,formalizationReady,missingContractualFields,publicationReady} from '../../../lib/contractPreparation';
 const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY,ANON=process.env.SUPABASE_ANON_KEY;
 const APP=(process.env.NEXT_PUBLIC_APP_URL||'https://www.escalavendas.com.br').replace(/\/$/,'');
 const h=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
@@ -13,8 +14,6 @@ async function audit(empresaId:string,diagnosticoId:string|undefined,title:strin
 const normalize=(value:any)=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const formalizationType=(project:any)=>String(project?.formalizacao||'Contrato de Prestação de Serviços');
 const usesAdhesionTerm=(project:any)=>normalize(formalizationType(project)).includes('termo');
-const contractFieldsComplete=(company:any)=>['razao_social','cpf_cnpj','endereco','cidade','estado','cep'].every(field=>String(company?.[field]||'').trim());
-const formalizationDocumentReady=(project:any,contract:any,company:any)=>Boolean(project&&(usesAdhesionTerm(project)?contractFieldsComplete(company):contract));
 export async function GET(req:Request){
  try{
   if(!await isMaster(req))return Response.json({error:'Acesso exclusivo do Usuário Master.'},{status:403});
@@ -35,13 +34,13 @@ export async function GET(req:Request){
    rest(`pendencias_inteligentes?empresa_id=eq.${encodeURIComponent(empresaId)}&status=neq.Dispensada&select=*&order=created_at`).catch(()=>[])
   ]);
   const access=profiles?.[0]||null,financial=financials?.[0]||null,publication=financial?.snapshot_publicado?publications?.[0]||null:null,diagnostic=diagnostics?.[0]||null,plan=plans?.[0]||null,implementation=implementations?.[0]||null,project=projects?.[0]||null,contract=contracts?.[0]||null;
-  const requiresPayment=Boolean(project?.exige_pagamento),noAdditionalPayment=Boolean(project&&Number(project.valor_implantacao_adicional||0)===0&&Number(project.mensalidade_adicional||0)===0&&['Cobrança recorrente existente','Sem cobrança imediata'].includes(project.forma_cobranca)),financialReady=Boolean(financial&&financial.valor_implantacao!=null&&Number(financial.prazo_contratual)>0&&Number(financial.validade_proposta)>0&&(!requiresPayment||financial.link_pix||financial.link_cartao||financial.link_assinatura)),contractDataComplete=contractFieldsComplete(data.company),documentType=formalizationType(project),documentReady=formalizationDocumentReady(project,contract,data.company),contractStatus=acceptances?.[0]?.concorda_contrato?'Contrato/Termo aceito':publication?'Contrato/Termo publicado':documentReady?'Contrato/Termo disponível para revisão':project&&!contractDataComplete?'Dados contratuais pendentes':'Não iniciado';
+  const requiresPayment=Boolean(project?.exige_pagamento),noAdditionalPayment=Boolean(project&&Number(project.valor_implantacao_adicional||0)===0&&Number(project.mensalidade_adicional||0)===0&&['Cobrança recorrente existente','Sem cobrança imediata'].includes(project.forma_cobranca)),financialReady=Boolean(financial&&financial.valor_implantacao!=null&&Number(financial.prazo_contratual)>0&&Number(financial.validade_proposta)>0&&(!requiresPayment||financial.link_pix||financial.link_cartao||financial.link_assinatura)),contractDataIsComplete=contractDataComplete(data.company,data.responsible),documentType=formalizationType(project),documentReady=formalizationReady(project,contract,data.company,data.responsible,usesAdhesionTerm),areaReady=publicationReady({plan,project,financialReady,documentReady,contractDataComplete:contractDataIsComplete}),contractStatus=acceptances?.[0]?.concorda_contrato?'Contrato/Termo aceito':publication?'Contrato/Termo publicado':documentReady?'Contrato/Termo disponível para revisão':project&&!contractDataIsComplete?'Dados contratuais pendentes':'Não iniciado';
   const checklist=[
    {label:'Plano Estratégico concluído',done:Boolean(plan&&['Plano Concluído','Concluído','Plano Liberado ao Cliente'].includes(plan.status))},
    {label:'Projeto de Evolução preparado',done:Boolean(project&&['Rascunho','Publicado','Aceito','Formalizado'].includes(project.status))},
    {label:'Financeiro configurado',done:financialReady},
    {label:'Contrato/Termo preparado',done:documentReady,detail:documentReady?documentType:undefined},
-   {label:'Área pronta para publicação',done:Boolean(plan&&project&&financialReady&&documentReady)},
+   {label:'Área pronta para publicação',done:areaReady},
    {label:'Área publicada',done:Boolean(publication||financial?.publicada_em)},
    {label:'Primeiro acesso',done:Boolean(access?.primeiro_acesso_em)},
    {label:'Aceite',done:Boolean(acceptances?.[0])},
@@ -52,7 +51,7 @@ export async function GET(req:Request){
    {label:'Implantação concluída',done:Boolean(diagnostic&&['Implantação concluída','Cliente Ativo'].includes(diagnostic.status))},
    {label:'Cliente Ativo',done:Boolean(diagnostic?.status==='Cliente Ativo')}
   ];
-  return Response.json({company:data.company,responsible:data.responsible,access,financial,publication,project,contract,formalization_type:documentType,formalization_document_ready:documentReady,contract_status:contractStatus,contract_data_complete:contractDataComplete,preview_available:Boolean(diagnostic||project),checklist,intelligent_pendencies:intelligentPendencies});
+  return Response.json({company:data.company,responsible:data.responsible,access,financial,publication,project,contract,formalization_type:documentType,formalization_document_ready:documentReady,contract_status:contractStatus,contract_data_complete:contractDataIsComplete,contract_missing_fields:missingContractualFields(data.company,data.responsible).map(item=>item.label),preview_available:Boolean(diagnostic||project),preview_warning:!contractDataIsComplete?'Pré-visualização disponível, mas a Área do Cliente ainda não pode ser publicada porque existem dados contratuais pendentes.':null,checklist,intelligent_pendencies:intelligentPendencies});
  }catch(e:any){return Response.json({error:e?.message||'Não foi possível carregar a Publicação.'},{status:500})}
 }
 export async function POST(req:Request){
@@ -94,7 +93,7 @@ export async function POST(req:Request){
    return Response.json({ok:true,message:`${stage.project} registrado com sucesso.`});
   }
   if(action==='review_contract'){
-   const contract=(await rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`))?.[0],required=['razao_social','cpf_cnpj','endereco','cidade','estado','cep'],missing=required.filter(field=>!String(data.company?.[field]||'').trim());
+   const contract=(await rest(`contratos_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`))?.[0],missing=missingContractualFields(data.company,data.responsible).map(item=>item.label);
    if(!contract)return Response.json({error:'O contrato ainda não foi iniciado.'},{status:409});
    if(missing.length)return Response.json({error:'Complete os dados contratuais antes da revisão.',pending:missing},{status:409});
    await rest(`contratos_growth?id=eq.${encodeURIComponent(contract.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Revisado',updated_at:new Date().toISOString()})});
@@ -141,7 +140,7 @@ export async function POST(req:Request){
     rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&select=versao&order=versao.desc&limit=1`).then(x=>x?.[0]).catch(()=>null)
    ]);
    const pending:string[]=[];
-    const documentType=formalizationType(project),documentReady=formalizationDocumentReady(project,contract,data.company),termSelected=usesAdhesionTerm(project),strategic3=isStrategicCommercialProject(project);
+    const documentType=formalizationType(project),documentReady=formalizationReady(project,contract,data.company,data.responsible,usesAdhesionTerm),termSelected=usesAdhesionTerm(project),strategic3=isStrategicCommercialProject(project);
     if(strategic3){const currentFingerprint=await commercialFingerprint(project);if(project.commercial_3_0_status!=='PRONTO'||!project.commercial_3_0_snapshot||project.commercial_3_0_fingerprint!==currentFingerprint)pending.push('Concluir novamente a Consolidação Comercial 3.0');else{const consolidated=project.commercial_3_0_snapshot,implantationMatches=Number(financial?.valor_implantacao||0)===Number(consolidated.financial?.valor_implantacao||0),monthlyMatches=Number(financial?.valor_mensalidade||0)===Number(consolidated.financial?.valor_mensalidade||0),resourceMatches=(project.projeto_evolucao_recursos||[]).length===(consolidated.resources||[]).length;if(!implantationMatches)pending.push('Corrigir divergência do valor de implantação consolidado');if(!monthlyMatches)pending.push('Corrigir divergência da mensalidade consolidada');if(!resourceMatches)pending.push('Corrigir divergência dos recursos consolidados')}}
    if(!diagnostic)pending.push('Concluir o Diagnóstico');
    if(!String(plan?.parecer_consultor||diagnostic?.parecer_consultor||diagnostic?.parecer||'').trim())pending.push('Preencher o Parecer do Consultor');
@@ -154,7 +153,7 @@ export async function POST(req:Request){
    if(project&&!project.checklist?.resumo_financeiro_atualizado)pending.push('Atualizar o Resumo Financeiro');
    if(!documentReady)pending.push('Prepare o Contrato/Termo para continuar.');
    if(!termSelected&&contract&&contract.status!=='Revisado')pending.push('Revisar e confirmar o Contrato/Termo');
-   for(const [field,label] of [['razao_social','Razão Social'],['cpf_cnpj','CPF/CNPJ'],['endereco','Endereço'],['cidade','Cidade'],['estado','Estado'],['cep','CEP']] as const)if(!String(data.company?.[field]||'').trim())pending.push(`Completar ${label}`);
+   for(const item of missingContractualFields(data.company,data.responsible))pending.push(`Completar ${item.label}`);
    if(!financial)pending.push('Salvar o Financeiro');
    if(financial?.valor_implantacao==null)pending.push('Definir o valor da implantação');
    if(!Number(financial?.prazo_contratual||0))pending.push('Definir o prazo contratual');

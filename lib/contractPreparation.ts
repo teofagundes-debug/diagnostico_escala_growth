@@ -1,0 +1,7 @@
+export const contractualCompanyFields=[['razao_social','Razão Social'],['cpf_cnpj','CPF/CNPJ'],['endereco','Endereço'],['cidade','Cidade'],['estado','Estado'],['cep','CEP']] as const;
+export const contractualResponsibleFields=[['nome','Nome do responsável legal'],['email','E-mail do responsável legal'],['telefone','Telefone do responsável legal']] as const;
+const filled=(value:any)=>Boolean(String(value||'').trim());
+export function missingContractualFields(company:any,responsible:any){return[...contractualCompanyFields.filter(([field])=>!filled(company?.[field])).map(([field,label])=>({scope:'company',field,label})),...contractualResponsibleFields.filter(([field])=>!filled(responsible?.[field])).map(([field,label])=>({scope:'responsible',field,label}))]}
+export function contractDataComplete(company:any,responsible:any){return missingContractualFields(company,responsible).length===0}
+export function formalizationReady(project:any,contract:any,company:any,responsible:any,usesTerm:(project:any)=>boolean){if(!project||!filled(project.formalizacao)||!contractDataComplete(company,responsible))return false;return usesTerm(project)||Boolean(contract)}
+export function publicationReady(input:{plan:any;project:any;financialReady:boolean;documentReady:boolean;contractDataComplete:boolean}){return Boolean(input.plan&&input.project&&input.financialReady&&input.documentReady&&input.contractDataComplete)}
