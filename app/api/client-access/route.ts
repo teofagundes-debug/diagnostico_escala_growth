@@ -156,7 +156,7 @@ export async function POST(req:Request){
     rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&select=versao&order=versao.desc&limit=1`).then(x=>x?.[0]).catch(()=>null)
    ]),project=official.project||official.legacyFallback&&legacyProject||null,canonical=await canonicalPublicationReadiness(official,financial);
    const pending:string[]=[];
-    const documentType=formalizationType(project),documentReady=formalizationReady(project,contract,data.company,data.responsible,usesAdhesionTerm),termSelected=usesAdhesionTerm(project);
+    const documentType=formalizationType(project),documentReady=formalizationReady(project,contract,data.company,data.responsible,usesAdhesionTerm),termSelected=usesAdhesionTerm(project),strategic3=isStrategicCommercialProject(project);
    if(!diagnostic)pending.push('Concluir o Diagnóstico');
    if(!String(plan?.parecer_consultor||diagnostic?.parecer_consultor||diagnostic?.parecer||'').trim())pending.push('Preencher o Parecer do Consultor');
     if(canonical.legacy&&(!plan||!['Plano Concluído','Concluído','Plano Liberado ao Cliente'].includes(plan.status)))pending.push('Concluir o Plano Estratégico');
