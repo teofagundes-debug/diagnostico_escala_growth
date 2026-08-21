@@ -42,4 +42,8 @@
 
 /* Ajustes editoriais pontuais */
 .technologyBrands>p{max-width:920px}.aboutSection .sectionInner{grid-template-columns:minmax(0,1fr) 440px;gap:64px}
+.visionSection .sectionHeading,.visionSection .sectionHeading h2{max-width:1180px}
+.heroCopy h1{font-size:clamp(2.8rem,4.65vw,4.65rem);line-height:1.01}
 @media(max-width:820px){.aboutSection .sectionInner{grid-template-columns:1fr;gap:45px}}
+@media(max-width:560px){.heroCopy h1{font-size:clamp(2.35rem,11vw,3.25rem);line-height:1.03}}
+.capabilityGrid article ul{display:grid;margin:0;padding:0;gap:9px;list-style:none}.capabilityGrid article li{display:flex;align-items:flex-start;gap:10px;line-height:1.45}.capabilityGrid article li::before{display:grid;flex:0 0 20px;width:20px;height:20px;margin-top:1px;border-radius:50%;place-items:center;background:#e5f3eb;color:var(--green);content:"✓";font-size:.66rem;font-weight:900}
