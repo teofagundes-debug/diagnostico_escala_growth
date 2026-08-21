@@ -39,3 +39,7 @@
 @media(max-width:1080px){.benefitsSection .sectionInner{grid-template-columns:.8fr 1.2fr;gap:44px}.benefitList li{min-height:82px}.technologyBrands li{min-height:106px}}
 @media(max-width:820px){.benefitsSection .sectionInner{grid-template-columns:1fr;gap:38px}.technologyBrands li img{max-height:78px}}
 @media(max-width:560px){.benefitList li{min-height:0;padding:19px 14px;font-size:1rem}.technologyBrands li{min-height:98px;padding:10px}.technologyBrands li img{max-height:70px}}
+
+/* Ajustes editoriais pontuais */
+.technologyBrands>p{max-width:920px}.aboutSection .sectionInner{grid-template-columns:minmax(0,1fr) 440px;gap:64px}
+@media(max-width:820px){.aboutSection .sectionInner{grid-template-columns:1fr;gap:45px}}
