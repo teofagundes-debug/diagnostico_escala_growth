@@ -19,16 +19,16 @@ const examples = [
     text: "Entenda o impacto dos principais gargalos, receba recomendações e visualize a direção de evolução da sua operação.",
     src: "/images/diagnostico-escala-growth/atencao-e-evolucao.png",
     alt: "Exemplo de recomendações do Diagnóstico Escala Growth com prioridades e direção de evolução.",
-    width: 520,
-    height: 764,
+    width: 963,
+    height: 912,
   },
   {
     title: "Por onde começar",
     text: "Transforme a análise em ações práticas, com uma visão organizada dos próximos passos para começar a evoluir sua operação.",
     src: "/images/diagnostico-escala-growth/plano-dinamico.png",
     alt: "Exemplo de plano dinâmico do Diagnóstico Escala Growth com próximos passos organizados.",
-    width: 520,
-    height: 405,
+    width: 959,
+    height: 726,
   },
 ] as const;
 
