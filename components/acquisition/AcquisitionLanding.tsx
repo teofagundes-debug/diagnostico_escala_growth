@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { brandLogo } from "@/components/brand";
 import { LandingMotion } from "@/components/landing/LandingMotion";
+import { DiagnosticResultShowcase } from "./DiagnosticResultShowcase";
 import styles from "./AcquisitionLanding.module.css";
 
 const problems = ["Leads chegam e ficam sem retorno.", "Cada vendedor acompanha os clientes de um jeito.", "Você não sabe quantas oportunidades estão realmente abertas.", "Não consegue identificar com clareza de onde vêm as melhores vendas.", "Investe para gerar demanda, mas perde visibilidade depois que o lead entra.", "Sabe que existem gargalos, mas não sabe o que atacar primeiro."];
@@ -23,7 +24,7 @@ export function AcquisitionLanding() {
 
       <section className={styles.diagnosticSection} aria-labelledby="diagnostic-title"><div className={styles.inner}><div className={styles.diagnosticCopy} data-reveal><Heading eyebrow="Diagnóstico Escala Growth" id="diagnostic-title">Descubra onde sua operação comercial precisa evoluir.</Heading><p>O Diagnóstico Escala Growth analisa pontos importantes da sua operação comercial e identifica forças, gargalos e prioridades para evolução.</p><p><strong>Ao concluir, seu diagnóstico é gerado imediatamente.</strong> Você visualiza seu resultado online, conhece seu IEG, identifica forças e gargalos e pode imprimir o diagnóstico para utilizar na análise da sua operação.</p><blockquote>Terminou. Recebeu. Já pode usar.</blockquote><Cta label="Quero fazer meu diagnóstico" /></div><ul className={styles.deliverables} data-reveal-group="deliverables">{deliverables.map(item=><li key={item}><span>✓</span>{item}</li>)}</ul></div></section>
 
-      <section className={styles.resultSection} aria-labelledby="result-title"><div className={styles.inner}><Heading eyebrow="Exemplo de visualização" id="result-title">Uma entrega clara para começar a agir.</Heading><div className={styles.resultDemo} data-reveal><ResultPreview /><div><span>Leitura imediata</span><h3>Forças, gargalos e direção em uma única análise.</h3><p>A representação é ilustrativa. Seu resultado será calculado exclusivamente a partir das respostas fornecidas no diagnóstico.</p></div></div></div></section>
+      <DiagnosticResultShowcase />
 
       <section className={styles.stepsSection} aria-labelledby="steps-title"><div className={styles.inner}><Heading eyebrow="Como funciona" id="steps-title">Em poucos passos você entende melhor sua operação comercial.</Heading><ol className={styles.steps} data-reveal-group="steps">{steps.map(([number,title,text],index)=><li key={number}><span>{number}</span><h3>{title}</h3><p>{text}</p>{index===1&&<strong>Terminou. Recebeu. Já pode usar.</strong>}</li>)}</ol></div></section>
 
