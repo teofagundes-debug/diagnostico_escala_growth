@@ -1,210 +1,67 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { LandingMotion } from "./LandingMotion";
 import { PublicHeader } from "./PublicHeader";
 import { WebchatWidget } from "./WebchatWidget";
-import { LandingMotion } from "./LandingMotion";
 import styles from "./LandingPage.module.css";
 
-const problems = [
-  ["01", "Clientes sem retorno", "Contatos chegam, mas nem todos recebem acompanhamento no momento correto."],
-  ["02", "Atendimento desorganizado", "Conversas ficam espalhadas e a equipe perde contexto sobre cada cliente."],
-  ["03", "Falta de processo comercial", "Cada vendedor trabalha de uma maneira e não existe um fluxo claro de acompanhamento."],
-  ["04", "Pouca visibilidade", "A empresa não enxerga quantas oportunidades existem, onde estão os gargalos e o que precisa melhorar."],
-  ["05", "Baixa previsibilidade", "As decisões são tomadas sem indicadores consistentes sobre atendimento, conversão e vendas."],
+const problems = ["Clientes sem retorno", "Atendimento desorganizado", "Falta de processo comercial", "Oportunidades sem acompanhamento", "Pouca visibilidade sobre o funil", "Dificuldade para saber o que realmente virou venda"];
+const pillars = [["Atrair", "Como sua empresa gera oportunidades e cria demanda de forma consistente."], ["Converter", "Como atende, qualifica, acompanha e transforma oportunidades em vendas."], ["Crescer", "Como mede resultados, ganha previsibilidade e evolui a operação comercial."]];
+const stages = [["01", "Diagnóstico", "Analisamos como a empresa atrai, atende, acompanha e converte oportunidades e calculamos seu Índice Escala Growth."], ["02", "Estratégia", "Na Reunião Estratégica, interpretamos o diagnóstico, definimos prioridades e estruturamos um Plano Estratégico de evolução."], ["03", "Implantação", "Transformamos o plano em execução, estruturando processos, tecnologia, automações, aquisição, mensuração e os recursos definidos para o projeto."], ["04", "Evolução", "Acompanhamos indicadores, execução e evolução da operação para que novas decisões sejam tomadas com base em dados e resultados."]];
+const capabilities: [string, string[]][] = [
+  ["Organização comercial", ["Processos", "Funil e pipelines", "CRM", "Gestão de oportunidades"]],
+  ["Atendimento e relacionamento", ["Organização dos canais", "Atendimento e qualificação", "Acompanhamento", "Automações"]],
+  ["Aquisição", ["Geração de demanda", "Google Ads e Meta Ads", "Landing Pages", "Estratégias de aquisição"]],
+  ["Integração", ["APIs", "Webhooks", "Integrações entre sistemas", "Automação de fluxos"]],
+  ["Mensuração", ["Dashboards", "Indicadores", "Origem das oportunidades", "Acompanhamento do funil"]],
+  ["Capacitação", ["Processos", "Uso das soluções implantadas", "Orientação da equipe", "Evolução operacional"]],
 ];
-
-const stages = [
-  ["1", "Diagnóstico", "Analisamos como sua empresa atrai, atende, acompanha e converte oportunidades."],
-  ["2", "Estratégia", "Identificamos prioridades e definimos um plano adequado à realidade da sua operação."],
-  ["3", "Implantação", "Estruturamos processos, ferramentas, automações, indicadores e recursos necessários."],
-  ["4", "Evolução", "Acompanhamos os resultados e orientamos os próximos passos para o crescimento."],
-];
-
-const pillars = [
-  ["Atrair", "Avalia como a empresa gera demanda, atrai novos contatos e transforma investimento em oportunidades comerciais."],
-  ["Converter", "Avalia atendimento, velocidade de resposta, organização dos contatos, processo comercial e capacidade de transformar oportunidades em vendas."],
-  ["Crescer", "Avalia indicadores, gestão, previsibilidade, acompanhamento de resultados e capacidade de evolução contínua."],
-];
-
-const solutions = ["Organização comercial", "CRM e gestão de oportunidades", "WhatsApp Oficial", "Agentes de Inteligência Artificial", "Automação de atendimento", "Integrações entre sistemas", "Dashboard Executivo", "Indicadores e relatórios", "Landing pages", "Google Ads", "Meta Ads", "Treinamento da equipe"];
-const benefits = ["Visão centralizada das oportunidades", "Atendimento mais organizado", "Processos comerciais mais claros", "Menos clientes esquecidos", "Melhor acompanhamento da equipe", "Indicadores para tomada de decisão", "Uso estratégico de Inteligência Artificial", "Mais previsibilidade comercial"];
-const audience = ["utilizam WhatsApp no atendimento ou nas vendas", "recebem contatos de diferentes canais", "possuem equipe comercial ou de atendimento", "querem organizar oportunidades", "desejam implantar automação ou Inteligência Artificial", "investem ou pretendem investir em divulgação", "precisam melhorar indicadores e previsibilidade", "sentem que estão perdendo oportunidades por falta de acompanhamento"];
+const technology = [["Atendimento e relacionamento", "WhatsApp Oficial, Instagram Direct, Facebook Messenger, Webchat e canais digitais integrados."], ["Gestão comercial", "CRM, pipelines, gestão de oportunidades e acompanhamento comercial."], ["Inteligência e automação", "Agentes de IA, automações, fluxos inteligentes, qualificação e apoio ao atendimento."], ["Integração", "APIs, Webhooks e integrações entre sistemas."], ["Aquisição", "Google Ads, Meta Ads e Landing Pages."], ["Gestão e mensuração", "Dashboards, indicadores, origem das oportunidades e acompanhamento de resultados."]];
+const benefits = ["Oportunidades mais organizadas", "Processos comerciais mais claros", "Melhor acompanhamento dos leads", "Maior visibilidade sobre o funil", "Indicadores para tomada de decisão", "Melhor entendimento da origem das oportunidades", "Capacidade de identificar gargalos", "Tecnologia utilizada de forma estratégica", "Evolução acompanhada ao longo do projeto"];
 const faqs = [
-  ["O diagnóstico é gratuito?", "O diagnóstico inicial poderá ser realizado sem compromisso e tem como objetivo identificar o nível atual de estrutura da operação comercial da empresa."],
-  ["Quanto tempo leva para responder?", "O tempo pode variar conforme as respostas, mas normalmente o preenchimento leva apenas alguns minutos."],
-  ["O diagnóstico já apresenta uma proposta comercial?", "Não. Primeiro avaliamos a operação. A estratégia e as possíveis soluções são definidas posteriormente, de acordo com as necessidades identificadas."],
-  ["Preciso utilizar Inteligência Artificial?", "Não necessariamente. A Inteligência Artificial é um dos recursos que podem ser recomendados. A prioridade é resolver os gargalos identificados."],
-  ["A Escala Growth serve apenas para empresas que vendem pelo WhatsApp?", "Não. O WhatsApp é um canal importante, mas a metodologia também analisa processos, atendimento, vendas, indicadores, marketing e gestão das oportunidades."],
-  ["O diagnóstico garante aumento de vendas?", "Não. O diagnóstico identifica oportunidades de melhoria e orienta decisões. Resultados comerciais dependem da execução, da operação, do mercado e do envolvimento da empresa."],
-  ["O que acontece após o diagnóstico?", "Após a análise, a empresa poderá receber uma orientação inicial e, quando aplicável, avançar para uma reunião estratégica, Plano Estratégico e Plano de Implantação."],
+  ["O que é o Método Escala Growth?", "É o método utilizado pela Escala Vendas para diagnosticar a operação comercial, identificar prioridades e transformar a análise em um plano de evolução executável."],
+  ["A Escala Vendas é uma empresa de software?", "Não. A Escala Vendas organiza e evolui operações comerciais conectando estratégia, processos, tecnologia, implantação e acompanhamento. A tecnologia é um meio para executar a estratégia."],
+  ["Preciso trocar as ferramentas que minha empresa já utiliza?", "Não necessariamente. Primeiro entendemos a estrutura atual e o problema. Os recursos existentes podem ser mantidos, integrados ou evoluídos conforme a necessidade identificada."],
+  ["A Escala Vendas também faz a implantação?", "Sim, quando a implantação faz parte do escopo contratado. O plano pode envolver processos, tecnologia, automações, aquisição, mensuração, integrações e capacitação."],
+  ["O Diagnóstico já é uma proposta comercial?", "Não. O Diagnóstico identifica forças, gargalos e prioridades. Uma proposta é estruturada posteriormente, quando houver aderência e um escopo definido."],
+  ["A tecnologia é obrigatória em todos os projetos?", "Não. A tecnologia entra quando ajuda a resolver o problema identificado e a executar a estratégia com mais organização, integração e informação."],
+  ["Como funciona o acompanhamento depois da implantação?", "A evolução é acompanhada por indicadores, execução e novas decisões, respeitando o escopo e o momento da operação comercial."],
+  ["Qual é o primeiro passo?", "O primeiro passo é realizar o Diagnóstico Escala Growth para compreender como a operação funciona hoje e quais pontos merecem prioridade."],
 ];
 
 export function LandingPage() {
-  return (
-    <div className={styles.landingPage} data-landing-page>
-      <LandingMotion />
-      <PublicHeader />
-      <main>
-        <section className={styles.heroSection} aria-labelledby="landing-title">
-          <div className={styles.heroContent}>
-            <div className={styles.heroCopy}>
-              <span className={styles.eyebrow}>Método Escala Growth</span>
-              <h1 id="landing-title">
-                <span>Toda empresa cresce</span>
-                <span>quando consegue</span>
-                <span>acompanhar <em className={styles.titleHighlight}>cada</em></span>
-                <span><em className={styles.titleHighlight}>oportunidade.</em></span>
-              </h1>
-              <p className={styles.heroLead}>Descubra os principais gargalos da sua operação comercial e receba uma visão estruturada sobre onde sua empresa precisa evoluir para vender com mais organização, controle e previsibilidade.</p>
-              <div className={styles.heroButtons}>
-                <Link className={styles.primaryButton} href="/diagnostico">Iniciar meu Diagnóstico</Link>
-                <a className={styles.secondaryButton} href="#como-funciona">Conhecer a metodologia</a>
-              </div>
-              <ul className={styles.heroIndicators} aria-label="Informações sobre o diagnóstico">
-                <li><span aria-hidden="true">✓</span> Diagnóstico online</li>
-                <li><span aria-hidden="true">✓</span> Aproximadamente 8 minutos</li>
-                <li><span aria-hidden="true">✓</span> Relatório imediato</li>
-              </ul>
-              <p className={styles.heroNote}>Ao final do diagnóstico você receberá seu Índice Escala Growth, com uma visão dos pilares Atrair, Converter e Crescer.</p>
-            </div>
-            <aside className={styles.indexPreview} aria-label="Representação ilustrativa do Índice Escala Growth">
-              <div className={styles.previewHeader}><span>Índice Escala Growth</span><small>Representação ilustrativa</small></div>
-              <h2>Uma visão integrada da sua operação comercial.</h2>
-              <div className={styles.previewBars}>
-                {[
-                  ["Atrair", "72%"],
-                  ["Converter", "58%"],
-                  ["Crescer", "43%"],
-                ].map(([name, width]) => (
-                  <div key={name} className={styles.previewBar}><span>{name}</span><i><b style={{ width }} /></i></div>
-                ))}
-              </div>
-              <p>O diagnóstico revela forças, gargalos e prioridades — sem transformar esta prévia em uma pontuação real.</p>
-            </aside>
-          </div>
-        </section>
+  return <div className={styles.landingPage} data-landing-page>
+    <LandingMotion /><PublicHeader />
+    <main>
+      <section className={styles.heroSection} aria-labelledby="landing-title"><div className={styles.heroContent}>
+        <div className={styles.heroCopy}><span className={styles.eyebrow}>Escala Vendas</span><h1 id="landing-title">Toda empresa cresce quando consegue acompanhar <em>cada oportunidade.</em></h1><p className={styles.heroLead}>A Escala Vendas organiza operações comerciais unindo estratégia, processos e tecnologia para transformar oportunidades em crescimento com mais controle e previsibilidade.</p><p className={styles.heroComplement}>Antes de buscar mais leads, é preciso entender como sua empresa atrai, atende, acompanha e converte as oportunidades que já chegam.</p><div className={styles.heroButtons}><a className={styles.primaryButton} href="#metodo">Conheça o Método Escala Growth</a><Link className={styles.secondaryButton} href="/diagnostico">Faça seu Diagnóstico</Link></div></div>
+        <aside className={styles.heroStatement}><span>Estratégia comercial aplicada</span><h2>Organizar antes de acelerar.</h2><p>Entender o cenário, definir prioridades e implantar os recursos certos para que cada oportunidade possa ser acompanhada.</p><div className={styles.statementLine}><i /><strong>Estratégia</strong><i /><strong>Execução</strong><i /><strong>Evolução</strong></div></aside>
+      </div></section>
 
-        <section className={styles.problemSection} aria-labelledby="problem-title">
-          <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading} data-reveal>
-              <span className={styles.eyebrow}>O desafio</span>
-              <h2 id="problem-title">Sua empresa pode estar perdendo oportunidades sem perceber.</h2>
-              <p>Muitas empresas recebem contatos, investem em divulgação e possuem uma boa equipe, mas ainda enfrentam dificuldades para acompanhar cada oportunidade até a venda.</p>
-            </div>
-            <div className={styles.problemGrid} data-reveal-group="problems">
-              {problems.map(([number, title, text]) => <article key={number} className={styles.problemItem}><span>{number}</span><h3>{title}</h3><p>{text}</p></article>)}
-            </div>
-            <p className={styles.sectionConclusion} data-reveal>Antes de investir mais para atrair clientes, é preciso garantir que sua empresa consiga acompanhar melhor as oportunidades que já possui.</p>
-          </div>
-        </section>
+      <section className={styles.problemSection} aria-labelledby="problem-title"><div className={styles.sectionInner}><Heading eyebrow="O problema que resolvemos" id="problem-title" title="Mais oportunidades não resolvem uma operação comercial desorganizada."><p>Empresas podem perder vendas mesmo quando existe demanda. O problema aparece quando os contatos chegam por diferentes canais, o atendimento não segue um processo claro e ninguém consegue acompanhar cada oportunidade até a decisão.</p></Heading><ul className={styles.problemGrid} data-reveal-group="problems">{problems.map((item, i) => <li key={item}><span>0{i + 1}</span><strong>{item}</strong></li>)}</ul><p className={styles.sectionConclusion} data-reveal>Antes de vender mais, é preciso vender melhor.</p></div></section>
 
-        <section id="como-funciona" className={styles.methodSection} aria-labelledby="method-title">
-          <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading} data-reveal><span className={styles.eyebrow}>Como funciona</span><h2 id="method-title">Uma metodologia para transformar diagnóstico em evolução.</h2></div>
-            <ol className={styles.stageFlow} data-reveal-group="stages">
-              {stages.map(([number, title, text]) => <li key={number}><span>{number}</span><h3>{title}</h3><p>{text}</p></li>)}
-            </ol>
-          </div>
-        </section>
+      <section id="empresa" className={styles.visionSection} aria-labelledby="vision-title"><div className={styles.sectionInner}><Heading eyebrow="Nossa visão" id="vision-title" title="Crescimento comercial exige mais do que gerar leads."><p>Gerar demanda é importante. Mas crescimento sustentável depende da capacidade de transformar cada oportunidade em um processo que possa ser acompanhado, medido e melhorado.</p><p>Por isso, a Escala Vendas trabalha conectando estratégia, processos, tecnologia, implantação e acompanhamento. Primeiro entendemos o problema. Depois definimos o caminho. Só então utilizamos os recursos necessários para colocar a estratégia em prática.</p></Heading><ol className={styles.visionFlow} data-reveal-group="vision">{["Estratégia", "Processos", "Tecnologia", "Implantação", "Acompanhamento"].map(item => <li key={item}>{item}</li>)}</ol></div></section>
 
-        <section id="indice" className={styles.indexSection} aria-labelledby="index-title">
-          <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading} data-reveal>
-              <span className={styles.eyebrow}>Índice Escala Growth</span>
-              <h2 id="index-title">Entenda o nível de estrutura da sua operação comercial.</h2>
-              <p>O diagnóstico avalia três pilares essenciais para o crescimento de uma empresa.</p>
-            </div>
-            <div className={styles.pillarGrid} data-reveal-group="pillars">
-              {pillars.map(([title, text], index) => <article key={title}><span>0{index + 1}</span><h3>{title}</h3><p>{text}</p></article>)}
-            </div>
-            <div className={styles.centeredAction} data-reveal>
-              <p>Ao final, você recebe uma visão clara dos principais pontos de atenção e das áreas com maior potencial de evolução.</p>
-              <Link className={styles.primaryButton} href="/diagnostico">Descobrir meu Índice Escala Growth</Link>
-            </div>
-          </div>
-        </section>
+      <section id="metodo" className={styles.methodSection} aria-labelledby="method-title"><div className={styles.sectionInner}><Heading eyebrow="Método Escala Growth" id="method-title" title="Um método para entender onde sua operação está e definir o próximo passo."><p>O Escala Growth é o método utilizado pela Escala Vendas para diagnosticar a operação comercial, identificar prioridades e transformar análise em um plano de evolução executável.</p><strong className={styles.brandArchitecture}>Escala Vendas é a empresa. Escala Growth é o método.</strong></Heading><div className={styles.pillarGrid} data-reveal-group="pillars">{pillars.map(([title, text], i) => <article key={title}><span>0{i + 1}</span><h3>{title}</h3><p>{text}</p></article>)}</div></div></section>
 
-        <section id="solucoes" className={styles.solutionsSection} aria-labelledby="solutions-title">
-          <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading} data-reveal>
-              <span className={styles.eyebrow}>Da estratégia à execução</span>
-              <h2 id="solutions-title">A tecnologia certa entra depois que entendemos o problema.</h2>
-              <p>A Escala Growth não começa indicando ferramentas. Primeiro identificamos o que precisa ser organizado. Depois definimos quais recursos fazem sentido para a realidade da empresa.</p>
-            </div>
-            <ul className={styles.solutionGrid} data-reveal-group="solutions">{solutions.map(solution => <li key={solution}><span aria-hidden="true">✓</span>{solution}</li>)}</ul>
-            <p className={styles.subtleNote}>As soluções são recomendadas de acordo com o diagnóstico e podem variar conforme o estágio, a estrutura e os objetivos de cada empresa.</p>
-          </div>
-        </section>
+      <section id="como-atuamos" className={styles.stagesSection} aria-labelledby="stages-title"><div className={styles.sectionInner}><Heading eyebrow="Como atuamos" id="stages-title" title="Da análise à evolução da operação comercial." /><ol className={styles.stageFlow} data-reveal-group="stages">{stages.map(([number, title, text]) => <li key={number}><span>{number}</span><h3>{title}</h3><p>{text}</p></li>)}</ol></div></section>
 
-        <section className={styles.benefitsSection} aria-labelledby="benefits-title">
-          <div className={styles.sectionInner}>
-            <div className={styles.benefitIntro} data-reveal>
-              <span className={styles.eyebrow}>O que muda na prática</span>
-              <h2 id="benefits-title">Mais clareza para decidir. Mais estrutura para crescer.</h2>
-              <blockquote>Tecnologia para organizar.<br />Pessoas para vender.</blockquote>
-            </div>
-            <ul className={styles.benefitList} data-reveal-group="benefits">{benefits.map(benefit => <li key={benefit}><span aria-hidden="true">✓</span>{benefit}</li>)}</ul>
-          </div>
-        </section>
+      <section className={styles.capabilitySection} aria-labelledby="capability-title"><div className={styles.sectionInner}><Heading eyebrow="Da estratégia à execução" id="capability-title" title="Planejamento só gera valor quando consegue sair do papel."><p>A Escala Vendas não encerra o trabalho na recomendação. Quando a implantação faz parte do projeto contratado, estruturamos os recursos necessários para colocar o plano definido em funcionamento.</p></Heading><div className={styles.capabilityGrid} data-reveal-group="capabilities">{capabilities.map(([title, items]) => <article key={title}><h3>{title}</h3><ul>{items.map(item => <li key={item}>{item}</li>)}</ul></article>)}</div><p className={styles.subtleNote}>As soluções dependem das necessidades identificadas e do escopo contratado. Nem todos os recursos fazem parte de todos os projetos.</p></div></section>
 
-        <section className={styles.audienceSection} aria-labelledby="audience-title">
-          <div className={styles.sectionInner}>
-            <div className={styles.sectionHeading} data-reveal><span className={styles.eyebrow}>Para quem é</span><h2 id="audience-title">Para empresas que sabem que podem vender melhor.</h2><p>A metodologia Escala Growth é indicada para empresas que:</p></div>
-            <ul className={styles.audienceGrid} data-reveal-group="audience">{audience.map(item => <li key={item}><span aria-hidden="true">→</span>{item}</li>)}</ul>
-            <p className={styles.sectionConclusion} data-reveal>Não é necessário possuir uma grande equipe ou uma estrutura tecnológica avançada. O diagnóstico considera o momento atual da empresa e indica uma evolução possível e realista.</p>
-          </div>
-        </section>
+      <section id="tecnologia" className={styles.technologySection} aria-labelledby="technology-title"><div className={styles.sectionInner}><div className={styles.technologyIntro} data-reveal><span className={styles.eyebrowLight}>Tecnologia</span><h2 id="technology-title">Estratégia define o caminho.<br />Tecnologia dá escala à execução.</h2><p>Não começamos escolhendo ferramentas. Primeiro entendemos o problema, definimos prioridades e estruturamos a estratégia. A tecnologia entra para organizar processos, conectar canais, automatizar tarefas, acompanhar oportunidades e gerar informação para decisões melhores.</p></div><div className={styles.technologyGrid} data-reveal-group="technology">{technology.map(([title, text]) => <article key={title}><h3>{title}</h3><p>{text}</p></article>)}</div><blockquote data-reveal>A tecnologia certa é aquela que resolve o problema certo.</blockquote></div></section>
 
-        <section className={styles.aboutSection} aria-labelledby="about-title">
-          <div className={styles.sectionInner}>
-            <div className={styles.aboutCopy} data-reveal>
-              <span className={styles.eyebrow}>Conheça quem vai conduzir a evolução da sua empresa</span>
-              <h2 id="about-title">Estratégia, tecnologia e experiência comercial trabalhando juntas.</h2>
-              <p>A Escala Vendas atua na organização e evolução de operações comerciais por meio de processos, automação e Inteligência Artificial.</p>
-              <p>Nossa metodologia une experiência em tecnologia, gestão de projetos e vendas consultivas para ajudar empresas a acompanhar melhor cada oportunidade e construir uma operação mais organizada, mensurável e preparada para crescer.</p>
-            </div>
-            <aside className={styles.consultantCard} data-reveal>
-              <div className={styles.consultantPhotoFrame}>
-                <Image
-                  className={styles.consultantPhoto}
-                  src="/teofilo-oliveira-fagundes.jpg"
-                  alt="Teófilo Oliveira Fagundes, CEO da Escala Vendas."
-                  width={1200}
-                  height={1500}
-                  sizes="(max-width: 820px) calc(100vw - 80px), 380px"
-                  unoptimized
-                />
-              </div>
-              <div className={styles.consultantContent}>
-                <h3>Teófilo Oliveira Fagundes</h3>
-                <strong>CEO • Escala Vendas</strong>
-                <p>Especialista em Organização Comercial, Automação e Inteligência Artificial.</p>
-              </div>
-            </aside>
-          </div>
-        </section>
+      <section className={styles.benefitsSection} aria-labelledby="benefits-title"><div className={styles.sectionInner}><Heading eyebrow="O que muda na prática" id="benefits-title" title="Mais clareza para acompanhar a operação e decidir o próximo passo." /><ul className={styles.benefitList} data-reveal-group="benefits">{benefits.map(item => <li key={item}><span>✓</span>{item}</li>)}</ul></div></section>
 
-        <section id="faq" className={styles.faqSection} aria-labelledby="faq-title">
-          <div className={styles.faqInner}>
-            <div className={styles.sectionHeading} data-reveal><span className={styles.eyebrow}>Perguntas frequentes</span><h2 id="faq-title">Dúvidas antes de começar?</h2></div>
-            <div className={styles.faqList} data-reveal-group="faq">{faqs.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div>
-          </div>
-        </section>
+      <section id="quem-conduz" className={styles.aboutSection} aria-labelledby="about-title"><div className={styles.sectionInner}><div className={styles.aboutCopy} data-reveal><span className={styles.eyebrow}>Quem conduz</span><h2 id="about-title">Experiência para transformar estratégia em execução.</h2><p>A Escala Vendas atua na organização e evolução de operações comerciais, conectando estratégia, processos e tecnologia para ajudar empresas a acompanhar melhor suas oportunidades e estruturar seu crescimento.</p><blockquote>Tecnologia para organizar.<br />Pessoas para vender.</blockquote></div><aside className={styles.consultantCard} data-reveal><div className={styles.consultantPhotoFrame}><Image className={styles.consultantPhoto} src="/teofilo-oliveira-fagundes.jpg" alt="Teófilo Oliveira Fagundes, fundador e consultor da Escala Vendas." width={1200} height={1500} sizes="(max-width: 820px) calc(100vw - 56px), 420px" /></div><div className={styles.consultantContent}><h3>Teófilo Oliveira Fagundes</h3><strong>Fundador e Consultor — Escala Vendas</strong><p>Experiência em tecnologia, gestão de projetos e vendas consultivas aplicada à evolução de operações comerciais.</p></div></aside></div></section>
 
-        <section className={styles.finalCta} aria-labelledby="final-cta-title">
-          <div data-reveal><span className={styles.eyebrowLight}>Comece pelo diagnóstico</span><h2 id="final-cta-title">Toda oportunidade conta.</h2><p>Descubra onde sua operação comercial está perdendo força e quais áreas precisam evoluir para sua empresa crescer com mais organização e previsibilidade.</p><Link className={styles.lightButton} href="/diagnostico">Fazer meu Diagnóstico Escala Growth</Link><small>O primeiro passo para vender melhor é entender como sua empresa vende hoje.</small></div>
-        </section>
-      </main>
+      <section id="faq" className={styles.faqSection} aria-labelledby="faq-title"><div className={styles.faqInner}><Heading eyebrow="Perguntas frequentes" id="faq-title" title="Entenda como a Escala Vendas atua." /><div className={styles.faqList} data-reveal-group="faq">{faqs.map(([q, a]) => <details key={q}><summary>{q}<span>+</span></summary><p>{a}</p></details>)}</div></div></section>
+      <section className={styles.finalCta} aria-labelledby="final-cta-title"><div data-reveal><span className={styles.eyebrowLight}>Seu próximo passo</span><h2 id="final-cta-title">Toda oportunidade conta.</h2><p>Descubra como sua operação comercial está estruturada hoje e quais pontos merecem prioridade para evoluir.</p><div className={styles.finalActions}><Link className={styles.lightButton} href="/diagnostico">Fazer meu Diagnóstico Escala Growth</Link><a className={styles.outlineLightButton} href="#contato">Falar com a Escala Vendas</a></div></div></section>
+    </main>
+    <footer id="contato" className={styles.footer}><div className={styles.footerInner}><div><strong>Escala Vendas LTDA</strong><p>CNPJ: 60.328.666/0001-03</p><p>Rua Marechal Deodoro, 450, sala 505<br />Centro · Curitiba – PR · CEP 80010-010</p></div><div><strong>Contato</strong><a href="mailto:contato@escalavendas.com.br">contato@escalavendas.com.br</a><nav><a href="#empresa">Empresa</a><a href="#metodo">Método</a><a href="#como-atuamos">Como atuamos</a><a href="#tecnologia">Tecnologia</a></nav></div><WebchatWidget /><nav aria-label="Acesso"><strong>Acesso</strong><Link href="/diagnostico">Diagnóstico</Link><Link href="/login">Área do cliente</Link></nav></div><p className={styles.copyright}>© {new Date().getFullYear()} Escala Vendas. Todos os direitos reservados.</p></footer>
+  </div>;
+}
 
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <div><strong>Escala Vendas LTDA</strong><p>CNPJ: 60.328.666/0001-03</p><p>Rua Marechal Deodoro, 450, sala 505<br />Centro · Curitiba – PR · CEP 80010-010</p></div>
-          <div><strong>Contato</strong><a href="mailto:contato@escalavendas.com.br">contato@escalavendas.com.br</a></div>
-          <WebchatWidget />
-          <nav aria-label="Links do rodapé"><strong>Acesso</strong><Link href="/diagnostico">Diagnóstico</Link><Link href="/login">Área do cliente</Link></nav>
-        </div>
-        <p className={styles.copyright}>© {new Date().getFullYear()} Escala Vendas. Todos os direitos reservados.</p>
-      </footer>
-    </div>
-  );
+function Heading({ eyebrow, id, title, children }: { eyebrow: string; id: string; title: string; children?: ReactNode }) {
+  return <div className={styles.sectionHeading} data-reveal><span className={styles.eyebrow}>{eyebrow}</span><h2 id={id}>{title}</h2>{children}</div>;
 }

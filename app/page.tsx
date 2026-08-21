@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/LandingPage";
 
-const title = "Escala Growth | Organize sua operação comercial para crescer";
-const description = "Descubra os gargalos da sua operação comercial com o Diagnóstico Escala Growth e identifique como melhorar processos, atendimento, vendas e indicadores.";
+const title = "Escala Vendas | Estratégia, Processos e Tecnologia para Vender Melhor";
+const description = "A Escala Vendas organiza operações comerciais por meio do Método Escala Growth, unindo estratégia, processos, tecnologia, implantação e acompanhamento para transformar oportunidades em crescimento.";
 const siteUrl = "https://www.escalavendas.com.br";
 const canonicalUrl = siteUrl + "/";
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title,
     description,
     url: canonicalUrl,
-    siteName: "Escala Growth",
+    siteName: "Escala Vendas",
     locale: "pt_BR",
     type: "website",
   },
@@ -26,5 +26,22 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <LandingPage />;
+  const organization = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Escala Vendas LTDA",
+    url: canonicalUrl,
+    email: "contato@escalavendas.com.br",
+    taxID: "60.328.666/0001-03",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Rua Marechal Deodoro, 450, sala 505",
+      addressLocality: "Curitiba",
+      addressRegion: "PR",
+      postalCode: "80010-010",
+      addressCountry: "BR",
+    },
+  };
+
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization).replace(/</g, "\\u003c") }} /><LandingPage /></>;
 }
