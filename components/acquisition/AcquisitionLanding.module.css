@@ -4,3 +4,7 @@
 @media(max-width:560px){.header>div,.heroInner,.inner{width:min(100% - 28px,1120px)}.header img{width:118px}.headerCta{padding:0 13px;font-size:.72rem}.heroInner{min-height:0;padding:60px 0}.heroCopy h1{font-size:clamp(2.35rem,11vw,3.2rem)}.primaryButton{width:100%;text-align:center}.preview{padding:25px}.preview dl{grid-template-columns:1fr}.problemGrid,.pillarFlow{grid-template-columns:1fr}.heading h2,.finalCta h2{font-size:clamp(2rem,9vw,2.65rem)}.authoritySection img{width:125px}.footer nav{flex-direction:column;gap:10px}}
 @media(prefers-reduced-motion:reduce){.page *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .turnSection,.stepsSection{background:#fff}
+
+/* Quebras editoriais da Landing de aquisição */
+.heroCopy h1{font-size:clamp(2.65rem,4.1vw,3.8rem);line-height:1.02}.softSection .heading{max-width:1080px}.softSection .heading h2{font-size:clamp(2.15rem,3.25vw,3.05rem);line-height:1.08}.leadText{max-width:980px}
+@media(max-width:560px){.heroCopy h1{font-size:clamp(2.25rem,10vw,2.9rem)}.softSection .heading h2{font-size:clamp(2rem,8.5vw,2.5rem)}}
