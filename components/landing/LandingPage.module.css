@@ -32,3 +32,10 @@
 /* Quebras editoriais: usa a largura real antes de criar uma nova linha */
 .sectionHeading{max-width:1080px}.sectionHeading h2,.technologyIntro h2{max-width:1080px;text-wrap:wrap}.sectionHeading p{max-width:840px}.stagesSection .sectionHeading,.stagesSection .sectionHeading h2{max-width:1180px}.problemSection .sectionHeading h2,.methodSection .sectionHeading h2,.capabilitySection .sectionHeading h2{max-width:1060px}.benefitsSection .sectionHeading h2,.faqSection .sectionHeading h2,.aboutCopy h2{max-width:100%;text-wrap:wrap}
 @media(max-width:820px){.sectionHeading,.sectionHeading h2,.technologyIntro h2,.stagesSection .sectionHeading h2,.problemSection .sectionHeading h2,.methodSection .sectionHeading h2,.capabilitySection .sectionHeading h2{max-width:100%}}
+
+/* Refinamento final restrito às tecnologias e aos benefícios */
+.technologyBrands li{min-height:112px;padding:12px;background:#fff;opacity:.86}.technologyBrands li:hover{opacity:1;background:#fff}.technologyBrands li img{display:block;width:auto;height:auto;max-width:94%;max-height:88px;object-fit:contain;filter:saturate(.82);transition:filter .35s ease,opacity .35s ease,transform .35s ease}.technologyBrands li:hover img{filter:saturate(1);transform:translateY(-2px)}
+.benefitsSection .sectionInner{grid-template-columns:.72fr 1.28fr;gap:60px}.benefitList{column-gap:16px;row-gap:8px}.benefitList li{min-height:88px;padding:22px 18px;gap:14px;align-items:flex-start;font-size:1.03rem;line-height:1.5}.benefitList span{margin-top:1px}
+@media(max-width:1080px){.benefitsSection .sectionInner{grid-template-columns:.8fr 1.2fr;gap:44px}.benefitList li{min-height:82px}.technologyBrands li{min-height:106px}}
+@media(max-width:820px){.benefitsSection .sectionInner{grid-template-columns:1fr;gap:38px}.technologyBrands li img{max-height:78px}}
+@media(max-width:560px){.benefitList li{min-height:0;padding:19px 14px;font-size:1rem}.technologyBrands li{min-height:98px;padding:10px}.technologyBrands li img{max-height:70px}}
