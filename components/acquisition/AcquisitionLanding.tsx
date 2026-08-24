@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { brandLogo } from "@/components/brand";
 import { LandingMotion } from "@/components/landing/LandingMotion";
 import { DiagnosticResultShowcase } from "./DiagnosticResultShowcase";
+import { AttributionDiagnosticLink, CampaignAttributionCapture } from "./CampaignAttributionClient";
 import styles from "./AcquisitionLanding.module.css";
 
 const problems = ["Leads chegam e ficam sem retorno.", "Cada vendedor acompanha os clientes de um jeito.", "Você não sabe quantas oportunidades estão realmente abertas.", "Não consegue identificar com clareza de onde vêm as melhores vendas.", "Investe para gerar demanda, mas perde visibilidade depois que o lead entra.", "Sabe que existem gargalos, mas não sabe o que atacar primeiro."];
@@ -13,8 +14,8 @@ const audience = ["Empresas que já recebem oportunidades", "Possuem atendimento
 const faqs = [["O que é o Diagnóstico Escala Growth?", "É uma análise estruturada da operação comercial que identifica forças, gargalos e prioridades nos pilares Atrair, Converter e Crescer."], ["Recebo o resultado na hora?", "Sim. Ao finalizar, o resultado fica disponível online imediatamente."], ["Posso imprimir meu diagnóstico?", "Sim. O diagnóstico gerado fica disponível para consulta e impressão."], ["Quanto tempo leva para responder?", "O tempo varia conforme as respostas, mas o preenchimento normalmente leva apenas alguns minutos."], ["O diagnóstico é uma proposta comercial?", "Não. O diagnóstico é uma análise da operação. Qualquer proposta é tratada separadamente e somente quando houver aderência."], ["Preciso instalar alguma ferramenta?", "Não. O diagnóstico é realizado online e não exige instalação de software."], ["O que acontece depois do resultado?", "Você já pode utilizar as informações para compreender prioridades. Se fizer sentido, poderá avançar posteriormente para uma análise estratégica com a Escala Vendas."]];
 
 export function AcquisitionLanding() {
-  return <div className={styles.page} data-landing-page><LandingMotion />
-    <header className={styles.header}><div><Link href="/" aria-label="Escala Vendas — início"><img src={brandLogo} alt="Escala Vendas" /></Link><Link className={styles.headerCta} href="/diagnostico">Fazer Diagnóstico</Link></div></header>
+  return <div className={styles.page} data-landing-page><LandingMotion /><CampaignAttributionCapture />
+    <header className={styles.header}><div><Link href="/" aria-label="Escala Vendas — início"><img src={brandLogo} alt="Escala Vendas" /></Link><AttributionDiagnosticLink className={styles.headerCta}>Fazer Diagnóstico</AttributionDiagnosticLink></div></header>
     <main>
       <section className={styles.hero} aria-labelledby="acquisition-title"><div className={styles.heroInner}><div className={styles.heroCopy}><span className={styles.eyebrow}>Diagnóstico Escala Growth</span><h1 id="acquisition-title">O problema pode não ser falta de leads.<em>Pode ser o que acontece depois que eles chegam.</em></h1><p>Descubra onde sua operação comercial está perdendo força entre atrair oportunidades, convertê-las em vendas e crescer com mais controle.</p><Cta label="Fazer meu Diagnóstico Escala Growth" /><small>Online <b>•</b> Resultado imediato <b>•</b> Diagnóstico disponível para impressão</small></div><ResultPreview /></div></section>
 
@@ -38,10 +39,10 @@ export function AcquisitionLanding() {
 
       <section className={styles.finalCta} aria-labelledby="final-title"><div><h2 id="final-title">Antes de investir para trazer mais oportunidades, descubra o que acontece com as que já chegam.</h2><p>Faça o Diagnóstico Escala Growth e tenha uma visão mais clara dos pontos que merecem prioridade na sua operação comercial.</p><Cta label="Fazer meu Diagnóstico Escala Growth" /><small>Resultado online e disponível imediatamente após a conclusão.</small></div></section>
     </main>
-    <footer className={styles.footer}><div><p><strong>Escala Vendas LTDA</strong><br />CNPJ: 60.328.666/0001-03<br /><a href="mailto:contato@escalavendas.com.br">contato@escalavendas.com.br</a></p><nav><Link href="/">Voltar para o site da Escala Vendas</Link><Link href="/diagnostico">Diagnóstico</Link></nav></div></footer>
+    <footer className={styles.footer}><div><p><strong>Escala Vendas LTDA</strong><br />CNPJ: 60.328.666/0001-03<br /><a href="mailto:contato@escalavendas.com.br">contato@escalavendas.com.br</a></p><nav><Link href="/">Voltar para o site da Escala Vendas</Link><AttributionDiagnosticLink>Diagnóstico</AttributionDiagnosticLink></nav></div></footer>
   </div>;
 }
 
-function Cta({ label }: { label: string }) { return <Link className={styles.primaryButton} href="/diagnostico">{label}</Link>; }
+function Cta({ label }: { label: string }) { return <AttributionDiagnosticLink className={styles.primaryButton}>{label}</AttributionDiagnosticLink>; }
 function Heading({ eyebrow,id,children }: { eyebrow:string;id:string;children:ReactNode }) { return <div className={styles.heading} data-reveal><span className={styles.eyebrow}>{eyebrow}</span><h2 id={id}>{children}</h2></div>; }
 function ResultPreview() { return <aside className={styles.preview} aria-label="Exemplo ilustrativo de resultado"><div><span>Índice Escala Growth</span><small>Exemplo visual</small></div><strong>IEG</strong><h2>Uma visão integrada da operação.</h2><dl><div><dt>Maior força</dt><dd>Converter</dd></div><div><dt>Principal gargalo</dt><dd>Crescer</dd></div><div><dt>Direção</dt><dd>Evoluir com controle</dd></div></dl><p>Valores ilustrativos — não representam um diagnóstico real.</p></aside>; }

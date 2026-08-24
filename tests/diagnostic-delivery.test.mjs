@@ -19,7 +19,7 @@ test('resultado só é exibido depois da confirmação da persistência',()=>{
 });
 
 test('API padroniza sucesso e falha do registro',()=>{
-  assert.ok(api.includes("Response.json({ok:true,diagnostico_id:await r.json()},{status:201})"));
+  assert.ok(api.includes("Response.json({ok:true,diagnostico_id},{status:201})"));
   assert.ok(api.includes("Response.json({ok:false,error:'Não foi possível registrar o diagnóstico na Central.'}"));
   assert.ok(api.includes("console.error('[diagnostics] Falha ao registrar diagnóstico'"));
 });

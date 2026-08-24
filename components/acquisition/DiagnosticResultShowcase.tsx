@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "./AcquisitionLanding.module.css";
+import {AttributionDiagnosticLink} from "./CampaignAttributionClient";
 
 const examples = [
   {
@@ -80,7 +80,7 @@ export function DiagnosticResultShowcase() {
         <div className={styles.showcaseCta} data-reveal>
           <h3>Seu diagnóstico fica disponível online assim que você conclui.</h3>
           <p>Consulte, imprima e utilize as informações para entender melhor onde sua operação precisa evoluir.</p>
-          <Link className={styles.primaryButton} href="/diagnostico">Fazer meu Diagnóstico Escala Growth</Link>
+          <AttributionDiagnosticLink className={styles.primaryButton}>Fazer meu Diagnóstico Escala Growth</AttributionDiagnosticLink>
           <small>Resultado online e disponível imediatamente após a conclusão.</small>
         </div>
       </div>

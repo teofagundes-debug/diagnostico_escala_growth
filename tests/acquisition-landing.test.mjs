@@ -4,11 +4,14 @@ import test from "node:test";
 
 const page = readFileSync(new URL("../components/acquisition/AcquisitionLanding.tsx", import.meta.url), "utf8");
 const showcase = readFileSync(new URL("../components/acquisition/DiagnosticResultShowcase.tsx", import.meta.url), "utf8");
+const attribution = readFileSync(new URL("../components/acquisition/CampaignAttributionClient.tsx", import.meta.url), "utf8");
 const metadata = readFileSync(new URL("../app/escala-growth/page.tsx", import.meta.url), "utf8");
 
 test("landing de aquisição mantém um único objetivo de conversão", () => {
   assert.equal((page.match(/<h1/g) || []).length, 1);
-  assert.equal((page.match(/href="\/diagnostico"/g) || []).length + (showcase.match(/href="\/diagnostico"/g) || []).length, 4);
+  assert.equal((page.match(/<Cta /g) || []).length, 3);
+  assert.equal((page.match(/<AttributionDiagnosticLink/g) || []).length + (showcase.match(/<AttributionDiagnosticLink/g) || []).length, 4);
+  assert.match(attribution, /authorizedTrackingSearch\(location\.search\)/);
   assert.doesNotMatch(page, /href="\/login"/);
   assert.match(page, /Resultado imediato/);
   assert.match(page, /Diagnóstico disponível para impressão/);
