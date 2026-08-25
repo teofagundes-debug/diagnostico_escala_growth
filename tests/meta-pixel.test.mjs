@@ -21,9 +21,8 @@ test('Landing dispara PageView uma vez sem alterar atribuição',()=>{
 
 test('DiagnosticStarted ocorre no início efetivo e uma vez por jornada montada',()=>{
  assert.match(diagnostic,/diagnosticStartedTracked=useRef\(false\)/);
- assert.match(diagnostic,/if\(screen!==['"]quiz['"]\|\|diagnosticStartedTracked\.current\)return/);
- assert.match(diagnostic,/if\(trackDiagnosticStarted\(\)\)diagnosticStartedTracked\.current=true/);
- assert.doesNotMatch(diagnostic,/trackDiagnosticStarted\(\);setScreen\('quiz'\)/);
+ assert.match(diagnostic,/if\(!diagnosticStartedTracked\.current&&trackDiagnosticStarted\(\)\)diagnosticStartedTracked\.current=true;setScreen\(['"]quiz['"]\)/);
+ assert.doesNotMatch(diagnostic,/useEffect\([^\n]*trackDiagnosticStarted/);
  assert.match(pixel,/trackCustom','DiagnosticStarted/);
  assert.match(diagnostic,/diagnosticStartedTracked\.current=false;setCompany/);
 });
