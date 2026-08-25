@@ -20,7 +20,8 @@ test('Landing dispara PageView uma vez sem alterar atribuição',()=>{
 });
 
 test('DiagnosticStarted ocorre no início efetivo e uma vez por sessão',()=>{
- assert.match(diagnostic,/trackDiagnosticStarted\(\);setScreen\('quiz'\)/);
+ assert.match(diagnostic,/useEffect\(\(\)=>\{if\(screen==='quiz'\)trackDiagnosticStarted\(\)\},\[screen\]\)/);
+ assert.doesNotMatch(diagnostic,/trackDiagnosticStarted\(\);setScreen\('quiz'\)/);
  assert.match(pixel,/escala_meta_diagnostic_started_v1/);
  assert.match(pixel,/trackCustom','DiagnosticStarted/);
 });
