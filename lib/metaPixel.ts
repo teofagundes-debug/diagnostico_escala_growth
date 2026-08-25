@@ -1,7 +1,6 @@
 const PIXEL_ID=process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim()||'';
 const SCRIPT_ID='meta-pixel-script';
 const PAGE_VIEW_KEY='escala_meta_pageview_escala_growth_v1';
-const DIAGNOSTIC_STARTED_KEY='escala_meta_diagnostic_started_v1';
 
 type MetaPixelCommand=(...args:unknown[])=>void;
 
@@ -37,7 +36,9 @@ export function trackPageView(){
 }
 
 export function trackDiagnosticStarted(){
- once(DIAGNOSTIC_STARTED_KEY,()=>{if(initMetaPixel())window.fbq?.('trackCustom','DiagnosticStarted')});
+ if(!initMetaPixel()||!window.fbq)return false;
+ window.fbq('trackCustom','DiagnosticStarted');
+ return true;
 }
 
 export function leadEventId(diagnosticId:string){return `diagnostico-${diagnosticId}-lead`}

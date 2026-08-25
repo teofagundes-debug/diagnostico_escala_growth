@@ -19,11 +19,13 @@ test('Landing dispara PageView uma vez sem alterar atribuição',()=>{
  assert.match(pixel,/escala_meta_pageview_escala_growth_v1/);
 });
 
-test('DiagnosticStarted ocorre no início efetivo e uma vez por sessão',()=>{
- assert.match(diagnostic,/useEffect\(\(\)=>\{if\(screen==='quiz'\)trackDiagnosticStarted\(\)\},\[screen\]\)/);
+test('DiagnosticStarted ocorre no início efetivo e uma vez por jornada montada',()=>{
+ assert.match(diagnostic,/diagnosticStartedTracked=useRef\(false\)/);
+ assert.match(diagnostic,/if\(screen!==['"]quiz['"]\|\|diagnosticStartedTracked\.current\)return/);
+ assert.match(diagnostic,/if\(trackDiagnosticStarted\(\)\)diagnosticStartedTracked\.current=true/);
  assert.doesNotMatch(diagnostic,/trackDiagnosticStarted\(\);setScreen\('quiz'\)/);
- assert.match(pixel,/escala_meta_diagnostic_started_v1/);
  assert.match(pixel,/trackCustom','DiagnosticStarted/);
+ assert.match(diagnostic,/diagnosticStartedTracked\.current=false;setCompany/);
 });
 
 test('Lead só ocorre após sucesso confirmado da API e usa eventID determinístico',()=>{
@@ -39,7 +41,7 @@ test('Home institucional permanece sem integração do Pixel',()=>{
  assert.doesNotMatch(home,/metaPixel|trackPageView|fbq/);
 });
 
-test('comportamento browser inicializa e não duplica PageView, início ou Lead',async()=>{
+test('comportamento browser inicializa e não duplica PageView ou Lead',async()=>{
  process.env.NEXT_PUBLIC_META_PIXEL_ID='1789973778843473';
  const values=new Map(),scripts=new Map();
  globalThis.sessionStorage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)};
@@ -51,7 +53,7 @@ test('comportamento browser inicializa e não duplica PageView, início ou Lead'
  };
  const tracking=await import(`../lib/metaPixel.ts?test=${Date.now()}`);
  tracking.trackPageView();tracking.trackPageView();
- tracking.trackDiagnosticStarted();tracking.trackDiagnosticStarted();
+ tracking.trackDiagnosticStarted();
  tracking.trackLead('diagnostico-1');tracking.trackLead('diagnostico-1');
  const commands=globalThis.window.fbq.queue;
  assert.equal(commands.filter(command=>command[0]==='init').length,1);
