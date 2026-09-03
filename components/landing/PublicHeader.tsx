@@ -3,6 +3,7 @@ import { brandLogo } from "@/components/brand";
 import styles from "./LandingPage.module.css";
 
 const links = [
+  ["Serviços", "/servicos"],
   ["Empresa", "#empresa"],
   ["Método", "#metodo"],
   ["Como atuamos", "#como-atuamos"],
