@@ -69,6 +69,17 @@ test("pré-proposta continua interna e apresentação omite campos administrativ
   assert.match(admin,/Nenhum conteúdo foi publicado ao cliente/);
 });
 
+test("apresentação abre em nova aba e mantém a Central disponível",()=>{
+  const admin=read("components/ToolImplementationAdmin.tsx");
+  const presentation=read("components/ToolImplementationPresentation.tsx");
+  assert.match(admin,/target="_blank"/);
+  assert.match(admin,/rel="noopener noreferrer"/);
+  assert.match(admin,/projeto_id=\$\{encodeURIComponent\(selected\.id\)\}/);
+  assert.match(admin,/pre_proposta_id=\$\{encodeURIComponent\(proposal\.id\)\}/);
+  assert.match(presentation,/\/api\/tool-implementation\?id=/);
+  assert.match(presentation,/cache:'no-store'/);
+});
+
 test("Central e sitemap expõem as novas rotas sem substituir URLs atuais",()=>{
   const central=read("components/CentralApp.tsx"),sitemap=read("app/sitemap.ts");
   assert.match(central,/Implantação de Ferramentas/);
