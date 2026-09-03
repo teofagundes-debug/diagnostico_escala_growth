@@ -3,4 +3,4 @@ import {ToolImplementationPresentation} from '@/components/ToolImplementationPre
 
 export const metadata:Metadata={title:'Apresentação da Solução | Escala Vendas',robots:{index:false,follow:false}};
 
-export default function Page(){return <ToolImplementationPresentation/>}
+export default async function Page({searchParams}:{searchParams:Promise<{projeto_id?:string;pre_proposta_id?:string}>}){const params=await searchParams;return <ToolImplementationPresentation projectId={params.projeto_id||''} proposalId={params.pre_proposta_id||''}/>}

@@ -78,6 +78,8 @@ test("apresentação abre em nova aba e mantém a Central disponível",()=>{
   assert.match(admin,/pre_proposta_id=\$\{encodeURIComponent\(proposal\.id\)\}/);
   assert.match(presentation,/\/api\/tool-implementation\?id=/);
   assert.match(presentation,/cache:'no-store'/);
+  assert.doesNotMatch(presentation,/returnfetch/);
+  assert.match(presentation,/projectId,proposalId/);
 });
 
 test("Central e sitemap expõem as novas rotas sem substituir URLs atuais",()=>{
