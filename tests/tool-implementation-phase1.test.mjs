@@ -55,6 +55,13 @@ test("síntese comercial usa fatos coletados e preserva edição do consultor",(
   assert.equal(toolPresentationSynthesis("A empresa busca CRM para a área comercial.",configuration),generated);
 });
 
+test("síntese elimina verbos duplicados em automações e integrações",()=>{
+  const text=toolCommercialSynthesis({process_automation:{summary:"Disparar notificações"},system_integration:{systems:"Integrar com o ERP"}});
+  assert.match(text,/automatizar o disparo de notificações/i);
+  assert.match(text,/integrar a operação com o ERP/i);
+  assert.doesNotMatch(text,/automatizar Disparar|integrar Integrar/i);
+});
+
 test("entregáveis acompanham somente as soluções presentes",()=>{
   const items=toolImplementationItems({solutions:[{id:"CRM"}]},["Estruturação inicial do CRM","Configuração do Agente de IA","Entrega personalizada"]);
   assert.ok(items.includes("Estruturação inicial do CRM"));
@@ -88,9 +95,9 @@ test("API separa entrada pública da gestão exclusiva do Master",()=>{
 
 test("pré-proposta continua interna e apresentação omite campos administrativos",()=>{
   const admin=read("components/ToolImplementationAdmin.tsx");
-  const presentation=admin.slice(admin.indexOf("function Presentation"));
+  const presentation=read("components/ToolImplementationPresentation.tsx");
   assert.match(admin,/Apresentar ao Cliente/);
-  assert.match(presentation,/Configuração da solução/);
+  assert.match(presentation,/Solução proposta/);
   assert.match(presentation,/Investimento inicial/);
   assert.match(presentation,/Licenças de uso/);
   assert.doesNotMatch(presentation,/observacoes_internas|custos internos|margem|Portal do Cliente/);
