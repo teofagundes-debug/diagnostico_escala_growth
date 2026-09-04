@@ -41,7 +41,7 @@ test('Dossiê restrito é determinado por origem canônica e não por nome',()=>
  assert.match(dossier,/data\.customer_origin==='FERRAMENTAS'/);
  assert.match(dossier,/<ClientAreaPanel companyId=\{companyId\} company=\{company\} restricted/);
  assert.match(clientArea,/restricted=false/);
- assert.match(clientArea,/!restricted&&<><ExecutionStrategySummary/);
+ assert.match(clientArea,/!toolMode&&<><ExecutionStrategySummary/);
 });
 
 test('Dossiê de Ferramentas mantém valores validados e acompanhamento completo do acesso',()=>{
@@ -56,11 +56,24 @@ test('Dossiê de Ferramentas mantém valores validados e acompanhamento completo
 });
 
 test('jornada de Ferramentas omite blocos exclusivos do Método',()=>{
- assert.match(clientArea,/restricted\?journey\.timeline\.filter\(step=>\['Área do Cliente','Aceite','Formalização'\]\.includes/);
- assert.match(clientArea,/!restricted&&<ChecklistGroup title="Preparação"/);
- assert.match(clientArea,/!restricted&&<ChecklistGroup title="Pendências Inteligentes"/);
- assert.match(clientArea,/!restricted&&<ChecklistGroup title="Implantação"/);
+ assert.match(clientArea,/toolMode\?journey\.timeline\.filter\(step=>\['Área do Cliente','Aceite','Formalização'\]\.includes/);
+ assert.match(clientArea,/!toolMode&&<ChecklistGroup title="Preparação"/);
+ assert.match(clientArea,/!toolMode&&<ChecklistGroup title="Pendências Inteligentes"/);
+ assert.match(clientArea,/!toolMode&&<ChecklistGroup title="Implantação"/);
  assert.match(clientArea,/<ChecklistGroup title="Liberação da Área do Cliente"/);
+});
+
+test('convite de Ferramentas não menciona o Método Escala Growth',()=>{
+ const toolsBranch=clientAccessApi.slice(clientAccessApi.indexOf("if(tools&&!ctx.diagnosticoId)"),clientAccessApi.indexOf('const official = await officialPublicationContext',clientAccessApi.indexOf("if(tools&&!ctx.diagnosticoId)")));
+ assert.match(toolsBranch,/sendEmail\(\{email,name,link:generated\.link,existing:isExisting,tools:true\}\)/);
+ assert.match(clientAccessApi,/Sua Proposta Comercial de Implantação de Ferramentas está disponível/);
+ assert.match(clientAccessApi,/Área do Cliente você poderá revisar a Proposta Comercial/);
+});
+
+test('condições comerciais ficam no snapshot e não são enviadas como coluna financeira',()=>{
+ const financialLine=clientAccessApi.split('\n').find(line=>line.includes('const financialPayload:any='))||'';
+ assert.doesNotMatch(financialLine,/\.\.\.proposalMoney|condicoes/);
+ assert.match(clientAccessApi,/buildToolPortalSnapshot\(\{proposal,financial:financialPayload/);
 });
 
 test('publicação de Ferramentas não passa pelas exigências do Método Growth',()=>{
