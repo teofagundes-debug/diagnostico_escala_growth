@@ -4,6 +4,7 @@ const SUPABASE_URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROL
 const headers=()=>({apikey:KEY!,Authorization:`Bearer ${KEY}`,'Content-Type':'application/json'});
 async function rest(path:string,init:RequestInit={}){return fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init.headers||{})},cache:'no-store'})}
 async function rows(table:string,companyId:string,select='id'){const response=await rest(`${table}?empresa_id=eq.${encodeURIComponent(companyId)}&select=${select}`);return response.ok?response.json():[]}
+async function removeRows(table:string,column:string,value:string){const response=await rest(`${table}?${column}=eq.${encodeURIComponent(value)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!response.ok)throw new Error(`Não foi possível remover os registros relacionados de ${table}: ${await response.text()}`)}
 
 function storageObject(value:any){
  try{const url=new URL(String(value||'')),prefix='/storage/v1/object/public/',index=url.pathname.indexOf(prefix);if(index<0||url.origin!==new URL(SUPABASE_URL!).origin)return null;const object=url.pathname.slice(index+prefix.length),slash=object.indexOf('/');return slash>0?{bucket:object.slice(0,slash),path:decodeURIComponent(object.slice(slash+1))}:null}catch{return null}
@@ -40,7 +41,7 @@ export async function DELETE(req:Request){
    diagnosticos:'diagnosticos',reunioes_estrategicas:'reunioes_estrategicas',preparacoes_reuniao:'preparacoes_reuniao',
    planos_estrategicos:'planos_estrategicos',planos_implantacao:'planos_implantacao',investimentos:'financeiro_growth',
    contratos:'contratos_growth',aceites:'aceites_growth',pagamentos:'pagamentos_growth',timeline:'dossie_eventos',historico_reunioes:'reuniao_estrategica_historico',
-   implantacoes:'implantacoes',comunicacoes:'comunicacoes_growth',usuarios:'portal_usuarios'
+   implantacoes:'implantacoes',comunicacoes:'comunicacoes_growth',usuarios:'portal_usuarios',projetos_ferramentas:'projetos_implantacao_ferramentas',formalizacoes:'formalizacoes'
   };
   const entries=await Promise.all(Object.entries(modules).map(async([label,table])=>[label,(await rows(table,companyId)).length] as const));
   const counts=Object.fromEntries(entries);
@@ -48,8 +49,12 @@ export async function DELETE(req:Request){
   const files=diagnostics.map((x:any)=>storageObject(x.relatorio_pdf)).filter(Boolean) as {bucket:string;path:string}[];
   const authUsers=users.filter((x:any)=>x.perfil==='cliente'&&x.auth_user_id&&x.auth_user_id!==current.user?.id).map((x:any)=>x.auth_user_id);
 
+  const formalizations=await rows('formalizacoes',companyId,'id');
+  for(const formalization of formalizations){for(const table of ['proposta_publicacoes','financeiro_growth','contratos_growth','aceites_growth','pagamentos_growth'])await removeRows(table,'formalizacao_id',formalization.id)}
+  await removeRows('formalizacoes','empresa_id',companyId);
+  await removeRows('projetos_implantacao_ferramentas','empresa_id',companyId);
   const removed=await rest(`empresas?id=eq.${encodeURIComponent(companyId)}`,{method:'DELETE',headers:{Prefer:'return=representation'}});
-  if(!removed.ok)return Response.json({error:'Não foi possível excluir a empresa e seus relacionamentos.'},{status:removed.status});
+  if(!removed.ok)return Response.json({error:`Não foi possível excluir a empresa e seus relacionamentos: ${(await removed.text()).slice(0,500)}`},{status:removed.status});
 
   let filesRemoved=0,authRemoved=0;
   for(const file of files){const response=await fetch(`${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(file.bucket)}/${file.path.split('/').map(encodeURIComponent).join('/')}`,{method:'DELETE',headers:{apikey:KEY!,Authorization:`Bearer ${KEY}`}});if(response.ok)filesRemoved++}

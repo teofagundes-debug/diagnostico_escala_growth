@@ -10,6 +10,7 @@ const dispatcher=read('lib/integrationEventDispatcher.ts');
 const dossierApi=read('app/api/dossiers/route.ts');
 const dossier=read('components/CompanyDossierExecutive.tsx');
 const clientArea=read('components/ClientAreaPanel.tsx');
+const companiesApi=read('app/api/companies/route.ts');
 
 test('entrada de Ferramentas coleta o padrão cadastral e contratual',()=>{
  for(const field of ['nome_fantasia','cpf_cnpj','segmento','endereco','cidade','estado','cep'])assert.match(form,new RegExp(field));
@@ -48,4 +49,18 @@ test('Dossiê de Ferramentas mantém valores validados e acompanhamento completo
  assert.match(clientArea,/client-area-timeline/);
  assert.match(clientArea,/Liberação da Área do Cliente/);
  assert.match(clientArea,/Publicar Área do Cliente/);
+});
+
+test('jornada de Ferramentas omite blocos exclusivos do Método',()=>{
+ assert.match(clientArea,/restricted\?journey\.timeline\.filter\(step=>!\['Preparação','Implantação'\]\.includes/);
+ assert.match(clientArea,/!restricted&&<ChecklistGroup title="Preparação"/);
+ assert.match(clientArea,/!restricted&&<ChecklistGroup title="Pendências Inteligentes"/);
+ assert.match(clientArea,/!restricted&&<ChecklistGroup title="Implantação"/);
+ assert.match(clientArea,/<ChecklistGroup title="Liberação da Área do Cliente"/);
+});
+
+test('exclusão remove relações restritivas de Ferramentas antes da empresa',()=>{
+ const tools=companiesApi.indexOf("removeRows('projetos_implantacao_ferramentas','empresa_id',companyId)"),company=companiesApi.indexOf('const removed=await rest(`empresas?id=eq.');
+ assert.ok(tools>=0&&company>tools);
+ assert.match(companiesApi,/removeRows\('formalizacoes','empresa_id',companyId\)/);
 });
