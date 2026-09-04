@@ -4,6 +4,7 @@ import { commercialFingerprint, isStrategicCommercialProject } from '../../../li
 import { contractDataComplete, formalizationReady, missingContractualFields, publicationReady } from '../../../lib/contractPreparation';
 import { commercialConsolidationReadiness, legacyPublicationReadiness, officialImplementationReadiness, selectPublicationProject, strategicContext } from '../../../lib/clientPublicationReadiness';
 import { loadGrowthFinancial, saveGrowthFinancial } from '../../../lib/financialContext';
+import { buildToolPortalSnapshot, latestValidatedToolProposal, TOOL_FORMALIZATION_ORIGIN, toolProposalFinancial } from '../../../lib/toolClientPublication';
 const SUPABASE_URL = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_SERVICE_ROLE_KEY, ANON = process.env.SUPABASE_ANON_KEY;
 const APP = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.escalavendas.com.br').replace(/\/$/, '');
 const h = () => ({ 'Content-Type': 'application/json', apikey: KEY!, Authorization: `Bearer ${KEY}` });
@@ -11,6 +12,19 @@ async function rest(path: string, init: RequestInit = {}) { const r = await fetc
     throw new Error(await r.text()); const text = await r.text(); return text ? JSON.parse(text) : null; }
 async function companyData(empresaId: string) { const company = (await rest(`empresas?id=eq.${encodeURIComponent(empresaId)}&select=*&limit=1`))?.[0], responsible = (await rest(`responsaveis?empresa_id=eq.${encodeURIComponent(empresaId)}&select=nome,email,telefone&order=created_at.asc&limit=1`))?.[0]; if (!company)
     throw new Error('Empresa não encontrada.'); return { company, responsible }; }
+async function toolContext(empresaId:string){
+ const encoded=encodeURIComponent(empresaId),projects=await rest(`projetos_implantacao_ferramentas?empresa_id=eq.${encoded}&select=*,pre_propostas_implantacao(*)&order=created_at.desc`).catch(()=>[]),proposal=latestValidatedToolProposal(projects||[]);
+ if(!projects?.length)return null;
+ const formalizations=proposal?await rest(`formalizacoes?empresa_id=eq.${encoded}&origem=eq.${TOOL_FORMALIZATION_ORIGIN}&origem_id=eq.${encodeURIComponent(proposal.id)}&versao=eq.${Number(proposal.versao||1)}&select=*&limit=1`).catch(()=>[]):[],formalization=formalizations?.[0]||null;
+ const [financials,publications,contracts,acceptances,payments]=await Promise.all([
+  formalization?rest(`financeiro_growth?formalizacao_id=eq.${formalization.id}&select=*&limit=1`).catch(()=>[]):Promise.resolve([]),
+  formalization?rest(`proposta_publicacoes?formalizacao_id=eq.${formalization.id}&select=*&order=versao.desc&limit=1`).catch(()=>[]):Promise.resolve([]),
+  formalization?rest(`contratos_growth?formalizacao_id=eq.${formalization.id}&select=*&order=updated_at.desc&limit=1`).catch(()=>[]):Promise.resolve([]),
+  formalization?rest(`aceites_growth?formalizacao_id=eq.${formalization.id}&select=*&order=aceito_em.desc&limit=1`).catch(()=>[]):Promise.resolve([]),
+  formalization?rest(`pagamentos_growth?formalizacao_id=eq.${formalization.id}&select=*&order=created_at.desc&limit=1`).catch(()=>[]):Promise.resolve([])
+ ]);
+ return{projects,proposal,formalization,financial:financials[0]||null,publication:publications[0]||null,contract:contracts[0]||null,acceptance:acceptances[0]||null,payment:payments[0]||null};
+}
 async function generateLink(email: string, existing: boolean) { const expiresHours = Math.max(1, Number(process.env.CLIENT_INVITE_EXPIRY_HOURS || 72)); const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, { method: 'POST', headers: h(), body: JSON.stringify({ type: existing ? 'recovery' : 'invite', email, redirect_to: `${APP}/definir-senha` }) }); if (!r.ok) {
     const message = await r.text();
     if (!existing && /already|registered|exists/i.test(message))
@@ -78,6 +92,21 @@ export async function GET(req: Request) {
             rest(`pendencias_inteligentes?empresa_id=eq.${encodeURIComponent(empresaId)}&status=neq.Dispensada&select=*&order=created_at`).catch(() => [])
         ]);
         const official = await officialPublicationContext(empresaId), access = profiles?.[0] || null, diagnostic = diagnostics?.[0] || null, plan = plans?.[0] || null, implementation = implementations?.[0] || null, legacyProject = projects?.[0] || null, project = official.project || official.legacyFallback && legacyProject || null, contract = contracts?.[0] || null;
+        const tools=await toolContext(empresaId);
+        if(tools&&!diagnostic){
+            const contractualReady=contractDataComplete(data.company,data.responsible),proposalReady=Boolean(tools.proposal),financialValues=tools.proposal?toolProposalFinancial(tools.proposal):null,published=Boolean(tools.publication||tools.financial?.snapshot_publicado),paid=Boolean(tools.payment&&String(tools.payment.status||'').toLowerCase().includes('confirm')||tools.financial?.status==='Pagamento confirmado'),formalized=Boolean(tools.formalization?.status==='FORMALIZADA'),documentReady=contractualReady&&proposalReady;
+            const checklist=[
+                {label:'Proposta Comercial validada',done:proposalReady},
+                {label:'Valores comerciais definidos',done:Boolean(financialValues&&financialValues.valor_implantacao>=0&&financialValues.valor_mensalidade>=0)},
+                {label:'Dados contratuais completos',done:contractualReady},
+                {label:'Contrato/Termo preparado',done:documentReady},
+                {label:'Área pronta para publicação',done:Boolean(proposalReady&&contractualReady&&documentReady)},
+                {label:'Área publicada',done:published},{label:'Primeiro acesso',done:Boolean(access?.primeiro_acesso_em)},
+                {label:'Aceite',done:Boolean(tools.acceptance)},{label:'Contrato/Termo',done:Boolean(tools.acceptance?.concorda_contrato)},
+                {label:'Pagamento',done:paid},{label:'Formalização',done:formalized}
+            ];
+            return Response.json({company:data.company,responsible:data.responsible,access,financial:tools.financial,publication:tools.publication,project:null,contract:tools.contract,formalization_type:'Contrato/Termo de Implantação de Ferramentas',formalization_document_ready:documentReady,contract_status:tools.acceptance?'Contrato/Termo aceito':published?'Contrato/Termo publicado':documentReady?'Contrato/Termo pronto para publicação':'Dados contratuais pendentes',contract_data_complete:contractualReady,contract_missing_fields:missingContractualFields(data.company,data.responsible).map(item=>item.label),preview_available:proposalReady,preview_warning:!contractualReady?'Pré-visualização disponível, mas a Área do Cliente ainda não pode ser publicada porque existem dados contratuais pendentes.':null,checklist,intelligent_pendencies:[],publication_source:{flow:TOOL_FORMALIZATION_ORIGIN,proposal_id:tools.proposal?.id||null,proposal_version:tools.proposal?.versao||null,formalization_id:tools.formalization?.id||null}});
+        }
         const financial = (await loadGrowthFinancial(rest, { companyId: empresaId, projectEvolutionId: project?.id }))?.financial || null, publication = financial?.snapshot_publicado ? publications?.[0] || null : null, canonical = await canonicalPublicationReadiness(official, financial);
         const requiresPayment = Boolean(project?.exige_pagamento), noAdditionalPayment = Boolean(project && Number(project.valor_implantacao_adicional || 0) === 0 && Number(project.mensalidade_adicional || 0) === 0 && ['Cobrança recorrente existente', 'Sem cobrança imediata'].includes(project.forma_cobranca)), financialReady = Boolean(financial && financial.valor_implantacao != null && Number(financial.prazo_contratual) > 0 && Number(financial.validade_proposta) > 0 && (!requiresPayment || financial.link_pix || financial.link_cartao || financial.link_assinatura)), contractDataIsComplete = contractDataComplete(data.company, data.responsible), documentType = formalizationType(project), documentReady = formalizationReady(project, contract, data.company, data.responsible, usesAdhesionTerm), officialReady = canonical.legacy ? Boolean(canonical.legacyState?.configuration && canonical.legacyState?.executor && canonical.legacyState?.financial) : Boolean(official.publishedPlan && official.project && canonical.implementation.ready && canonical.commercial?.ready), areaReady = publicationReady({ plan: official.publishedPlan || canonical.legacy && plan, project, financialReady: financialReady && officialReady, documentReady, contractDataComplete: contractDataIsComplete }), contractStatus = acceptances?.[0]?.concorda_contrato ? 'Contrato/Termo aceito' : publication ? 'Contrato/Termo publicado' : documentReady ? 'Contrato/Termo disponível para revisão' : project && !contractDataIsComplete ? 'Dados contratuais pendentes' : 'Não iniciado';
         const checklist = [
@@ -201,6 +230,27 @@ export async function POST(req: Request) {
         if (!email || !email.includes('@'))
             return Response.json({ error: 'Revise o e-mail do responsável.' }, { status: 400 });
         if(action==='publish') {
+            const tools=await toolContext(empresaId);
+            if(tools&&!ctx.diagnosticoId){
+                const proposal=tools.proposal,pending:string[]=[];
+                if(!proposal)pending.push('Concluir a validação da Proposta Comercial');
+                for(const item of missingContractualFields(data.company,data.responsible))pending.push(`Completar ${item.label}`);
+                if(pending.length)return Response.json({error:'Existem pendências antes da publicação.',pending},{status:409});
+                const now=new Date().toISOString(),proposalVersion=Number(proposal.versao||1);
+                const formalization=tools.formalization||(await rest('formalizacoes',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({empresa_id:empresaId,origem:TOOL_FORMALIZATION_ORIGIN,origem_id:proposal.id,versao:proposalVersion,status:'PRONTA',created_by:String(body.usuario||'Usuário Master')})}))?.[0];
+                const proposalMoney=toolProposalFinancial(proposal),version=Number((await rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&select=versao&order=versao.desc&limit=1`).catch(()=>[]))?.[0]?.versao||0)+1;
+                const contract=tools.contract||{titulo:'Contrato/Termo de Implantação de Ferramentas',status:'Publicado',tipo:'Contrato/Termo',gerado_automaticamente:true,created_at:now,updated_at:now};
+                const financialPayload:any={empresa_id:empresaId,formalizacao_id:formalization.id,...proposalMoney,prazo_contratual:12,validade_proposta:15,status:'Portal publicado',publicada_em:now,publicada_por:String(body.usuario||'Usuário Master'),versao_publicada:version,updated_at:now};
+                const snapshot=buildToolPortalSnapshot({proposal,financial:financialPayload,contract,version,publishedAt:now}); financialPayload.snapshot_publicado=snapshot;
+                const isExisting=Boolean(existing?.auth_user_id||existing?.primeiro_acesso_em),generated=await generateLink(email,isExisting),accessPayload={email,nome:name,telefone:phone,empresa_id:empresaId,perfil:'cliente',ativo:true,auth_user_id:generated.authUserId||existing?.auth_user_id||null,status_acesso:'Convite enviado',convite_enviado_em:existing?.convite_enviado_em||now,convite_reenviado_em:existing?now:null,convite_expira_em:generated.expiresAt,convite_link:generated.link,updated_at:now};
+                const saved=await rest('portal_usuarios?on_conflict=email',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(accessPayload)});
+                await rest(tools.financial?`financeiro_growth?id=eq.${tools.financial.id}`:'financeiro_growth',{method:tools.financial?'PATCH':'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(financialPayload)});
+                await rest('proposta_publicacoes',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({empresa_id:empresaId,formalizacao_id:formalization.id,versao:version,status:'PUBLICADA',snapshot,publicada_por:String(body.usuario||'Usuário Master'),publicada_em:now})});
+                await rest(`formalizacoes?id=eq.${formalization.id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PUBLICADA',published_at:now,updated_at:now})});
+                await rest(`pre_propostas_implantacao?id=eq.${proposal.id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'FORMALIZACAO_ENVIADA',updated_at:now})});
+                const mail=await sendEmail({email,name,link:generated.link,existing:isExisting}); await audit(empresaId,undefined,'Portal de Ferramentas publicado',`Proposta Comercial V${proposalVersion} publicada no Portal. Convite ${mail.sent?'enviado':'gerado'} para ${email}.`);
+                return Response.json({ok:true,access:saved?.[0],publication:{versao:version,publicada_em:now},link:generated.link,email_sent:mail.sent,email_error:mail.error||null,message:mail.sent?'Portal publicado e convite enviado.':'Portal publicado; envie manualmente o link de acesso.'});
+            }
             const official = await officialPublicationContext(empresaId), [plan, implementation, legacyProject, contract, diagnostic, lastPublication] = await Promise.all([
                 rest(`planos_estrategicos?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x => x?.[0]),
                 rest(`planos_implantacao?empresa_id=eq.${encodeURIComponent(empresaId)}&select=*&order=updated_at.desc&limit=1`).then(x => x?.[0]),

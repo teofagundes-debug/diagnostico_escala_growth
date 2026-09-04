@@ -11,6 +11,10 @@ const dossierApi=read('app/api/dossiers/route.ts');
 const dossier=read('components/CompanyDossierExecutive.tsx');
 const clientArea=read('components/ClientAreaPanel.tsx');
 const companiesApi=read('app/api/companies/route.ts');
+const clientAccessApi=read('app/api/client-access/route.ts');
+const portalApi=read('app/api/portal/route.ts');
+const portal=read('components/PortalApp.tsx');
+const onboarding=read('components/PortalOnboarding.tsx');
 
 test('entrada de Ferramentas coleta o padrão cadastral e contratual',()=>{
  for(const field of ['nome_fantasia','cpf_cnpj','segmento','endereco','cidade','estado','cep'])assert.match(form,new RegExp(field));
@@ -52,11 +56,26 @@ test('Dossiê de Ferramentas mantém valores validados e acompanhamento completo
 });
 
 test('jornada de Ferramentas omite blocos exclusivos do Método',()=>{
- assert.match(clientArea,/restricted\?journey\.timeline\.filter\(step=>!\['Preparação','Implantação'\]\.includes/);
+ assert.match(clientArea,/restricted\?journey\.timeline\.filter\(step=>\['Área do Cliente','Aceite','Formalização'\]\.includes/);
  assert.match(clientArea,/!restricted&&<ChecklistGroup title="Preparação"/);
  assert.match(clientArea,/!restricted&&<ChecklistGroup title="Pendências Inteligentes"/);
  assert.match(clientArea,/!restricted&&<ChecklistGroup title="Implantação"/);
  assert.match(clientArea,/<ChecklistGroup title="Liberação da Área do Cliente"/);
+});
+
+test('publicação de Ferramentas não passa pelas exigências do Método Growth',()=>{
+ const branch=clientAccessApi.slice(clientAccessApi.indexOf("if(tools&&!ctx.diagnosticoId)"),clientAccessApi.indexOf('const official = await officialPublicationContext',clientAccessApi.indexOf("if(tools&&!ctx.diagnosticoId)")));
+ assert.match(branch,/TOOL_FORMALIZATION_ORIGIN/);
+ assert.match(branch,/buildToolPortalSnapshot/);
+ for(const legacy of ['Concluir o Diagnóstico','Preencher o Parecer do Consultor','Plano Estratégico publicado não encontrado'])assert.doesNotMatch(branch,new RegExp(legacy));
+});
+
+test('Portal de Ferramentas expõe somente formalização comercial e documentos',()=>{
+ assert.match(portalApi,/customer_origin:'FERRAMENTAS'/);
+ assert.match(portal,/const toolsMenu=\[\['🏠 Início'.*Proposta Comercial.*Contrato ou Termo.*Aceite.*Documentos/);
+ assert.doesNotMatch(portal.match(/const toolsMenu=.*?;/)?.[0]||'',/Plano Estratégico|Projeto de Evolução|Painel Executivo|Visão Estratégica/);
+ assert.match(portal,/data\.customer_origin==='FERRAMENTAS'\?<Investment/);
+ assert.match(onboarding,/Revise e confirme sua contratação/);
 });
 
 test('exclusão remove relações restritivas de Ferramentas antes da empresa',()=>{

@@ -2,6 +2,7 @@ import { access } from '../../../lib/access';
 import { advanceJourney, JOURNEY_STAGES } from '../../../lib/workflow';
 import { portalProjectEvolutionProjection } from '../../../lib/portalProjectEvolution';
 import { loadGrowthFinancial, saveGrowthFinancial } from '../../../lib/financialContext';
+import { latestValidatedToolProposal, TOOL_FORMALIZATION_ORIGIN, toolProposalFinancial, toolProposalResources } from '../../../lib/toolClientPublication';
 const SUPABASE_URL = process.env.SUPABASE_URL, SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY, ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const headers = () => ({ 'Content-Type': 'application/json', 'apikey': SERVICE_KEY!, 'Authorization': `Bearer ${SERVICE_KEY}` });
 // Política contratual centralizada para futura automação de cancelamento e cálculo de saldo pendente.
@@ -37,6 +38,20 @@ export async function GET(req: Request) {
         const company = companies[0];
         if (!company)
             return Response.json({ error: 'Empresa não encontrada.' }, { status: 404 });
+        const toolProjects=await optional(`projetos_implantacao_ferramentas?empresa_id=eq.${id}&select=*,pre_propostas_implantacao(*)&order=created_at.desc`),toolProposal=latestValidatedToolProposal(toolProjects);
+        if(toolProjects.length&&!diagnostics.length){
+            const formalization=toolProposal?(await optional(`formalizacoes?empresa_id=eq.${id}&origem=eq.${TOOL_FORMALIZATION_ORIGIN}&origem_id=eq.${encodeURIComponent(toolProposal.id)}&versao=eq.${Number(toolProposal.versao||1)}&select=*&limit=1`))[0]||null:null;
+            const publication=formalization?(await optional(`proposta_publicacoes?formalizacao_id=eq.${formalization.id}&select=*&order=versao.desc&limit=1`))[0]||null:null,publishedSnapshot=publication?.snapshot||null,isPublished=Boolean(publication),preview=p.role==='master'&&!isPublished;
+            if(p.role==='cliente'&&!isPublished)return Response.json({error:'A Área do Cliente ainda não foi publicada.'},{status:403});
+            const proposal=p.role==='cliente'?publishedSnapshot?.proposal:toolProposal,proposalMoney=p.role==='cliente'?publishedSnapshot?.financial:toolProposalFinancial(toolProposal),resources=p.role==='cliente'?(publishedSnapshot?.proposal?.resources||[]):toolProposalResources(toolProposal);
+            const [toolContracts,toolAcceptances,toolPayments,toolFinancials]=formalization?await Promise.all([optional(`contratos_growth?formalizacao_id=eq.${formalization.id}&select=*&order=updated_at.desc`),optional(`aceites_growth?formalizacao_id=eq.${formalization.id}&select=*&order=aceito_em.desc`),optional(`pagamentos_growth?formalizacao_id=eq.${formalization.id}&select=*&order=created_at.desc`),optional(`financeiro_growth?formalizacao_id=eq.${formalization.id}&select=*&limit=1`)]):[[],[],[],[]];
+            const acceptance=toolAcceptances[0]||null,payment=toolPayments[0]||null,financial=toolFinancials[0]||proposalMoney||{},contract=toolContracts[0]||publishedSnapshot?.contract||{titulo:'Contrato/Termo de Implantação de Ferramentas',status:acceptance?'Aceito':'Disponível para leitura',conteudo:'A contratação compreende a implantação, configuração e licenciamento dos recursos descritos na Proposta Comercial publicada, conforme valores e condições nela registrados.'};
+            const investment={implantacao:Number(financial.valor_implantacao??proposalMoney?.valor_implantacao??0),mensalidade:Number(financial.valor_mensalidade??proposalMoney?.valor_mensalidade??0),prazo:`${Number(financial.prazo_contratual||12)} meses`,validade:`${Number(financial.validade_proposta||15)} dias`,observacoes:proposalMoney?.condicoes||null};
+            const implementation={recursos:(resources||[]).map((item:any)=>({id:item.recurso_id||item.id,nome:item.nome||item.nome_snapshot||item.recurso_nome||item.title||'Recurso contratado',tipo:item.tipo||'Implantação',status:'Contratado',valor_implantacao:item.implantacao||item.valor_implantacao,valor_mensal:item.mensalidade||item.valor_mensal}))};
+            const clientCompany={...company}; delete clientCompany.radar_comercial_url;
+            const documents=[{tipo:'Proposta Comercial',titulo:acceptance?'Proposta aceita':'Proposta publicada',data:publication?.publicada_em||proposal?.validada_em},...(contract?[{tipo:'Contrato/Termo',titulo:contract.titulo,data:publication?.publicada_em||contract.created_at}]:[]),...(acceptance?[{tipo:'Comprovante do aceite',titulo:'Aceite realizado',data:acceptance.aceito_em}]:[])].filter(item=>item.data);
+            return Response.json({role:p.role,customer_origin:'FERRAMENTAS',preview,isPublished,onboarding:Boolean(p.portal?.boas_vindas_concluida),company:clientCompany,proposal,project:null,plan:null,implementation,contract,acceptance,payment,financial,investment,documents,noAdditionalPayment:false,formalizationStatus:acceptance?'Formalização em análise':'Aguardando formalização',methodStarted:false});
+        }
         const latest = diagnostics.at(-1), rawPlan = plans.at(-1), rawImplementation = implementations.at(-1), rawProject = projects[0] || null, commercial3 = rawProject?.commercial_3_0_status === 'PRONTO' ? rawProject.commercial_3_0_snapshot : null;
         const financialContext = await loadGrowthFinancial(restData, { companyId: empresaId, projectEvolutionId: rawProject?.id });
         const storedFinancial: any = financialContext?.financial || { valor_implantacao: 0, valor_mensalidade: 0, desconto_pix: 10, status: 'Links pendentes' }, liveFinancial: any = commercial3 ? { ...storedFinancial, valor_implantacao: Number(commercial3.financial?.valor_implantacao || 0), valor_mensalidade: Number(commercial3.financial?.valor_mensalidade || 0), commercial_3_0_derived: true, commercial_3_0_status: 'PRONTO' } : storedFinancial, publishedSnapshot = liveFinancial.snapshot_publicado || null;
@@ -154,6 +169,16 @@ export async function POST(req: Request) { try {
         const checks = ['proposta', 'contrato', 'condicoes'];
         if (!checks.every(x => body[x] === true))
             return Response.json({ error: 'Confirme a leitura da Proposta Comercial, do Contrato e a concordância com as condições.' }, { status: 400 });
+        const toolFormalization=(await optional(`formalizacoes?empresa_id=eq.${encodeURIComponent(p.empresa_id)}&origem=eq.${TOOL_FORMALIZATION_ORIGIN}&status=eq.PUBLICADA&select=*&order=published_at.desc&limit=1`))[0]||null;
+        if(toolFormalization){
+            const payload={empresa_id:p.empresa_id,formalizacao_id:toolFormalization.id,projeto_evolucao_id:null,plano_implantacao_id:null,usuario_id:p.portal?.id||null,responsavel:body.responsavel,cargo:body.cargo,concorda_plano_estrategico:false,concorda_plano_implantacao:false,concorda_proposta:true,concorda_contrato:true,ip:req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||null,user_agent:req.headers.get('user-agent'),status:'Proposta aceita'};
+            const r=await fetch(`${SUPABASE_URL}/rest/v1/aceites_growth`,{method:'POST',headers:{...headers(),Prefer:'return=representation'},body:JSON.stringify(payload)}); if(!r.ok)return new Response(await r.text(),{status:r.status});
+            const now=new Date().toISOString(); await Promise.all([
+                restData(`formalizacoes?id=eq.${toolFormalization.id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'ACEITA',accepted_at:now,updated_at:now})}),
+                restData(`contratos_growth?formalizacao_id=eq.${toolFormalization.id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Aceito',updated_at:now})}),
+                restData(`financeiro_growth?formalizacao_id=eq.${toolFormalization.id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'Pagamento aguardando confirmação',updated_at:now})})
+            ]); return Response.json({ok:true,acceptance:(await r.json())[0]});
+        }
         const implementation = (await optional(`planos_implantacao?empresa_id=eq.${encodeURIComponent(p.empresa_id)}&select=id&order=created_at.desc&limit=1`))[0], publishedProject = (await optional(`projetos_evolucao?empresa_id=eq.${encodeURIComponent(p.empresa_id)}&status=eq.Publicado&select=id,checklist,exige_pagamento,valor_implantacao_adicional,mensalidade_adicional,forma_cobranca&order=publicado_em.desc&limit=1`))[0];
         const payload = { empresa_id: p.empresa_id, projeto_evolucao_id: publishedProject?.id || null, plano_implantacao_id: implementation?.id || null, usuario_id: p.portal?.id || null, responsavel: body.responsavel, cargo: body.cargo, concorda_plano_estrategico: true, concorda_plano_implantacao: true, concorda_proposta: true, concorda_contrato: true, ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null, user_agent: req.headers.get('user-agent'), status: 'Proposta aceita' };
         const r = await fetch(`${SUPABASE_URL}/rest/v1/aceites_growth`, { method: 'POST', headers: { ...headers(), Prefer: 'return=representation' }, body: JSON.stringify(payload) });
