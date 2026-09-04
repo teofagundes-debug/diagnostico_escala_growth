@@ -9,6 +9,21 @@ function storageObject(value:any){
  try{const url=new URL(String(value||'')),prefix='/storage/v1/object/public/',index=url.pathname.indexOf(prefix);if(index<0||url.origin!==new URL(SUPABASE_URL!).origin)return null;const object=url.pathname.slice(index+prefix.length),slash=object.indexOf('/');return slash>0?{bucket:object.slice(0,slash),path:decodeURIComponent(object.slice(slash+1))}:null}catch{return null}
 }
 
+export async function GET(req:Request){
+ try{
+  const current=await access(req);
+  if(!current||current.role!=='master')return Response.json({error:'Apenas Usuários Master podem consultar empresas.'},{status:403});
+  const [companiesResponse,diagnosticsResponse]=await Promise.all([
+   rest('empresas?select=id,nome,segmento,consultor_responsavel,created_at&order=created_at.desc'),
+   rest('diagnosticos?select=id,empresa_id,pontuacao_geral,data_diagnostico,created_at&order=data_diagnostico.desc')
+  ]);
+  if(!companiesResponse.ok)return Response.json({error:'Não foi possível carregar as empresas.'},{status:companiesResponse.status});
+  if(!diagnosticsResponse.ok)return Response.json({error:'Não foi possível carregar o histórico de diagnósticos.'},{status:diagnosticsResponse.status});
+  const companies=await companiesResponse.json(),diagnostics=await diagnosticsResponse.json();
+  return Response.json(companies.map((company:any)=>({...company,diagnosticos:diagnostics.filter((diagnostic:any)=>diagnostic.empresa_id===company.id)})));
+ }catch(error:any){return Response.json({error:error?.message||'Não foi possível carregar as empresas.'},{status:500})}
+}
+
 export async function DELETE(req:Request){
  try{
   const current=await access(req);
