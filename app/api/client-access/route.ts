@@ -1,4 +1,4 @@
-import { isMaster } from '../../../lib/access';
+import { access as resolveAccess, isMaster } from '../../../lib/access';
 import { advanceJourney, diagnosticContext, updatePlanJourney } from '../../../lib/workflow';
 import { commercialFingerprint, isStrategicCommercialProject } from '../../../lib/commercialConsolidation';
 import { contractDataComplete, formalizationReady, missingContractualFields, publicationReady } from '../../../lib/contractPreparation';
@@ -135,7 +135,8 @@ export async function GET(req: Request) {
 }
 export async function POST(req: Request) {
     try {
-        if (!await isMaster(req))
+        const actor = await resolveAccess(req);
+        if (actor?.role !== 'master')
             return Response.json({ error: 'Acesso exclusivo do Usuário Master.' }, { status: 403 });
         const body = await req.json(), empresaId = String(body.empresa_id || ''), action = String(body.action || 'publish');
         if (!empresaId)
@@ -231,6 +232,13 @@ export async function POST(req: Request) {
         const email=String(body.email || existing?.email || data.responsible?.email || '').trim().toLowerCase(), name = String(body.nome || existing?.nome || data.responsible?.nome || 'Cliente'), phone = String(body.telefone || existing?.telefone || data.responsible?.telefone || '');
         if (!email || !email.includes('@'))
             return Response.json({ error: 'Revise o e-mail do responsável.' }, { status: 400 });
+        const profileWithEmail = (await rest(`portal_usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,empresa_id,perfil&limit=1`))?.[0];
+        const targetsMasterAccount = email === actor.email || profileWithEmail && profileWithEmail.perfil !== 'cliente';
+        const belongsToAnotherCompany = profileWithEmail?.empresa_id && profileWithEmail.empresa_id !== empresaId;
+        if (targetsMasterAccount)
+            return Response.json({ error: 'Este e-mail pertence a uma conta administrativa e não pode ser usado como acesso de cliente.' }, { status: 409 });
+        if (belongsToAnotherCompany)
+            return Response.json({ error: 'Este e-mail já está vinculado ao acesso de outra empresa.' }, { status: 409 });
         if(action==='publish') {
             const tools=await toolContext(empresaId);
             if(tools&&!ctx.diagnosticoId){
@@ -238,11 +246,14 @@ export async function POST(req: Request) {
                 if(!proposal)pending.push('Concluir a validação da Proposta Comercial');
                 for(const item of missingContractualFields(data.company,data.responsible))pending.push(`Completar ${item.label}`);
                 if(pending.length)return Response.json({error:'Existem pendências antes da publicação.',pending},{status:409});
-                const now=new Date().toISOString(),proposalVersion=Number(proposal.versao||1);
+                const now=new Date().toISOString(),proposalVersion=Number(proposal.versao||1),proposalMoney=toolProposalFinancial(proposal);
+                const stagedFinancial=tools.financial||(await rest(`financeiro_growth?empresa_id=eq.${encodeURIComponent(empresaId)}&formalizacao_id=is.null&select=*&order=updated_at.desc&limit=1`).catch(()=>[]))?.[0]||{};
+                const missingPaymentLinks=[proposalMoney.valor_implantacao>0&&!stagedFinancial.link_pix&&!stagedFinancial.link_cartao?'PIX ou Cartão':null,proposalMoney.valor_mensalidade>0&&!stagedFinancial.link_assinatura?'Assinatura':null].filter(Boolean);
+                if(missingPaymentLinks.length)return Response.json({error:`Configure os links de pagamento antes de publicar: ${missingPaymentLinks.join(' e ')}.`},{status:409});
                 const formalization=tools.formalization||(await rest('formalizacoes',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({empresa_id:empresaId,origem:TOOL_FORMALIZATION_ORIGIN,origem_id:proposal.id,versao:proposalVersion,status:'PRONTA',created_by:String(body.usuario||'Usuário Master')})}))?.[0];
-                const proposalMoney=toolProposalFinancial(proposal),version=Number((await rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&select=versao&order=versao.desc&limit=1`).catch(()=>[]))?.[0]?.versao||0)+1;
+                const version=Number((await rest(`proposta_publicacoes?empresa_id=eq.${encodeURIComponent(empresaId)}&select=versao&order=versao.desc&limit=1`).catch(()=>[]))?.[0]?.versao||0)+1;
                 const contract=tools.contract||{titulo:'Contrato/Termo de Implantação de Ferramentas',status:'Publicado',tipo:'Contrato/Termo',gerado_automaticamente:true,created_at:now,updated_at:now};
-                const financialPayload:any={empresa_id:empresaId,formalizacao_id:formalization.id,valor_implantacao:proposalMoney.valor_implantacao,valor_mensalidade:proposalMoney.valor_mensalidade,prazo_contratual:12,validade_proposta:15,status:'Portal publicado',publicada_em:now,publicada_por:String(body.usuario||'Usuário Master'),versao_publicada:version,updated_at:now};
+                const financialPayload:any={empresa_id:empresaId,formalizacao_id:formalization.id,valor_implantacao:proposalMoney.valor_implantacao,valor_mensalidade:proposalMoney.valor_mensalidade,desconto_pix:Number(stagedFinancial.desconto_pix||0),link_pix:stagedFinancial.link_pix||null,link_cartao:stagedFinancial.link_cartao||null,link_assinatura:stagedFinancial.link_assinatura||null,observacoes:stagedFinancial.observacoes||null,prazo_contratual:12,validade_proposta:15,status:'Portal publicado',publicada_em:now,publicada_por:String(body.usuario||'Usuário Master'),versao_publicada:version,updated_at:now};
                 const snapshot=buildToolPortalSnapshot({proposal,financial:financialPayload,contract,version,publishedAt:now}); financialPayload.snapshot_publicado=snapshot;
                 const isExisting=Boolean(existing?.auth_user_id||existing?.primeiro_acesso_em),generated=await generateLink(email,isExisting),accessPayload={email,nome:name,telefone:phone,empresa_id:empresaId,perfil:'cliente',ativo:true,auth_user_id:generated.authUserId||existing?.auth_user_id||null,status_acesso:'Convite enviado',convite_enviado_em:existing?.convite_enviado_em||now,convite_reenviado_em:existing?now:null,convite_expira_em:generated.expiresAt,convite_link:generated.link,updated_at:now};
                 const saved=await rest('portal_usuarios?on_conflict=email',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(accessPayload)});

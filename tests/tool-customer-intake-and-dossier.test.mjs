@@ -70,6 +70,14 @@ test('convite de Ferramentas não menciona o Método Escala Growth',()=>{
  assert.match(clientAccessApi,/Área do Cliente você poderá revisar a Proposta Comercial/);
 });
 
+test('publicação nunca rebaixa uma conta administrativa para cliente',()=>{
+ assert.match(clientAccessApi,/const actor = await resolveAccess\(req\)/);
+ assert.match(clientAccessApi,/email === actor\.email/);
+ assert.match(clientAccessApi,/profileWithEmail\.perfil !== 'cliente'/);
+ assert.match(clientAccessApi,/conta administrativa e não pode ser usado como acesso de cliente/);
+ assert.match(clientAccessApi,/já está vinculado ao acesso de outra empresa/);
+});
+
 test('condições comerciais ficam no snapshot e não são enviadas como coluna financeira',()=>{
  const financialLine=clientAccessApi.split('\n').find(line=>line.includes('const financialPayload:any='))||'';
  assert.doesNotMatch(financialLine,/\.\.\.proposalMoney|condicoes/);
@@ -81,6 +89,19 @@ test('publicação de Ferramentas não passa pelas exigências do Método Growth
  assert.match(branch,/TOOL_FORMALIZATION_ORIGIN/);
  assert.match(branch,/buildToolPortalSnapshot/);
  for(const legacy of ['Concluir o Diagnóstico','Preencher o Parecer do Consultor','Plano Estratégico publicado não encontrado'])assert.doesNotMatch(branch,new RegExp(legacy));
+});
+
+test('financeiro de Ferramentas preserva links e bloqueia publicação incompleta',()=>{
+ assert.match(portalApi,/formalizacao_id=is\.null/);
+ assert.match(clientAccessApi,/const stagedFinancial=tools\.financial/);
+ assert.match(clientAccessApi,/Configure os links de pagamento antes de publicar/);
+ for(const field of ['link_pix','link_cartao','link_assinatura'])assert.match(clientAccessApi,new RegExp(`${field}:stagedFinancial\\.${field}`));
+ assert.match(portal,/tools\?'Implantação de Ferramentas'/);
+ assert.match(portal,/tools\?'Licenças mensais':'Assinatura Escala Growth'/);
+ assert.match(portal,/tools\?'da contratação':'do Método Escala Growth'/);
+ assert.match(portalApi,/const \[implementation, project, toolFormalization\]/);
+ assert.match(portalApi,/financeiro_growth\?formalizacao_id=eq\./);
+ assert.match(portalApi,/toolFormalization\.id/);
 });
 
 test('Portal de Ferramentas expõe somente formalização comercial e documentos',()=>{
