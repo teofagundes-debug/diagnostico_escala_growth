@@ -85,6 +85,8 @@ test('publicação de Ferramentas não passa pelas exigências do Método Growth
 
 test('Portal de Ferramentas expõe somente formalização comercial e documentos',()=>{
  assert.match(portalApi,/customer_origin:'FERRAMENTAS'/);
+ assert.match(portalApi,/formalization\|\|\(toolProjects\.length&&!diagnostics\.length\)/);
+ assert.match(portalApi,/proposta_publicacoes\?formalizacao_id=eq\./);
  assert.match(portal,/const toolsMenu=\[\['🏠 Início'.*Proposta Comercial.*Contrato ou Termo.*Aceite.*Documentos/);
  assert.doesNotMatch(portal.match(/const toolsMenu=.*?;/)?.[0]||'',/Plano Estratégico|Projeto de Evolução|Painel Executivo|Visão Estratégica/);
  assert.match(portal,/data\.customer_origin==='FERRAMENTAS'\?<Investment/);

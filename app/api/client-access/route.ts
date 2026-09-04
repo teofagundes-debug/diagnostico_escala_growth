@@ -13,9 +13,9 @@ async function rest(path: string, init: RequestInit = {}) { const r = await fetc
 async function companyData(empresaId: string) { const company = (await rest(`empresas?id=eq.${encodeURIComponent(empresaId)}&select=*&limit=1`))?.[0], responsible = (await rest(`responsaveis?empresa_id=eq.${encodeURIComponent(empresaId)}&select=nome,email,telefone&order=created_at.asc&limit=1`))?.[0]; if (!company)
     throw new Error('Empresa não encontrada.'); return { company, responsible }; }
 async function toolContext(empresaId:string){
- const encoded=encodeURIComponent(empresaId),projects=await rest(`projetos_implantacao_ferramentas?empresa_id=eq.${encoded}&select=*,pre_propostas_implantacao(*)&order=created_at.desc`).catch(()=>[]),proposal=latestValidatedToolProposal(projects||[]);
+ const encoded=encodeURIComponent(empresaId),projects=await rest(`projetos_implantacao_ferramentas?empresa_id=eq.${encoded}&select=*,pre_propostas_implantacao(*)&order=created_at.desc`).catch(()=>[]),suggestedProposal=latestValidatedToolProposal(projects||[]);
  if(!projects?.length)return null;
- const formalizations=proposal?await rest(`formalizacoes?empresa_id=eq.${encoded}&origem=eq.${TOOL_FORMALIZATION_ORIGIN}&origem_id=eq.${encodeURIComponent(proposal.id)}&versao=eq.${Number(proposal.versao||1)}&select=*&limit=1`).catch(()=>[]):[],formalization=formalizations?.[0]||null;
+ const formalizations=await rest(`formalizacoes?empresa_id=eq.${encoded}&origem=eq.${TOOL_FORMALIZATION_ORIGIN}&select=*&order=created_at.desc`).catch(()=>[]),formalization=formalizations.find((item:any)=>item.origem_id===suggestedProposal?.id&&Number(item.versao)===Number(suggestedProposal?.versao||1))||formalizations[0]||null,proposal=(projects||[]).flatMap((project:any)=>(project.pre_propostas_implantacao||[]).map((item:any)=>({...item,project}))).find((item:any)=>item.id===formalization?.origem_id)||suggestedProposal;
  const [financials,publications,contracts,acceptances,payments]=await Promise.all([
   formalization?rest(`financeiro_growth?formalizacao_id=eq.${formalization.id}&select=*&limit=1`).catch(()=>[]):Promise.resolve([]),
   formalization?rest(`proposta_publicacoes?formalizacao_id=eq.${formalization.id}&select=*&order=versao.desc&limit=1`).catch(()=>[]):Promise.resolve([]),

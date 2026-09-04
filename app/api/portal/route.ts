@@ -38,9 +38,8 @@ export async function GET(req: Request) {
         const company = companies[0];
         if (!company)
             return Response.json({ error: 'Empresa não encontrada.' }, { status: 404 });
-        const toolProjects=await optional(`projetos_implantacao_ferramentas?empresa_id=eq.${id}&select=*,pre_propostas_implantacao(*)&order=created_at.desc`),toolProposal=latestValidatedToolProposal(toolProjects);
-        if(toolProjects.length&&!diagnostics.length){
-            const formalization=toolProposal?(await optional(`formalizacoes?empresa_id=eq.${id}&origem=eq.${TOOL_FORMALIZATION_ORIGIN}&origem_id=eq.${encodeURIComponent(toolProposal.id)}&versao=eq.${Number(toolProposal.versao||1)}&select=*&limit=1`))[0]||null:null;
+        const toolProjects=await optional(`projetos_implantacao_ferramentas?empresa_id=eq.${id}&select=*,pre_propostas_implantacao(*)&order=created_at.desc`),suggestedToolProposal=latestValidatedToolProposal(toolProjects),toolFormalizations=await optional(`formalizacoes?empresa_id=eq.${id}&origem=eq.${TOOL_FORMALIZATION_ORIGIN}&select=*&order=created_at.desc`),formalization=toolFormalizations.find((item:any)=>item.origem_id===suggestedToolProposal?.id&&Number(item.versao)===Number(suggestedToolProposal?.versao||1))||toolFormalizations[0]||null,toolProposal=toolProjects.flatMap((project:any)=>(project.pre_propostas_implantacao||[]).map((item:any)=>({...item,project}))).find((item:any)=>item.id===formalization?.origem_id)||suggestedToolProposal;
+        if(formalization||(toolProjects.length&&!diagnostics.length)){
             const publication=formalization?(await optional(`proposta_publicacoes?formalizacao_id=eq.${formalization.id}&select=*&order=versao.desc&limit=1`))[0]||null:null,publishedSnapshot=publication?.snapshot||null,isPublished=Boolean(publication),preview=p.role==='master'&&!isPublished;
             if(p.role==='cliente'&&!isPublished)return Response.json({error:'A Área do Cliente ainda não foi publicada.'},{status:403});
             const proposal=p.role==='cliente'?publishedSnapshot?.proposal:toolProposal,proposalMoney=p.role==='cliente'?publishedSnapshot?.financial:toolProposalFinancial(toolProposal),resources=p.role==='cliente'?(publishedSnapshot?.proposal?.resources||[]):toolProposalResources(toolProposal);
