@@ -36,3 +36,9 @@ export function priceToolResources(requests:any[],catalog:any[],valorUi:any,prev
 
 export function toolCommercialTotals(items:ToolCommercialItem[]){return{investimento_inicial:items.reduce((sum,item)=>sum+Number(item.subtotal_implantacao||0),0),licencas_mensais:items.reduce((sum,item)=>sum+Number(item.subtotal_mensal||0),0)}}
 export function toolCommercialSnapshot(items:ToolCommercialItem[],parameters:any){return{version:1,captured_at:new Date().toISOString(),valor_ui:Number(parameters?.valor_ui||0),items,totals:toolCommercialTotals(items)}}
+
+export function validateToolScopeResolutions(solutionIds:string[],resolutions:any[],items:ToolCommercialItem[]){
+ const pending=solutionIds.filter(id=>['PROCESS_AUTOMATION','SYSTEM_INTEGRATION'].includes(id)),itemIds=new Set(items.map(item=>item.resource_id)),errors:string[]=[];
+ for(const solutionId of pending){const resolution=resolutions.find(item=>item.solution_type===solutionId);if(!resolution?.definition?.trim())errors.push(`${solutionId}: informe o escopo definido na reunião.`);if(!resolution?.resource_id||!itemIds.has(resolution.resource_id))errors.push(`${solutionId}: vincule um recurso comercial presente na configuração.`);if(!Number.isFinite(Number(resolution?.quantity))||Number(resolution?.quantity)<1)errors.push(`${solutionId}: informe uma quantidade válida.`)}
+ return{valid:errors.length===0,errors,pending};
+}
