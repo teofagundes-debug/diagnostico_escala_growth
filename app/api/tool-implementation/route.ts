@@ -3,6 +3,7 @@ import {isMaster} from '@/lib/access';
 import {normalizeBrazilianWhatsApp} from '@/lib/brazilianWhatsapp';
 import {initialToolProposal} from '@/lib/toolImplementation';
 import {mappedResourceRequests,priceToolResources,toolCommercialSnapshot,toolCommercialTotals,validateToolScopeResolutions} from '@/lib/toolCommercialPricing';
+import {dispatchDiagnosticEvents} from '@/lib/integrationEventDispatcher';
 const URL=process.env.SUPABASE_URL,KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const headers=()=>({'Content-Type':'application/json',apikey:KEY!,Authorization:`Bearer ${KEY}`});
 async function db(path:string,init:RequestInit={}){const response=await fetch(`${URL}/rest/v1/${path}`,{...init,headers:{...headers(),...(init.headers||{})},cache:'no-store'}),value=await response.text();if(!response.ok)throw new Error(value);return value?JSON.parse(value):[]}
@@ -11,13 +12,14 @@ async function commercialData(){const [catalog,mappings,parameters]=await Promis
 export async function POST(req:Request){try{
  if(!URL||!KEY)return Response.json({ok:false,error:'Persistência não configurada.'},{status:503});
  const body=await req.json(),whatsapp=normalizeBrazilianWhatsApp(body.whatsapp);
- if(!body.nome?.trim()||!body.empresa?.trim()||!body.email?.trim()||!whatsapp)return Response.json({ok:false,error:'Informe nome, empresa, e-mail e WhatsApp válidos.'},{status:400});
+ if(!body.nome?.trim()||!body.empresa?.trim()||!body.email?.trim()||!whatsapp||!body.cpf_cnpj?.trim()||!body.endereco?.trim()||!body.cidade?.trim()||!body.estado?.trim()||!body.cep?.trim())return Response.json({ok:false,error:'Informe os dados cadastrais e contratuais obrigatórios.'},{status:400});
  if(!['COMERCIAL','ATENDIMENTO','COMERCIAL_E_ATENDIMENTO'].includes(body.area))return Response.json({ok:false,error:'Selecione a área de interesse.'},{status:400});
  const proposal=initialToolProposal(body);if(!proposal.solutions.length&&!body.answers?.other_need)return Response.json({ok:false,error:'Selecione ao menos uma necessidade.'},{status:400});
- const payload={nome:String(body.nome).trim(),empresa:String(body.empresa).trim(),email:String(body.email).trim().toLowerCase(),whatsapp,area_interesse:body.area,solucoes_selecionadas:proposal.solutions,respostas:body.answers||{},configuracao_sugerida:proposal.configuration,itens_validacao:proposal.validation,sintese:proposal.synthesis,itens_implantacao:proposal.implementationItems};
+ const payload={nome:String(body.nome).trim(),empresa:String(body.empresa).trim(),nome_fantasia:String(body.nome_fantasia||'').trim(),cpf_cnpj:String(body.cpf_cnpj).replace(/\D/g,''),email:String(body.email).trim().toLowerCase(),whatsapp,segmento:String(body.segmento||'').trim(),endereco:String(body.endereco).trim(),cidade:String(body.cidade).trim(),estado:String(body.estado).trim(),cep:String(body.cep).replace(/\D/g,''),area_interesse:body.area,solucoes_selecionadas:proposal.solutions,respostas:body.answers||{},configuracao_sugerida:proposal.configuration,itens_validacao:proposal.validation,sintese:proposal.synthesis,itens_implantacao:proposal.implementationItems};
  const projectId=await db('rpc/registrar_diagnostico_implantacao',{method:'POST',body:JSON.stringify({payload})});
  const commercial=await commercialData(),requests=mappedResourceRequests(proposal.configuration,commercial.mappings),items=priceToolResources(requests,commercial.catalog,commercial.parameters.valor_ui),snapshot=toolCommercialSnapshot(items,commercial.parameters),rows=await db(`pre_propostas_implantacao?projeto_id=eq.${encodeURIComponent(projectId)}&select=id&order=versao.desc&limit=1`);
  if(rows[0])await db(`pre_propostas_implantacao?id=eq.${encodeURIComponent(rows[0].id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({itens_comerciais:items,snapshot_comercial:snapshot,financeiro:{...snapshot.totals,condicoes:null}})});
+ void dispatchDiagnosticEvents(10).catch(error=>console.error('[tool-implementation] Evento criado, mas o despacho imediato para a Nimble falhou; o outbox fará nova tentativa.',error));
  return Response.json({ok:true,projeto_id:projectId,message:'Recebemos suas informações.'},{status:201});
  }catch(error:any){console.error('[tool-implementation] Falha ao criar projeto',error);return Response.json({ok:false,error:'Não foi possível enviar suas informações. Tente novamente.'},{status:500})}}
 

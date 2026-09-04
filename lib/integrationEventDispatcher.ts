@@ -41,7 +41,7 @@ export async function dispatchDiagnosticEvents(limit=10):Promise<DispatchResult[
   for(const event of claimed){
     const attempt=Number(event.attempt_count||0)+1;
     try{
-      if(event.event_type!=='diagnostico_concluido')throw new Error(`Evento não suportado pelo dispatcher: ${event.event_type}`);
+      if(!['diagnostico_concluido','solicitacao_ferramentas_concluida'].includes(event.event_type))throw new Error(`Evento não suportado pelo dispatcher: ${event.event_type}`);
       const response=await fetch(NIMBLE_URL,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -59,4 +59,3 @@ export async function dispatchDiagnosticEvents(limit=10):Promise<DispatchResult[
   }
   return results;
 }
-
