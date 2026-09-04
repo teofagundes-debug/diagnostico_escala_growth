@@ -38,3 +38,14 @@ test('Dossiê restrito é determinado por origem canônica e não por nome',()=>
  assert.match(clientArea,/restricted=false/);
  assert.match(clientArea,/!restricted&&<><ExecutionStrategySummary/);
 });
+
+test('Dossiê de Ferramentas mantém valores validados e acompanhamento completo do acesso',()=>{
+ assert.match(dossierApi,/pre_propostas_implantacao\(id,versao,status,financeiro,snapshot_final,itens_comerciais/);
+ assert.match(dossier,/Configuração Comercial de Ferramentas/);
+ assert.match(dossier,/toolProposal\?\.snapshot_final\?\.financeiro\|\|toolProposal\?\.financeiro/);
+ assert.match(dossier,/Licenças mensais/);
+ assert.match(dossier,/<ClientAreaPanel companyId=\{companyId\} company=\{company\} restricted/);
+ assert.match(clientArea,/client-area-timeline/);
+ assert.match(clientArea,/Liberação da Área do Cliente/);
+ assert.match(clientArea,/Publicar Área do Cliente/);
+});
