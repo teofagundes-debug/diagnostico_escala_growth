@@ -25,12 +25,23 @@ test('remoção e quantidade usam exclusivamente os itens comerciais atuais',()=
  assert.deepEqual(quantity?.details.find(detail=>detail.label==='Quantidade')?.value,'3');
 });
 
-test('resolução e entregáveis canônicos acompanham a solução salva',()=>{
+test('resolução e recursos comerciais atuais acompanham a solução salva',()=>{
  const process={solutions:[{id:'PROCESS_AUTOMATION',name:'Automação de Processos'}],process_automation:{summary:'Disparar notificações'}},resolutions=[{solution_type:'PROCESS_AUTOMATION',definition:'Notificar clientes',resource_name:'CRM Comercial'}];
  const cards=toolPresentationSolutionCards(process,['Automação de Processos: escopo a validar na reunião.'],resolutions,[item('crm','CRM Comercial',['PROCESS_AUTOMATION'])],catalog);
  assert.equal(cards[0].scopeStatus,null);
  assert.equal(cards[0].scopeResolution?.definition,'Notificar clientes');
- assert.ok(toolPresentationImplementationItems(configuration,[],[],[item('crm','CRM Comercial')],catalog).includes('Estruturação inicial do CRM'));
+ assert.ok(toolPresentationImplementationItems(configuration,[],[],[item('crm','CRM Comercial')],catalog).includes('Implantação de CRM Comercial'));
+});
+
+test('entregas antigas do catálogo não acumulam depois de remover um recurso',()=>{
+ const previous=['Configuração do WhatsApp Oficial','Treinamento específico do recurso','Implantação de Treinamento'];
+ const extendedCatalog=[...catalog,{id:'training',nome:'Treinamento',entregas_padrao:['Treinamento específico do recurso']}];
+ const current=toolPresentationImplementationItems(configuration,previous,[],[item('wpp','WhatsApp Oficial')],extendedCatalog);
+ assert.ok(current.includes('Implantação de WhatsApp Oficial'));
+ assert.equal(current.includes('Configuração do WhatsApp Oficial'),false);
+ assert.equal(current.includes('Treinamento específico do recurso'),false);
+ assert.equal(current.includes('Implantação de Treinamento'),false);
+ assert.ok(current.length<12);
 });
 
 test('versão validada seleciona snapshot final como fonte congelada',()=>{
