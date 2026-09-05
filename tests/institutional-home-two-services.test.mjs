@@ -19,7 +19,7 @@ test('Rodada 2 remove a repetição dos dois caminhos e mantém a navegação v�
  assert.doesNotMatch(home,/id="solucoes"/);
  assert.doesNotMatch(home,/choiceSummary/);
  assert.doesNotMatch(header,/#solucoes/);
- assert.match(header,/#implantacao/);
+ assert.match(header,/current \? `\/#\$\{id\}` : `#\$\{id\}`/);
 });
 
 test('Diagnóstico permanece contextualizado dentro da Consultoria',()=>{

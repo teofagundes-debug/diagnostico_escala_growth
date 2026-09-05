@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { LandingMotion } from "./LandingMotion";
 import { InstitutionalFaq } from "./InstitutionalFaq";
 import { PublicHeader } from "./PublicHeader";
-import { WebchatWidget } from "./WebchatWidget";
+import { PublicFooter } from "./PublicFooter";
 import styles from "./LandingPage.module.css";
 
 const problems = ["Clientes sem retorno", "Atendimento desorganizado", "Falta de processo comercial", "Oportunidades sem acompanhamento", "Pouca visibilidade sobre o funil", "Dificuldade para saber o que realmente virou venda"];
@@ -46,7 +46,7 @@ export function LandingPage() { return <div className={styles.landingPage} data-
     <section id="faq" className={styles.faqSection}><div className={styles.faqInner}><Heading eyebrow="Perguntas frequentes" id="faq-title" title="Escolha o caminho certo para sua empresa." /><InstitutionalFaq items={faqs} /></div></section>
     <section className={styles.finalCta}><div data-reveal><span className={styles.eyebrowLight}>Seu próximo passo</span><h2>Qual é o próximo passo da sua empresa?</h2><p>Escolha o caminho que mais combina com o momento atual da sua operação.</p><div className={styles.finalActions}><Link className={styles.lightButton} href="/implantacao-ferramentas">Quero implantar ferramentas</Link><Link className={styles.outlineLightButton} href="/escala-growth">Quero melhorar minhas vendas</Link></div></div></section>
   </main>
-  <footer id="contato" className={styles.footer}><div className={styles.footerInner}><div><strong>Escala Vendas LTDA</strong><p>CNPJ: 60.328.666/0001-03</p><p>Rua Marechal Deodoro, 450, sala 505<br />Centro · Curitiba – PR · CEP 80010-010</p></div><div><strong>Soluções</strong><a href="#implantacao">Implantação de Ferramentas</a><a href="#consultoria">Consultoria Comercial</a><Link href="/escala-growth">Método Escala Growth</Link><Link href="/diagnostico">Diagnóstico</Link></div><WebchatWidget /><nav aria-label="Acesso"><strong>Acesso</strong><Link href="/login">Área do Cliente</Link><a href="mailto:contato@escalavendas.com.br">Contato</a><a href="#empresa">Empresa</a></nav></div><p className={styles.copyright}>© {new Date().getFullYear()} Escala Vendas. Todos os direitos reservados.</p></footer>
+  <PublicFooter />
 </div> }
 
 function ServiceChoice({eyebrow,title,text,href,cta,note}:{eyebrow:string;title:string;text:string;href:string;cta:string;note?:string}){return <article><span>{eyebrow}</span><h2>{title}</h2><p>{text}</p>{note&&<small>{note}</small>}<Link href={href}>{cta}<b aria-hidden="true">→</b></Link></article>}
