@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LandingPage } from "@/components/landing/LandingPage";
 
 const title = "Escala Vendas | Estratégia, Processos e Tecnologia para Vender Melhor";
-const description = "A Escala Vendas organiza operações comerciais por meio do Método Escala Growth, unindo estratégia, processos, tecnologia, implantação e acompanhamento para transformar oportunidades em crescimento.";
+const description = "Estratégia, processos e tecnologia para organizar operações comerciais, implantar CRM, Inteligência Artificial, automações e integrações e melhorar vendas.";
 const siteUrl = "https://www.escalavendas.com.br";
 const canonicalUrl = siteUrl + "/";
 

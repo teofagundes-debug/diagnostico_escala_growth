@@ -2,14 +2,7 @@ import Link from "next/link";
 import { brandLogo } from "@/components/brand";
 import styles from "./LandingPage.module.css";
 
-const links = [
-  ["Serviços", "/servicos"],
-  ["Empresa", "#empresa"],
-  ["Método", "#metodo"],
-  ["Como atuamos", "#como-atuamos"],
-  ["Tecnologia", "#tecnologia"],
-  ["Quem conduz", "#quem-conduz"],
-];
+const links = [["Soluções", "#solucoes"], ["Implantação de Ferramentas", "#implantacao"], ["Consultoria Comercial", "#consultoria"], ["Empresa", "#empresa"], ["Quem conduz", "#quem-conduz"]];
 
 export function PublicHeader() {
   return (
@@ -24,14 +17,14 @@ export function PublicHeader() {
         </nav>
         <div className={styles.headerActions}>
           <Link className={styles.clientLink} href="/login">Área do cliente</Link>
-          <Link className={styles.primaryButtonSmall} href="/diagnostico">Fazer diagnóstico</Link>
+          <a className={styles.primaryButtonSmall} href="#contato">Falar com a Escala</a>
         </div>
         <details className={styles.mobileMenu}>
           <summary aria-label="Abrir menu">Menu</summary>
           <nav aria-label="Navegação móvel">
             {links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
             <Link href="/login">Área do cliente</Link>
-            <Link className={styles.mobileCta} href="/diagnostico">Fazer diagnóstico</Link>
+            <a className={styles.mobileCta} href="#contato">Falar com a Escala</a>
           </nav>
         </details>
       </div>
