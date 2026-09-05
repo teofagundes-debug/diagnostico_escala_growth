@@ -15,6 +15,13 @@ test('Hero apresenta as duas linhas comerciais com o mesmo peso',()=>{
  assert.match(home,/href="\/escala-growth"/);
 });
 
+test('Rodada 2 remove a repetição dos dois caminhos e mantém a navegação válida',()=>{
+ assert.doesNotMatch(home,/id="solucoes"/);
+ assert.doesNotMatch(home,/choiceSummary/);
+ assert.doesNotMatch(header,/#solucoes/);
+ assert.match(header,/#implantacao/);
+});
+
 test('Diagnóstico permanece contextualizado dentro da Consultoria',()=>{
  const consulting=home.slice(home.indexOf('id="consultoria"'),home.indexOf('id="como-atuamos"'));
  assert.match(consulting,/Método Escala Growth/);
