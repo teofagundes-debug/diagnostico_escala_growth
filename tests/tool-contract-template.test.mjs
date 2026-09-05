@@ -12,7 +12,17 @@ test('Ferramentas reutiliza todas as cláusulas homologadas com objeto específi
  const content=module.buildHomologatedContract({origin:'IMPLANTACAO_FERRAMENTAS',...base});
  for(let clause=1;clause<=13;clause++)assert.match(content,new RegExp(`${clause}\\.`));
  for(const text of ['Implantação de Ferramentas','Agente de IA','WhatsApp Oficial','CRM Comercial','R$ 2.000,00','R$ 150,00','12 meses','Configurar atendimento e automações'])assert.ok(content.includes(text),text);
+ assert.match(content,/A Proposta Comercial publicada faz parte integrante deste contrato e define o escopo, os valores, os recursos, os serviços recorrentes e as condições comerciais da contratação\./);
+ assert.doesNotMatch(content,/snapshot/i);
  for(const forbidden of ['Método Escala Growth','Diagnóstico Growth','Plano Estratégico','Projeto de Evolução','Reunião Estratégica'])assert.doesNotMatch(content,new RegExp(forbidden));
+});
+
+test('proposta de Ferramentas não apresenta assinatura como forma de pagamento',()=>{
+ const portal=readFileSync('app/api/portal/route.ts','utf8'),toolBranch=portal.slice(portal.indexOf("if(formalization||(toolProjects.length&&!diagnostics.length))"),portal.indexOf('const latest = diagnostics.at(-1)'));
+ assert.match(toolBranch,/financial\.link_pix\?'PIX'/);
+ assert.match(toolBranch,/financial\.link_cartao\?'Cartão'/);
+ assert.doesNotMatch(toolBranch,/financial\.link_assinatura\?'Assinatura'/);
+ assert.match(portal.slice(portal.indexOf('const latest = diagnostics.at(-1)')),/financial\.link_assinatura \? 'Assinatura'/);
 });
 
 test('Growth preserva seu objeto e as cláusulas comuns homologadas',()=>{
