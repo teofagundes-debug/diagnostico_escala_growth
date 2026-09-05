@@ -27,7 +27,7 @@ export async function GET(req:Request){try{
  if(!await isMaster(req))return Response.json({error:'Acesso exclusivo do Usuário Master.'},{status:403});
  const id=new globalThis.URL(req.url).searchParams.get('id'),filter=id?`id=eq.${encodeURIComponent(id)}&`:'';
  const [projects,commercial]=await Promise.all([db(`projetos_implantacao_ferramentas?${filter}select=*,empresas(id,nome),responsaveis(id,nome,email,telefone),pre_propostas_implantacao(*),pre_propostas_implantacao_historico(*)&order=created_at.desc`),commercialData()]);
- if(id)return Response.json(projects);
+ if(id){const presentationCatalog=commercial.catalog.map((item:any)=>({id:item.id,nome:item.nome,descricao:item.descricao||null,categoria:item.categoria,entregas_padrao:Array.isArray(item.entregas_padrao)?item.entregas_padrao:[]}));return Response.json(projects.map((project:any)=>({...project,presentation_catalog:presentationCatalog})));}
  return Response.json({projects,catalog:commercial.catalog.filter((item:any)=>item.ativo!==false).map((item:any)=>({id:item.id,codigo:item.codigo,nome:item.nome,categoria:item.categoria,tipo:item.tipo_comercial||item.tipo,ui:item.ui,valor_mensal:item.valor_mensalidade_padrao??item.valor_mensal,impacta_financeiro:item.impacta_financeiro})),parameters:{valor_ui:commercial.parameters.valor_ui}});
  }catch(error:any){return Response.json({error:error?.message||'Não foi possível carregar os projetos.'},{status:500})}}
 
