@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     try {
         const p = await profile(req);
         if (!p)
-            return Response.json({ error: 'Acesso ao Portal não vinculado.' }, { status: 403 });
+            return Response.json({ error: 'Este acesso não está mais disponível.' }, { status: 403 });
         const url = new URL(req.url);
         if (url.searchParams.get('mode') === 'profile')
             return Response.json({ role: p.role, empresa_id: p.empresa_id, onboarding: Boolean(p.portal?.boas_vindas_concluida) });

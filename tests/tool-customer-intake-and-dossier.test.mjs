@@ -114,8 +114,8 @@ test('Portal de Ferramentas expõe somente formalização comercial e documentos
  assert.match(onboarding,/Revise e confirme sua contratação/);
 });
 
-test('exclusão remove relações restritivas de Ferramentas antes da empresa',()=>{
- const tools=companiesApi.indexOf("removeRows('projetos_implantacao_ferramentas','empresa_id',companyId)"),company=companiesApi.indexOf('const removed=await rest(`empresas?id=eq.');
- assert.ok(tools>=0&&company>tools);
- assert.match(companiesApi,/removeRows\('formalizacoes','empresa_id',companyId\)/);
+test('exclusão arquiva Ferramentas e preserva a identidade documental',()=>{
+ assert.match(companiesApi,/rpc\/arquivar_empresa_com_historico/);
+ assert.doesNotMatch(companiesApi,/removeRows\('formalizacoes'/);
+ assert.doesNotMatch(companiesApi,/removeRows\('projetos_implantacao_ferramentas'/);
 });
