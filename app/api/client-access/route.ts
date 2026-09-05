@@ -26,12 +26,12 @@ async function toolContext(empresaId:string){
  ]);
  return{projects,proposal,formalization,financial:financials[0]||null,publication:publications[0]||null,contract:contracts[0]||null,acceptance:acceptances[0]||null,payment:payments[0]||null};
 }
-async function generateLink(email: string, existing: boolean) { const expiresHours = Math.max(1, Number(process.env.CLIENT_INVITE_EXPIRY_HOURS || 72)); const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, { method: 'POST', headers: h(), body: JSON.stringify({ type: existing ? 'recovery' : 'invite', email, redirect_to: `${APP}/definir-senha` }) }); if (!r.ok) {
+async function generateLink(email: string, existing: boolean, retried=false) { const expiresHours = Math.max(1, Number(process.env.CLIENT_INVITE_EXPIRY_HOURS || 72)),type=existing?'recovery':'invite'; const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, { method: 'POST', headers: h(), body: JSON.stringify({ type, email, redirect_to: `${APP}/definir-senha` }) }); if (!r.ok) {
     const message = await r.text();
-    if (!existing && /already|registered|exists/i.test(message))
-        return generateLink(email, true);
+    if(!retried&&existing&&/user_not_found|not found/i.test(message))return generateLink(email,false,true);
+    if(!retried&&!existing&&/already|registered|exists/i.test(message))return generateLink(email,true,true);
     throw new Error(message);
-} const data = await r.json(); return { link: data.action_link, authUserId: data.user?.id, expiresAt: new Date(Date.now() + expiresHours * 3600000).toISOString() }; }
+} const data = await r.json(); return { link: data.action_link, authUserId: data.user?.id, expiresAt: new Date(Date.now() + expiresHours * 3600000).toISOString(),recovery:type==='recovery' }; }
 async function sendEmail(input: {
     email: string;
     name: string;
@@ -352,10 +352,10 @@ export async function POST(req: Request) {
             await audit(empresaId, ctx.diagnosticoId, 'Portal do Cliente publicado', `Versão ${version} publicada por ${String(body.usuario || 'Usuário Master')}. Convite ${mail.sent ? 'enviado' : 'gerado'} para ${email}.`);
             return Response.json({ ok: true, access: saved?.[0], publication: { versao: version, publicada_em: now }, link: generated.link, email_sent: mail.sent, email_error: mail.error || null, message: mail.sent ? 'Portal publicado e convite enviado.' : 'Portal publicado; envie manualmente o link de acesso.' });
         }
-        const isExisting = Boolean(existing?.auth_user_id || existing?.primeiro_acesso_em), generated = await generateLink(email, isExisting || action === 'resend' || action === 'reset'), now = new Date().toISOString();
+        const isExisting = Boolean(existing?.auth_user_id || existing?.primeiro_acesso_em), generated = await generateLink(email, isExisting), now = new Date().toISOString();
         const payload = { email, nome: name, telefone: phone, empresa_id: empresaId, perfil: 'cliente', ativo: true, auth_user_id: generated.authUserId || existing?.auth_user_id || null, status_acesso: 'Convite enviado', convite_enviado_em: existing?.convite_enviado_em || now, convite_reenviado_em: existing ? now : null, convite_expira_em: generated.expiresAt, convite_link: generated.link, updated_at: now };
         const saved = await rest('portal_usuarios?on_conflict=email', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(payload) });
-        const mail = await sendEmail({ email, name, link: generated.link, existing: isExisting, tools:Boolean(await toolContext(empresaId)) && !ctx.diagnosticoId });
+        const mail = await sendEmail({ email, name, link: generated.link, existing: generated.recovery, tools:Boolean(await toolContext(empresaId)) && !ctx.diagnosticoId });
         await audit(empresaId, ctx.diagnosticoId, existing ? 'Convite reenviado' : 'Acesso criado', `Convite ${mail.sent ? 'enviado' : 'gerado'} para ${email}.`);
         if (['create_release', 'release_existing'].includes(action) && ctx.diagnosticoId) {
             await updatePlanJourney(ctx.diagnosticoId, 'release');
