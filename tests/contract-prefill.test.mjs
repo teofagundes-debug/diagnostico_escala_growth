@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 const dossierApi=await readFile(new URL('../app/api/dossiers/route.ts',import.meta.url),'utf8');
 const central=await readFile(new URL('../components/CentralApp.tsx',import.meta.url),'utf8');
 const portal=await readFile(new URL('../app/api/portal/route.ts',import.meta.url),'utf8');
+const contractTemplate=await readFile(new URL('../lib/contractTemplate.ts',import.meta.url),'utf8');
 const migration=await readFile(new URL('../database/migration_20260803_dados_contratuais_revisados.sql',import.meta.url),'utf8');
 
 test('prefill respeita dados revisados e usa diagnóstico antes do cadastro geral',()=>{
@@ -25,5 +26,6 @@ test('CPF CNPJ e CEP são formatados somente para exibição',()=>{
 });
 
 test('contrato gerado continua consumindo os dados persistidos da empresa',()=>{
- for(const field of ['company.razao_social','company.cpf_cnpj','company.endereco','company.cidade','company.estado','company.cep'])assert.ok(portal.includes(field),field);
+ assert.match(portal,/buildHomologatedContract/);
+ for(const field of ['company.razao_social','company.cpf_cnpj','company.endereco','company.cidade','company.estado','company.cep'])assert.ok(contractTemplate.includes(field),field);
 });
