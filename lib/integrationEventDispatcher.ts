@@ -9,7 +9,8 @@ type DispatchResult={event_id:string;delivered:boolean;http_status:number|null;a
 
 const SUPABASE_URL=process.env.SUPABASE_URL;
 const SERVICE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
-const NIMBLE_URL=process.env.NIMBLE_DIAGNOSTIC_WEBHOOK_URL;
+const NIMBLE_DIAGNOSTIC_URL=process.env.NIMBLE_DIAGNOSTIC_WEBHOOK_URL;
+const NIMBLE_TOOLS_URL=process.env.NIMBLE_TOOLS_WEBHOOK_URL;
 const TIMEOUT_MS=Number(process.env.NIMBLE_WEBHOOK_TIMEOUT_MS||8000);
 const RETRY_SECONDS=[60,300,900,3600];
 
@@ -33,7 +34,6 @@ async function updateEvent(id:string,data:Record<string,unknown>){
 export function retryDelaySeconds(attempt:number){return backoffSeconds(attempt)}
 
 export async function dispatchDiagnosticEvents(limit=10):Promise<DispatchResult[]>{
-  if(!NIMBLE_URL)throw new Error('NIMBLE_DIAGNOSTIC_WEBHOOK_URL não configurada.');
   const claimed:IntegrationEvent[]=await supabase('rpc/claim_integration_events',{
     method:'POST',body:JSON.stringify({p_limit:Math.max(1,Math.min(Number(limit)||10,50))})
   });
@@ -42,7 +42,9 @@ export async function dispatchDiagnosticEvents(limit=10):Promise<DispatchResult[
     const attempt=Number(event.attempt_count||0)+1;
     try{
       if(!['diagnostico_concluido','solicitacao_ferramentas_concluida'].includes(event.event_type))throw new Error(`Evento não suportado pelo dispatcher: ${event.event_type}`);
-      const response=await fetch(NIMBLE_URL,{
+      const webhookUrl=event.event_type==='solicitacao_ferramentas_concluida'?NIMBLE_TOOLS_URL:NIMBLE_DIAGNOSTIC_URL;
+      if(!webhookUrl)throw new Error(`Webhook Nimble não configurado para ${event.event_type}.`);
+      const response=await fetch(webhookUrl,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(event.payload),
