@@ -24,6 +24,7 @@ test('Maya aparece na Home, em Implantação e no sitemap',()=>{
   assert.match(home,/href="\/maya"/);
   assert.match(home,/maya-home-hero\.png/);
   assert.match(home,/maya-whatsapp-conversation\.png/);
+  assert.match(home,/mayaWhatsappMockup[^>]+unoptimized/);
   assert.match(home,/HomeMayaVisual/);
   assert.match(home,/Exemplo ilustrativo de conversa da Maya/);
   assert.match(tools,/href: "\/maya"/);
