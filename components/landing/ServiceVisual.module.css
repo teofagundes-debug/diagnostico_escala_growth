@@ -1,0 +1,9 @@
+.visual{position:relative;width:100%;height:116px;margin:18px 0 2px;overflow:hidden;border:1px solid #dfebe4;border-radius:14px;background:radial-gradient(circle at 72% 42%,rgba(99,217,151,.16),transparent 34%),linear-gradient(145deg,#f8fcf9,#eef6f1)}
+.visual::after{position:absolute;inset:auto 9% 8px;height:24px;border-radius:50%;background:rgba(24,111,65,.07);filter:blur(14px);content:""}
+.visual svg{position:relative;z-index:1;width:100%;height:100%;fill:none;stroke:#39775a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.visual svg rect,.visual svg circle{fill:rgba(255,255,255,.72)}
+.visual svg .active{fill:rgba(75,204,132,.16);stroke:#16804b;stroke-width:2.4}
+.ai{background:radial-gradient(circle at 50% 52%,rgba(95,223,151,.2),transparent 32%),linear-gradient(145deg,#f8fcf9,#eef6f1)}
+.chat{background:radial-gradient(circle at 54% 56%,rgba(66,200,124,.18),transparent 35%),linear-gradient(145deg,#f8fcf9,#edf7f1)}
+.workflow,.integration{background:radial-gradient(circle at 60% 48%,rgba(150,224,112,.14),transparent 38%),linear-gradient(145deg,#fafdfa,#eef6f1)}
+@media(max-width:560px){.visual{height:108px;margin-top:16px}}
