@@ -9,11 +9,13 @@ const maya=read("../components/landing/MayaLandingPage.tsx");
 const tools=read("../components/landing/ToolLandingPage.tsx");
 
 test("cards institucionais compartilham visuais vetoriais responsivos",()=>{
-  for(const variant of ["crm","ai","chat","workflow","integration","insight"])
+  for(const variant of ["crm","ai","chat","workflow","integration","insight","qualification","handoff","channels","dashboard"])
     assert.match(visual,new RegExp(`variant===\\"${variant}\\"`));
   assert.match(home,/ServiceVisual label=\{title\}/);
   assert.match(maya,/ServiceVisual label=\{title\}/);
   assert.match(maya,/ServiceVisual label=\{module\}/);
   assert.match(tools,/ServiceVisual label=\{service\.title\}/);
   assert.match(visual,/aria-hidden="true"/);
+  for(const label of ["identificacao","transferencia","canais contratados","indicadores"])
+    assert.match(visual,new RegExp(`includes\\(\\"${label}\\"\\)`));
 });

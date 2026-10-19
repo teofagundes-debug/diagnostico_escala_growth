@@ -1,12 +1,16 @@
 import styles from "./ServiceVisual.module.css";
 
-type Variant="crm"|"ai"|"chat"|"workflow"|"integration"|"insight";
+type Variant="crm"|"ai"|"chat"|"workflow"|"integration"|"insight"|"qualification"|"handoff"|"channels"|"dashboard";
 
 function resolveVariant(label:string):Variant{
   const value=label.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  if(value.includes("identificacao")||value.includes("qualificacao"))return "qualification";
+  if(value.includes("transferencia"))return "handoff";
+  if(value.includes("canais contratados")||value.includes("multicanal"))return "channels";
+  if(value.includes("dados")||value.includes("indicadores"))return "dashboard";
   if(value.includes("crm")||value.includes("oportunidade"))return "crm";
   if(value.includes("inteligencia")||value.includes("agente")||value.includes("maya"))return "ai";
-  if(value.includes("atendimento")||value.includes("canal")||value.includes("transferencia")||value.includes("multicanal"))return "chat";
+  if(value.includes("atendimento")||value.includes("canal"))return "chat";
   if(value.includes("processo")||value.includes("agenda")||value.includes("follow")||value.includes("reativacao"))return "workflow";
   if(value.includes("integr")||value.includes("proposta"))return "integration";
   return "insight";
@@ -21,5 +25,9 @@ export function ServiceVisual({label}:{label:string}){
     {variant==="workflow"&&<><rect x="12" y="39" width="42" height="38" rx="10"/><rect x="99" y="39" width="42" height="38" rx="10"/><rect className={styles.active} x="186" y="14" width="42" height="38" rx="10"/><rect x="186" y="65" width="42" height="38" rx="10"/><path d="M54 58h45m42 0h20c14 0 12-25 25-25M141 58h20c14 0 12 26 25 26"/><path d="m91 51 8 7-8 7m87-39 8 7-8 7m0 37 8 7-8 7"/><circle cx="120" cy="58" r="6"/></>}
     {variant==="integration"&&<><rect x="92" y="30" width="56" height="56" rx="14"/><path className={styles.active} d="m105 53 15-9 15 9-15 9-15-9Zm0 12 15 9 15-9"/><rect x="12" y="12" width="43" height="36" rx="10"/><rect x="185" y="12" width="43" height="36" rx="10"/><rect x="12" y="69" width="43" height="36" rx="10"/><rect x="185" y="69" width="43" height="36" rx="10"/><path d="M55 30c25 0 18 28 37 28m93-28c-25 0-18 28-37 28M55 87c25 0 18-29 37-29m93 29c-25 0-18-29-37-29"/><circle cx="72" cy="34" r="3"/><circle cx="168" cy="34" r="3"/><circle cx="72" cy="82" r="3"/><circle cx="168" cy="82" r="3"/></>}
     {variant==="insight"&&<><path d="M32 89V59m33 30V42m33 47V67m33 22V26"/><path className={styles.active} d="m23 43 45-17 34 20 61-29"/><circle cx="23" cy="43" r="5"/><circle cx="68" cy="26" r="5"/><circle cx="102" cy="46" r="5"/><circle cx="163" cy="17" r="5"/><rect x="177" y="30" width="49" height="59" rx="10"/><path d="M190 49h23m-23 13h23m-23 13h15"/></>}
+    {variant==="qualification"&&<><circle className={styles.active} cx="72" cy="55" r="24"/><circle cx="72" cy="47" r="8"/><path d="M56 72c5-13 27-13 32 0M96 55h27"/><path d="m116 47 9 8-9 8"/><rect x="132" y="24" width="91" height="63" rx="12"/><path d="M149 43h56m-56 14h39m-39 14h25"/><circle cx="31" cy="28" r="8"/><path d="m25 28 4 4 8-9"/></>}
+    {variant==="handoff"&&<><rect x="17" y="28" width="72" height="55" rx="14"/><path d="m41 83-13 11 4-16M34 47h38M34 62h27"/><circle className={styles.active} cx="197" cy="55" r="25"/><circle cx="197" cy="47" r="8"/><path d="M181 73c5-13 27-13 32 0M92 55h69"/><path d="m151 46 10 9-10 9"/><circle cx="121" cy="55" r="5"/></>}
+    {variant==="channels"&&<><circle className={styles.active} cx="120" cy="58" r="22"/><path d="M109 58h22m-11-11v22"/><rect x="15" y="18" width="42" height="34" rx="10"/><rect x="15" y="70" width="42" height="34" rx="10"/><rect x="183" y="18" width="42" height="34" rx="10"/><rect x="183" y="70" width="42" height="34" rx="10"/><path d="M57 35c27 0 29 12 41 18M57 87c27 0 29-12 41-18m85-34c-27 0-29 12-41 18m41 34c-27 0-29-12-41-18"/><path d="M27 35h18M28 82h16m151-47h18m-18 47h18"/></>}
+    {variant==="dashboard"&&<><rect x="15" y="15" width="210" height="86" rx="13"/><path d="M31 83V61m18 22V45m18 38V68m18 15V35"/><path className={styles.active} d="m30 46 32-17 28 12 39-21"/><circle cx="30" cy="46" r="4"/><circle cx="62" cy="29" r="4"/><circle cx="90" cy="41" r="4"/><circle cx="129" cy="20" r="4"/><rect x="147" y="31" width="60" height="49" rx="8"/><path d="M160 47h34m-34 12h25m-25 11h17"/></>}
   </svg></div>
 }

@@ -5,5 +5,5 @@
 .visual svg .active{fill:rgba(75,204,132,.16);stroke:#16804b;stroke-width:2.4}
 .ai{background:radial-gradient(circle at 50% 52%,rgba(95,223,151,.2),transparent 32%),linear-gradient(145deg,#f8fcf9,#eef6f1)}
 .chat{background:radial-gradient(circle at 54% 56%,rgba(66,200,124,.18),transparent 35%),linear-gradient(145deg,#f8fcf9,#edf7f1)}
-.workflow,.integration{background:radial-gradient(circle at 60% 48%,rgba(150,224,112,.14),transparent 38%),linear-gradient(145deg,#fafdfa,#eef6f1)}
+.workflow,.integration,.qualification,.handoff,.channels,.dashboard{background:radial-gradient(circle at 60% 48%,rgba(150,224,112,.14),transparent 38%),linear-gradient(145deg,#fafdfa,#eef6f1)}
 @media(max-width:560px){.visual{height:108px;margin-top:16px}}
