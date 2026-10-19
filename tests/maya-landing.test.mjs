@@ -10,7 +10,7 @@ const api=read('app/api/tool-implementation/route.ts');
 const sitemap=read('app/sitemap.ts');
 
 test('Maya possui página própria com posicionamento e capacidades aprovadas',()=>{
-  for(const text of ['Maya — Sua assistente comercial','Uma operação comercial assistida','Atendimento contextual','Transferência com contexto','Maya Agenda','Follow-up','Reativação','Voz & Visão','Maya + equipe humana'])assert.ok(maya.includes(text));
+  for(const text of ['Maya – Sua assistente comercial','Uma operação comercial assistida','Atendimento contextual','Transferência com contexto','Maya Agenda','Follow-up','Reativação','Voz & Visão','Maya + equipe humana'])assert.ok(maya.includes(text));
 });
 
 test('CTAs da Maya reutilizam o diagnóstico de Implantação com origem identificada',()=>{

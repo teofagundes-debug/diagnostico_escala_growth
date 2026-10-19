@@ -76,4 +76,7 @@
 @media(max-width:1080px){.heroContentNew{grid-template-columns:minmax(0,1fr) minmax(390px,.85fr)}.homeMayaVisual{min-height:560px}.mayaCharacter{left:-90px;width:82%}.mayaPhone{right:18px;width:50%}}
 @media(max-width:820px){.heroContentNew{grid-template-columns:1fr}.heroContentNew .heroCopy{max-width:760px}.heroContentNew .heroCopy h1{max-width:760px}.homeMayaVisual{min-height:610px}.mayaCharacter{left:-30px;width:68%}.mayaPhone{right:34px;width:42%}.heroChoices{grid-column:auto}}
 @media(max-width:560px){.heroContentNew{padding:54px 0}.heroContentNew .heroCopy h1{font-size:clamp(2.55rem,11.5vw,3.35rem)}.homeMayaVisual{min-height:540px;border-radius:20px}.mayaIntro{top:22px;left:22px;max-width:245px}.mayaIntro strong{font-size:1.15rem}.mayaCharacter{bottom:-10px;left:-115px;width:110%}.mayaPhone{right:12px;bottom:18px;width:57%;border-width:5px}.mayaPhone header{padding:10px 8px}.chatBody{padding:11px 8px;gap:7px}.chatBody p{padding:8px;font-size:.63rem}.heroChoices{margin-top:0}}
+
+.homeMayaVisual .mayaIntro{right:28px;left:auto;max-width:235px;text-align:right}
+@media(max-width:560px){.homeMayaVisual .mayaIntro{top:20px;right:18px;left:auto;max-width:205px}.homeMayaVisual .mayaIntro strong{font-size:1.08rem}.homeMayaVisual .mayaIntro small{font-size:.72rem}}
 .currentNavigation{color:var(--green)!important}
